@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="impetuous-gfa",
-    version="0.1.0",
+    version="0.1.2",
     author="Richard Tjörnhammar",
     author_email="richard.tjornhammar@gmail.com",
     description="Impetuous Group Factor Analysis",
@@ -15,8 +15,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache License 2.0",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
-        "Domain :: Group Factor Analysis",
     ],
 )

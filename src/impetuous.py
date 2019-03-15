@@ -109,5 +109,6 @@ if __name__ == '__main__' :
 
     analyte_df = pd.read_csv(analyte_file,'\t' , index_col=0 )
     journal_df = prune_journal( pd.read_csv(journal_file,'\t', index_col=0 ) )
+
     print ( quantify_groups( analyte_df, journal_df, 'Group ~ Var + C(Cat) ', grouping_file ) )
 
