@@ -70,9 +70,6 @@ def prune_journal( journal_df,remove_units_on='_' ):
     journal_df = pd.concat( [nmr_journal,str_journal] )
     return( journal_df )
 
-analyte_file = './fine.txt'
-journal_file = './coarse.txt'
-grouping_file = './groups.gmt'
 dimred = PCA()
 
 def quantify_groups( analyte_df,journal_df,formula,grouping_file,delimiter='\t' ) :
@@ -84,11 +81,14 @@ def quantify_groups( analyte_df,journal_df,formula,grouping_file,delimiter='\t' 
             vline = line.replace('\n','').split(delimiter)
             gid,gdesc,analytes_ = vline[0],vline[1],vline[2:]
             group = analyte_df.loc[[a for a in analytes_ if a in sidx] ].dropna()
-            if len( group )>0 :
+            L_ = len( group ); str_analytes=','.join(group.index.values)
+            if L_>0 :
                 dimred.fit(group.values)
                 group_expression_df = pd.DataFrame([dimred.components_[0]],columns=analyte_df.columns.values,index=[gid])
                 rdf = pd.DataFrame(anova_test( statistical_formula, group_expression_df , journal_df )).T
                 rdf.columns = [ col+',p' for col in rdf.columns ]
+                rdf['description'] = gdesc+','+str(L_)
+                rdf['analytes'] = str_analytes
                 rdf.index = [ gid ]; ndf = pd.concat([rdf.T,group_expression_df.T]).T
                 if eval_df is None:
                     eval_df = ndf
@@ -102,9 +102,12 @@ def quantify_groups( analyte_df,journal_df,formula,grouping_file,delimiter='\t' 
     return( edf.T )
 
 if __name__ == '__main__' :
+    path = './'
+    analyte_file = path_ + 'fine.txt'
+    journal_file = path_ + 'coarse.txt'
+    grouping_file = path_ + 'groups.gmt'
 
     analyte_df = pd.read_csv(analyte_file,'\t' , index_col=0 )
     journal_df = prune_journal( pd.read_csv(journal_file,'\t', index_col=0 ) )
-
     print ( quantify_groups( analyte_df, journal_df, 'Group ~ Var + C(Cat) ', grouping_file ) )
 
