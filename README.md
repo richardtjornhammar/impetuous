@@ -9,9 +9,6 @@ The journal and analyte expression file must be ordered
 the same way with respect to the samples that are
 positioned on the columns.
 
-Install with:
-pip install  --index-url https://test.pypi.org/simple/ impetuous-gfa
-
 Visit the active code via:
 https://github.com/richardtjornhammar/impetuous
 
