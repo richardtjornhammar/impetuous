@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from scipy.stats import rankdata
-from convert import create_synonyms,flatten_dict
+from impetuous.convert import create_synonyms,flatten_dict
 import itertools
 
 def SubArraysOf(Array,Array_=None):
