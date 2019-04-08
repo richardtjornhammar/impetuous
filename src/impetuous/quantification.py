@@ -107,6 +107,42 @@ def group_significance( subset , all_analytes_df = None ,
     oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]])
     return ( pval , oddsratio )
 
+def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
+                                 tolerance = 0.05 , p_label = 'C(Status),p' ,
+                                 group_prefix = '') :
+    AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
+    SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
+    if len(AllAnalytes) == len(SigAnalytes) :
+        print('THIS STATISTICAL TEST WILL BE NONSENSE')
+    eval_df = None
+    with open( grouping_file ) as input :
+        for line in input :
+            vline = line.replace('\n','').split(delimiter)
+            gid, gdesc, analytes_ = vline[0], vline[1], vline[2:]
+            try :
+                group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 )
+            except KeyError as e :
+                continue
+            #group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna()
+            L_ = len( group ) ; str_analytes=','.join(group.index.values)
+            if L_ > 0 :
+                pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes )
+                rdf = pd.DataFrame( [[pv]], columns = [ group_prefix + 'Group_'+p_label ], index=[ gid ] )
+                rdf.columns = [ col+',p' if ',p' not in col else col for col in rdf.columns ]
+                rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes 
+                rdf[ group_prefix + 'NGroupAnalytes' ] = L_
+                ndf = rdf
+                if eval_df is None :
+                    eval_df = ndf
+                else :
+                    eval_df = pd.concat([eval_df,ndf])
+    edf = eval_df.T
+    for col in eval_df.columns :
+        if ',p' in col :
+            q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
+            edf.loc[l] = q
+    return ( edf.T )
+
 dimred = PCA()
 
 def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
