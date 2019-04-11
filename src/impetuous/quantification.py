@@ -90,9 +90,25 @@ def prune_journal ( journal_df , remove_units_on = '_' ) :
     journal_df = pd.concat( [nmr_journal,str_journal] )
     return( journal_df )
 
+def merge_significance ( significance_df , distance_type='euclidean' ) :
+    # TAKES P VALUES OR Q VALUES
+    # TRANSFORMS INTO A MERGED P OR Q VALUE VIA
+    # THE DISTANCE SCORE
+    # THE DATA DOMAIN SIGNIFICANCE IS ALONG COLUMNS AND 
+    # GROUPS ALONG INDICES
+    # EX: pd.DataFrame( np.random.rand(20).reshape(5,4) , columns=['bio','cars','oil','money']).apply( lambda x: -1.*np.log10(x) ).T.apply( lambda x: np.sqrt(np.sum(x**2)) )
+    #
+    if distance_type == 'euclidean' :
+        distance = lambda x : np.sqrt(np.sum(x**2))
+    else : # CURRENTLY ONLY ONE METHOD IMPLEMENTED
+        distance = lambda x : np.sqrt(np.sum(x**2))
+    get_pvalue = lambda x : 10**(-x)
+    return ( significance_df.apply( lambda x: -1.*np.log10(x) ).T.apply(distance).apply(get_pvalue) )
+
 def group_significance( subset , all_analytes_df = None ,
                         tolerance = 0.05 , significance_name = 'pVal' ,
                         AllAnalytes = None , SigAnalytes = None  ) :
+    # FISHER ODDS RATIO CHECK
     if AllAnalytes is None :
         if all_analytes_df is None :
             AllAnalytes = set(all_analytes_df.index.values)
@@ -113,17 +129,16 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
     AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
     SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
     if len(AllAnalytes) == len(SigAnalytes) :
-        print('THIS STATISTICAL TEST WILL BE NONSENSE')
+        print ( 'THIS STATISTICAL TEST WILL BE NONSENSE' )
     eval_df = None
     with open( grouping_file ) as input :
         for line in input :
             vline = line.replace('\n','').split(delimiter)
             gid, gdesc, analytes_ = vline[0], vline[1], vline[2:]
             try :
-                group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 )
+                group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
             except KeyError as e :
                 continue
-            #group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna()
             L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_ > 0 :
                 pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes )
@@ -163,7 +178,7 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
             if not synonyms is None :
                 [ analytes_.append(synonyms[a]) for a in analytes_ if a in synonyms ]
             try :
-                group = analyte_df.loc[[a for a in analytes_ if a in sidx] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 )
+                group = analyte_df.loc[[a for a in analytes_ if a in sidx] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
             except KeyError as e :
                 continue
             L_ = len( group ); str_analytes=','.join(group.index.values)
@@ -188,7 +203,7 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
 
 def quantify_analytes( analyte_df, journal_df, formula,
                        delimiter = '\t', test_type = 'random',
-                       verbose = True, only_include=None ) :
+                       verbose = True, only_include = None ) :
     statistical_formula = formula
     sidx = set(analyte_df.index.values) ; nidx=len(sidx)
     eval_df = None ; N_ = len(analyte_df)
@@ -233,7 +248,7 @@ def group_counts( analyte_df, grouping_file, delimiter = '\t',
             gid, gdesc, analytes_ = vline[0], vline[1], vline[2:]
             useSigAnalytes = [ a for a in analytes_ if a in SigAnalytes ]
             try :
-                group = analyte_df.loc[ useSigAnalytes ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 )
+                group = analyte_df.loc[ useSigAnalytes ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
             except KeyError as e :
                 continue
             L_ = len( group ) ; str_analytes=','.join(group.index.values)
@@ -272,7 +287,7 @@ def retrieve_genes_of( group_name, grouping_file, delimiter='\t', identifier='EN
     return ( list(set(all_analytes)) )
 
 import math
-def differential_analytes ( analyte_df , cols = [['a'],['b']] ): 
+def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     adf = analyte_df.loc[ :,cols[0] ].copy().apply(pd.to_numeric)
     bdf = analyte_df.loc[ :,cols[1] ].copy().apply(pd.to_numeric)
     regd_l = ( adf.values - bdf.values )

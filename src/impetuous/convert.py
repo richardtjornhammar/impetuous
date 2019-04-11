@@ -18,6 +18,16 @@ import numpy as np
 import json
 import sys
 
+def make_group_analytes_unique( grouping_file , delimiter='\t' ):
+    uniqe_grouping_file = 'unique_'+grouping_file
+    with open( uniqe_grouping_file , 'w' ) as of:
+        with open( grouping_file ) as input :
+            for line in input :
+                vline = line.replace('\n','').split(delimiter)
+                gid, gdesc, analytes_ = vline[0], vline[1], list(set(vline[2:]))
+                nvec = [gid,gdesc] ; [ nline.append(a) for a in analytes_ ]
+                print ( delimiter.join(nline) , file = of )
+
 def read_conversions(file_name):
     gene2ens = {} ; non_unique = []
     with open( file_name , 'r' ) as infile:
@@ -85,7 +95,6 @@ def flatten_dict( s2e ) :
         else :
             ndict[s] = e
     return ( ndict )
-
 
 if __name__ == '__main__' :
 
