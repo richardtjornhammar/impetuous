@@ -13,9 +13,7 @@ Visit the active code via:
 https://github.com/richardtjornhammar/impetuous
 
 Visit the published code: 
-v 0.1.1 https://doi.org/10.5281/zenodo.2594691
-v 0.2.6 https://doi.org/10.5281/zenodo.2636321
-
+https://doi.org/10.5281/zenodo.2594691
 
 Cite using 
-DOI: 10.5281/zenodo.2636321
+DOI: 10.5281/zenodo.2594691

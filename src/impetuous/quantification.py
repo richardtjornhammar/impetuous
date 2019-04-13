@@ -78,6 +78,21 @@ def anova_test ( formula, group_expression_df, journal_df, test_type = 'random' 
     table = sm.stats.anova_lm(model,typ=type_d[test_type])
     return table.iloc[ [(idx in formula) for idx in table.index],-1]
 
+from scipy.stats import ttest_rel,ttest_ind,mannwhitneyu
+def t_test ( df, endogen = 'expression' , group = 'disease' ,
+             pair_values = ('Sick','Healthy') ,
+             test_type = 'independent', equal_var = False ) :
+    group1 = df[df[group] == pair_values[0]][endogen].astype(float)
+    group2 = df[df[group] == pair_values[1]][endogen].astype(float)
+    if test_type == 'independent':
+        pv = ttest_ind( group1, group2 , equal_var = equal_var )
+    if test_type == 'related':
+        pv = ttest_ind( group1, group2 )
+    p_normality = mannwhitneyu( group1, group2, alternative="two-sided")[1]
+    pvalue = pv[1]; statistic=pv[0]
+    n , m = len(group1) , len(group2)
+    return ( pvalue , p_normality )
+
 def prune_journal ( journal_df , remove_units_on = '_' ) :
     journal_df = journal_df.loc[ [ 'label' in idx.lower() or '[' in idx for idx in journal_df.index.values] , : ].copy()
     bSel = [ ('label' in idx.lower() ) for idx in journal_df.index.values]
@@ -98,17 +113,23 @@ def merge_significance ( significance_df , distance_type='euclidean' ) :
     # GROUPS ALONG INDICES
     # EX: pd.DataFrame( np.random.rand(20).reshape(5,4) , columns=['bio','cars','oil','money']).apply( lambda x: -1.*np.log10(x) ).T.apply( lambda x: np.sqrt(np.sum(x**2)) )
     #
-    if distance_type == 'euclidean' :
+    distance = lambda x : np.sqrt(np.sum(x**2))
+    if distance_type == 'euclidean' : # CONSERVATIVE ESTIMATE
         distance = lambda x : np.sqrt(np.sum(x**2))
-    else : # CURRENTLY ONLY ONE METHOD IMPLEMENTED
-        distance = lambda x : np.sqrt(np.sum(x**2))
+    if distance_type == 'extreme' :   # ANTI-CONSERVATIVE ESTIMATE
+        distance = lambda x : np.max(x)
     get_pvalue = lambda x : 10**(-x)
     return ( significance_df.apply( lambda x: -1.*np.log10(x) ).T.apply(distance).apply(get_pvalue) )
 
 def group_significance( subset , all_analytes_df = None ,
                         tolerance = 0.05 , significance_name = 'pVal' ,
-                        AllAnalytes = None , SigAnalytes = None  ) :
+                        AllAnalytes = None , SigAnalytes = None,
+                        alternative = 'greater' ) :
     # FISHER ODDS RATIO CHECK
+    # CHECK FOR ALTERNATIVE: 
+    #   'greater'   ( ENRICHMENT IN GROUP ) 
+    #   'two-sided' ( DIFFERENTIAL GROUP EXPERSSION ) 
+    #   'less'      ( DEPLETION IN GROUP )
     if AllAnalytes is None :
         if all_analytes_df is None :
             AllAnalytes = set(all_analytes_df.index.values)
@@ -120,7 +141,7 @@ def group_significance( subset , all_analytes_df = None ,
     notSigAnalytes = AllAnalytes - SigAnalytes
     AB  = len(Analytes&SigAnalytes)    ; nAB  = len(notAnalytes&SigAnalytes)
     AnB = len(Analytes&notSigAnalytes) ; nAnB = len(notAnalytes&notSigAnalytes)
-    oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]])
+    oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative)
     return ( pval , oddsratio )
 
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
@@ -146,6 +167,7 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
                 rdf.columns = [ col+',p' if ',p' not in col else col for col in rdf.columns ]
                 rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes 
                 rdf[ group_prefix + 'NGroupAnalytes' ] = L_
+                rdf[ group_prefix + 'FracGroupFill' ]  = L_ / float(len(analytes_))
                 ndf = rdf
                 if eval_df is None :
                     eval_df = ndf

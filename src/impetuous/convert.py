@@ -18,6 +18,10 @@ import numpy as np
 import json
 import sys
 
+def normalise_for_apples_and_oranges_stats( X , method='ordinal' ):
+    X_ = rankdata( X , method=method )/len(X)
+    return(X_)
+
 def make_group_analytes_unique( grouping_file , delimiter='\t' ):
     uniqe_grouping_file = 'unique_'+grouping_file
     with open( uniqe_grouping_file , 'w' ) as of:
