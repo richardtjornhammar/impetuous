@@ -87,7 +87,7 @@ def t_test ( df, endogen = 'expression' , group = 'disease' ,
     if test_type == 'independent':
         pv = ttest_ind( group1, group2 , equal_var = equal_var )
     if test_type == 'related':
-        pv = ttest_ind( group1, group2 )
+        pv = ttest_rel( group1, group2 )
     p_normality = mannwhitneyu( group1, group2, alternative="two-sided")[1]
     pvalue = pv[1]; statistic=pv[0]
     n , m = len(group1) , len(group2)
@@ -109,7 +109,7 @@ def merge_significance ( significance_df , distance_type='euclidean' ) :
     # TAKES P VALUES OR Q VALUES
     # TRANSFORMS INTO A MERGED P OR Q VALUE VIA
     # THE DISTANCE SCORE
-    # THE DATA DOMAIN SIGNIFICANCE IS ALONG COLUMNS AND 
+    # THE DATA DOMAIN SIGNIFICANCE IS ALONG COLUMNS AND
     # GROUPS ALONG INDICES
     # EX: pd.DataFrame( np.random.rand(20).reshape(5,4) , columns=['bio','cars','oil','money']).apply( lambda x: -1.*np.log10(x) ).T.apply( lambda x: np.sqrt(np.sum(x**2)) )
     #
@@ -126,9 +126,9 @@ def group_significance( subset , all_analytes_df = None ,
                         AllAnalytes = None , SigAnalytes = None,
                         alternative = 'greater' ) :
     # FISHER ODDS RATIO CHECK
-    # CHECK FOR ALTERNATIVE: 
-    #   'greater'   ( ENRICHMENT IN GROUP ) 
-    #   'two-sided' ( DIFFERENTIAL GROUP EXPERSSION ) 
+    # CHECK FOR ALTERNATIVE:
+    #   'greater'   ( ENRICHMENT IN GROUP )
+    #   'two-sided' ( DIFFERENTIAL GROUP EXPERSSION )
     #   'less'      ( DEPLETION IN GROUP )
     if AllAnalytes is None :
         if all_analytes_df is None :
