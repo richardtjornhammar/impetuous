@@ -12,7 +12,7 @@ class Cluster(object):
         from sklearn.decomposition import PCA
         from numpy import histogram2d
         from scipy.stats import rankdata
-        nbins = nbins
+        self.nbins = nbins
         self.histogram2d = histogram2d
         self.KMeans = KMeans
         self.rankdata = rankdata
@@ -22,14 +22,16 @@ class Cluster(object):
         self.df_ = None
         self.num_index_ = None
 
-    def approximate_density_clustering( self, df, nbins=50 ) :
+    def approximate_density_clustering( self, df, nbins=None ) :
         #
         # GENES APPROX 20K OK SO APPROX 50 BINS
         # ANALYTES ON ROWS, SAMPLE POINTS ON COLUMNS
+        if nbins is None :
+            nbins = self.nbins
         self.df_= df
         frac_df = df.apply( lambda x:self.rankdata( x , method='average' )/float(len(x)) )
         self.pca_f.fit(frac_df.T.values)
-        vals,xe,ye = self.histogram2d(self.pca_f.components_[0],self.pca_f.components_[1],bins=50)
+        vals,xe,ye = self.histogram2d(self.pca_f.components_[0],self.pca_f.components_[1],bins=nbins)
         mvs, svsx, svsy = np.mean(vals),np.std(vals,0),np.std(vals,1)
         svs = np.sqrt(svsx**2+svsy**2)
         #
