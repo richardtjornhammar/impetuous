@@ -29,9 +29,9 @@ def SubArraysOf(Array,Array_=None):
         return( SubArraysOf(Array_,Array_[:-1]) )
     return([Array]+SubArraysOf(Array[1:],Array_))
 
-def grouper(inputs, n, fillvalue=None):
-    iters = [iter(inputs)] * n
-    return it.zip_longest(*iters, fillvalue=fillvalue)
+def permuter( inputs , n ) :
+    # permuter( inputs=['T2D','NGT','Female','Male'] , n=2 ) 
+    return( [p[0] for p in zip(itertools.permutations(inputs,n))] )
 
 def grouper ( inputs, n ):
     iters = [iter(inputs)] * n
@@ -79,19 +79,52 @@ def anova_test ( formula, group_expression_df, journal_df, test_type = 'random' 
     return table.iloc[ [(idx in formula) for idx in table.index],-1]
 
 from scipy.stats import ttest_rel,ttest_ind,mannwhitneyu
-def t_test ( df, endogen = 'expression' , group = 'disease' ,
-             pair_values = ('Sick','Healthy') ,
-             test_type = 'independent', equal_var = False ) :
+def t_test ( df , endogen = 'expression' , group = 'disease' ,
+             pair_values = ('Sick','Healthy') , test_type = 'independent',
+             equal_var = False, alternative = 'greater' ) :
     group1 = df[df[group] == pair_values[0]][endogen].astype(float)
     group2 = df[df[group] == pair_values[1]][endogen].astype(float)
     if test_type == 'independent':
         pv = ttest_ind( group1, group2 , equal_var = equal_var )
     if test_type == 'related':
         pv = ttest_rel( group1, group2 )
-    p_normality = mannwhitneyu( group1, group2, alternative="two-sided")[1]
-    pvalue = pv[1]; statistic=pv[0]
-    n , m = len(group1) , len(group2)
-    return ( pvalue , p_normality )
+    try :
+        p_normality = mannwhitneyu( group1, group2, alternative=alternative )[1]
+    except ValueError as err:
+        print(err.args)
+        p_normality = 1.0    
+    pvalue = pv[1] ; statistic=pv[0]
+    return ( pvalue , p_normality, statistic )
+
+def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
+    if 'glm' in statistical_formula.lower():
+        print ( 'NOT IMPLEMENTED YET' )
+    #
+    # THE FALLBACK IS A TYPE2 ANOVA
+    if 'ttest' in statistical_formula.lower() :
+        result = None
+        # WE CONDUCT SEPARATE TESTS FOR ALL THE UNIQUE PAIR LABELS PRESENT
+        check = [ idx for idx in journal_df.index if idx in statistical_formula ]
+        df = pd.concat( [journal_df,group_expression_df],axis=0 ).T
+        for c in check :
+            if test_type in set([ 'related' , 'fixed' , 'paired' ]):
+                test_type = 'related'
+            else :
+                test_type = 'independent'
+
+            for pair in permuter( list(set(journal_df.loc[c].values)),2) :
+                result_ = t_test( df, endogen = df.columns.values[-1], group = c,
+                                  pair_values = pair, test_type = test_type, equal_var = False )
+                hdr = ' '.join( [c,' '.join([str(p) for p in pair])] )
+                tdf = pd.Series( result_, index = [ hdr, hdr+' mwu', hdr+' stat,s' ] )
+                if result is None :
+                    result = tdf
+                else :
+                    result = pd.concat([result,tdf])
+                result.name = 'PR>t'
+    else :
+        result = anova_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )
+    return ( result )
 
 def prune_journal ( journal_df , remove_units_on = '_' ) :
     journal_df = journal_df.loc[ [ 'label' in idx.lower() or '[' in idx for idx in journal_df.index.values] , : ].copy()
@@ -114,7 +147,7 @@ def merge_significance ( significance_df , distance_type='euclidean' ) :
     # EX: pd.DataFrame( np.random.rand(20).reshape(5,4) , columns=['bio','cars','oil','money']).apply( lambda x: -1.*np.log10(x) ).T.apply( lambda x: np.sqrt(np.sum(x**2)) )
     #
     distance = lambda x : np.sqrt(np.sum(x**2))
-    if distance_type == 'euclidean' : # CONSERVATIVE ESTIMATE
+    if distance_type == 'euclidean' : # ESTIMATE
         distance = lambda x : np.sqrt(np.sum(x**2))
     if distance_type == 'extreme' :   # ANTI-CONSERVATIVE ESTIMATE
         distance = lambda x : np.max(x)
@@ -146,7 +179,7 @@ def group_significance( subset , all_analytes_df = None ,
 
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
                                  tolerance = 0.05 , p_label = 'C(Status),p' ,
-                                 group_prefix = '') :
+                                 group_prefix = '' ) :
     AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
     SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
     if len(AllAnalytes) == len(SigAnalytes) :
@@ -163,7 +196,7 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
             L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_ > 0 :
                 pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes )
-                rdf = pd.DataFrame( [[pv]], columns = [ group_prefix + 'Group_'+p_label ], index=[ gid ] )
+                rdf = pd.DataFrame( [[pv]], columns = [ group_prefix + 'Fisher_'+p_label ], index=[ gid ] )
                 rdf.columns = [ col+',p' if ',p' not in col else col for col in rdf.columns ]
                 rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes 
                 rdf[ group_prefix + 'NGroupAnalytes' ] = L_
@@ -181,7 +214,6 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
     return ( edf.T )
 
 dimred = PCA()
-
 def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
                       delimiter = '\t' , test_type = 'random' ,
                       split_id = None , skip_line_char = '#' ) :
@@ -207,8 +239,8 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
             if L_>0 :
                 dimred.fit(group.values)
                 group_expression_df = pd.DataFrame([dimred.components_[0]],columns=analyte_df.columns.values,index=[gid])
-                rdf = pd.DataFrame(anova_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )).T
-                rdf.columns = [ col+',p' for col in rdf.columns ]
+                rdf = pd.DataFrame( parse_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )).T
+                rdf .columns = [ col+',p' if (not ',s' in col) else col+',s' for col in rdf.columns ]
                 rdf['description'] = gdesc+','+str(L_)
                 rdf['analytes'] = str_analytes
                 rdf.index = [ gid ] ; ndf = pd.concat([rdf.T,group_expression_df.T]).T
@@ -238,8 +270,8 @@ def quantify_analytes( analyte_df, journal_df, formula,
         if L_>0 :
             gid = group.index.values[0].split('.')[-1].replace(' ','') ; gdesc = group.index.values[0].split('.')[0]
             group_expression_df = pd.DataFrame([group.values[0]], columns=analyte_df.columns.values, index=[gid] )
-            rdf = pd.DataFrame(anova_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )).T
-            rdf .columns = [ col+',p' for col in rdf.columns ]
+            rdf = pd.DataFrame(parse_test( statistical_formula, group_expression_df, journal_df, test_type=test_type )).T
+            rdf .columns = [ col+',p' if (not ',s' in col) else col+',s' for col in rdf.columns ]
             rdf['description'] = gdesc+','+str(L_)
             rdf['analytes'] = str_analytes
             rdf .index = [ gid ] ; ndf = pd.concat([rdf.T,group_expression_df.T]).T
@@ -322,7 +354,7 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     ddf = ddf.sort_values('Dist', ascending = False )
     return ( ddf )
 
-def add_kendalltau( analyte_results_df, journal_df, what='M'):
+def add_kendalltau( analyte_results_df, journal_df, what='M') :
     if what in set(journal_df.index.values) :
         # ADD IN CONCOORDINANCE WITH KENDALL TAU
         from scipy.stats import kendalltau
@@ -337,6 +369,7 @@ def add_kendalltau( analyte_results_df, journal_df, what='M'):
     return ( analyte_results_df )
 
 if __name__ == '__main__' :
+
     test_type = 'random'
 
     path_ = './'
