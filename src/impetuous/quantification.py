@@ -346,7 +346,8 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     bdf = analyte_df.loc[ :,cols[1] ].copy().apply(pd.to_numeric)
     regd_l = ( adf.values - bdf.values )
     regd_r = -regd_l
-    ddf = pd.DataFrame( np.array([regd_l.reshape(-1),regd_r.reshape(-1),regd_l.reshape(-1)**2]).T , columns=['DiffL','DiffR','Dist'], index=adf.index )
+    ddf = pd.DataFrame( np.array( [ regd_l.reshape(-1) , regd_r.reshape(-1) , regd_l.reshape(-1)**2 ] ).T ,
+                        columns=['DiffL','DiffR','Dist'] , index=adf.index )
     for col in adf.columns :
         ddf.loc[:,col] = adf.loc[:,col]
     for col in bdf.columns :

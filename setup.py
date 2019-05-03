@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = "impetuous-gfa",
-    version = "0.2.23",
+    version = "0.2.25",
     author = "Richard Tjörnhammar",
     author_email = "richard.tjornhammar@gmail.com",
     description = "Impetuous Quantification, Enrichment and Group Factor Analysis",
@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type = "text/markdown",
     url = "https://github.com/richardtjornhammar/impetuous",
     packages = setuptools.find_packages('src'),
-    package_dir = {'impetuous':'src/impetuous','quantification':'src/quantification','convert':'src/convert','pathways':'src/pathways','clustering':'src/clustering'},
+    package_dir = {'impetuous':'src/impetuous','quantification':'src/quantification','convert':'src/convert','pathways':'src/pathways','clustering':'src/clustering','hierarchal':'src/hierarchal'},
     classifiers = [
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
