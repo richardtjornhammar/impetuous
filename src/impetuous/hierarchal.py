@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 from impetuous.quantification import group_significance
 
-def HierarchalEnrichment ( 
+def HierarchalEnrichment (
             analyte_df , dag_df , dag_level_label = 'DAG,l' ,
             ancestors_id_label = 'aid' , id_name = None , threshold=0.05 ,
             p_label = 'C(Status),p', analyte_name_label = 'analytes',
@@ -30,17 +30,21 @@ def HierarchalEnrichment (
     #     INCLUDING NODE ID, NODE ANALYTES FIELD (SEPERATED BY ITEM DELIMITER)
     #     INCLUDING ANCESTORS FIELD (SEPERATED BY ITEM DELIMITER)
     #     DAG LEVEL OF EACH NODE
-    df = dag_df ; dag_depth = df[dag_level_label].apply(np.max)
+    tolerance = threshold
+    df = dag_df ; dag_depth = np.max( df[dag_level_label].values )
     AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
     SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
     if len( AllAnalytes ) == len( SigAnalytes ) :
         print ( 'THIS STATISTICAL TEST WILL BE NONSENSE' )
-    marked_analytes = {} ; used_analytes = {}
-    for d in range( dag_depth, 0, -1 ): # ROOT IS NOT INCLUDED
+    marked_analytes = {} ; used_analytes = {} ; node_sig = {}
+    for d in range( dag_depth, 0, -1 ) : 
+        # ROOT IS NOT INCLUDED
         filter_ = df [ dag_level_label ] == d
         nodes = np.where( filter_ )[ 0 ]
         for node in nodes :
-            analytes_ = df[ node,analyte_name_label ].values.replace('\n','').replace(' ','').split(item_delimiter)
+            if 'nan' in str(df.iloc[node,:].loc[analyte_name_label]).lower():
+                continue
+            analytes_ = df.iloc[node,:].loc[analyte_name_label].replace('\n','').replace(' ','').split(item_delimiter)
             try :
                 group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
             except KeyError as e :
@@ -51,18 +55,18 @@ def HierarchalEnrichment (
                 unused_group = group
             L_ = len( unused_group ) ; str_analytes=','.join(unused_group.index.values)
             if L_ > 0 :
-                used_analytes[node] = ','.join( group.index.values )
+                node_name = df.iloc[node].name
+                used_analytes[node_name] = ','.join( group.index.values )
                 pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes )
-                node_sig[node] = pv ; marked_ = set(group.index.values)
-                ancestors = df[node,ancestors_id_label].values.replace('\n','').replace(' ','').split(item_delimiter)
+                node_sig[node_name] = pv ; marked_ = set( group.index.values )
+                ancestors = df.iloc[node].loc[ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
                 for u in ancestors :
                     if u in marked_analytes :
                         us = marked_analytes[u]
                         marked_analytes[u] = us | marked_
                     else :
                         marked_analytes[u] = marked_
-    df['Hierarchal,p'] = [ node_sig[idx] for idx in df.index.values ]
-    df['Included analytes,ids'] = [ used_analytes[idx] for idx in df.index.values ]
-
+    df['Hierarchal,p'] = [ node_sig[idx] if idx in node_sig else 1. for idx in df.index.values ]
+    df['Included analytes,ids'] = [ used_analytes[idx] if idx in used_analytes else '' for idx in df.index.values ]
+    df = df.dropna()
     return ( df )
-
