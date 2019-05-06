@@ -15,8 +15,59 @@ limitations under the License.
 """
 import pandas as pd
 import numpy as np
+import networkx as nx
+from networkx.readwrite import json_graph
 import json
 import sys
+
+def write_tree( tree , outfile='tree.json' ):
+    root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
+    o_json = json_graph.tree_data( tree , root )
+    if not outfile is None:
+        with open(outfile, 'w') as o_file:
+            json.dump(o_json, o_file )
+    return( o_json )
+
+def add_attributes_to_tree ( p_df , tree ):
+    id_lookup = { rid:lid for (lid,rid) in nx.get_node_attributes(tree,'source').items() }
+    add_attributes = p_df.columns.values
+    for attribute in add_attributes:
+        propd = { id_lookup[idx]:{attribute:val} for (idx,val)
+                      in zip(p_df.index.values,p_df.loc[:,attribute]) if idx in set(id_lookup.keys()) }
+        nx.set_node_attributes( tree , propd )
+    return( tree )
+
+def parent_child_to_dag ( 
+             relationship_file = './PCLIST.txt' ,
+             i_p = 0 , i_c = 1 
+           ) :
+    n_df = pd .read_csv ( relationship_file , '\t' )
+    pair_tuples = [ (p,c) for (p,c) in zip(n_df.iloc[:,i_p],n_df.iloc[:,i_c]) ]
+    children_of = {} ; all_names = set([])
+    for ( p,c ) in pair_tuples :
+        all_names = all_names | set([p]) | set([c_[0] if not 'str' in str(type(c_)) else c_ for c_ in c])
+        if p in children_of :
+            children_of[p] .append(c)
+        else :
+            children_of[p] = [c]
+    G = nx .DiGraph()
+    G .add_nodes_from (  all_names  )
+    G .add_edges_from ( pair_tuples )
+    tree = nx.algorithms.dag.dag_to_branching( G )
+    root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
+    descendants = [ ( idx , nx.algorithms.dag.descendants(G,idx) ) for idx in all_names ]
+    ancestors   = [ ( idx , nx.algorithms.dag.ancestors(G,idx) ) for idx in all_names ]
+    return ( tree,ancestors,descendants )
+
+def make_pathway_ancestor_data_frame(ancestors):
+    p_df = None
+    for k,v in ancestors :
+        t_df = pd.DataFrame([[','.join(list(v)),len(v)]],index=[k],columns=['DAG,a','DAG,l'])
+        if p_df is None :
+            p_df = t_df
+        else :
+            p_df = pd.concat([p_df,t_df])
+    return( p_df )
 
 def normalise_for_apples_and_oranges_stats( X , method='ordinal' ):
     X_ = rankdata( X , method=method )/len(X)
