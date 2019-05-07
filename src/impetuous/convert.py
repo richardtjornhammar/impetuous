@@ -80,8 +80,8 @@ def make_group_analytes_unique( grouping_file , delimiter='\t' ):
             for line in input :
                 vline = line.replace('\n','').split(delimiter)
                 gid, gdesc, analytes_ = vline[0], vline[1], list(set(vline[2:]))
-                nvec = [gid,gdesc] ; [ nline.append(a) for a in analytes_ ]
-                print ( delimiter.join(nline) , file = of )
+                nvec = [gid,gdesc] ; [ nvec.append(a) for a in analytes_ ]
+                print ( delimiter.join(nvec) , file = of )
 
 def read_conversions(file_name):
     gene2ens = {} ; non_unique = []
