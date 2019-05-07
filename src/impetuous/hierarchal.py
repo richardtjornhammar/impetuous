@@ -40,26 +40,24 @@ def HierarchalEnrichment (
     for d in range( dag_depth, 0, -1 ) : 
         # ROOT IS NOT INCLUDED
         filter_ = df [ dag_level_label ] == d
-        nodes = np.where( filter_ )[ 0 ]
+        nodes = df.iloc[ [i for i in np.where(filter_)[ 0 ]] ,:].index.values
         for node in nodes :
-            if 'nan' in str(df.iloc[node,:].loc[analyte_name_label]).lower():
+            if 'nan' in str(df.loc[node,analyte_name_label]).lower() :
                 continue
-            analytes_ = df.iloc[node,:].loc[analyte_name_label].replace('\n','').replace(' ','').split(item_delimiter)
+            analytes_ = df.loc[node,analyte_name_label].replace('\n','').replace(' ','').split(item_delimiter)
             try :
                 group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
             except KeyError as e :
                 continue
             if node in marked_analytes :
                 unused_group = group.loc[ list( set(group.index.values)-marked_analytes[node] ) ]
-            else :
-                unused_group = group
-            L_ = len( unused_group ) ; str_analytes=','.join(unused_group.index.values)
+                group = unused_group
+            L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_ > 0 :
-                node_name = df.iloc[node].name
-                used_analytes[node_name] = ','.join( group.index.values )
+                used_analytes[node] = ','.join( group.index.values )
                 pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes )
-                node_sig[node_name] = pv ; marked_ = set( group.index.values )
-                ancestors = df.iloc[node].loc[ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
+                node_sig[node] = pv ; marked_ = set( group.index.values )
+                ancestors = df.loc[node,ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
                 for u in ancestors :
                     if u in marked_analytes :
                         us = marked_analytes[u]
