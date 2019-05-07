@@ -62,7 +62,7 @@ def parent_child_to_dag (
 def make_pathway_ancestor_data_frame(ancestors):
     p_df = None
     for k,v in ancestors :
-        t_df = pd.DataFrame([[','.join(list(v)),len(v)]],index=[k],columns=['DAG,a','DAG,l'])
+        t_df = pd.DataFrame([[','.join(list(v)),len(v)]],index=[k],columns=['DAG,ancestors','DAG,level'])
         if p_df is None :
             p_df = t_df
         else :
@@ -74,7 +74,7 @@ def normalise_for_apples_and_oranges_stats( X , method='ordinal' ):
     return(X_)
 
 def make_group_analytes_unique( grouping_file , delimiter='\t' ):
-    uniqe_grouping_file = 'unique_'+grouping_file
+    uniqe_grouping_file = '/'.join(grouping_file.split('/')[:-1]) + '/unique_'+grouping_file.split('/')[-1]
     with open( uniqe_grouping_file , 'w' ) as of:
         with open( grouping_file ) as input :
             for line in input :
@@ -140,9 +140,7 @@ def create_synonyms( convert_file , unique_mapping=False ):
     return ( ens2sym , sym2ens )
 
 def flatten_dict( s2e ) :
-    #
     # FORCES FIRST ELEMENT
-    #
     ndict = {}
     for (s,e) in s2e.items() :
         if 'list' in str(type(e)) :
