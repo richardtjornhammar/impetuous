@@ -9,11 +9,14 @@ The journal and analyte expression file must be ordered
 the same way with respect to the samples that are
 positioned on the columns.
 
-Visit the active code via:
+Visit the active code via :
 https://github.com/richardtjornhammar/impetuous
 
-Visit the published code: 
+Visit the published code : 
 https://doi.org/10.5281/zenodo.2594691
 
-Cite using 
+Cite using :
 DOI: 10.5281/zenodo.2594691
+
+Install with :
+pip install impetuous-gfa

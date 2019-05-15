@@ -30,12 +30,38 @@ def SubArraysOf(Array,Array_=None):
     return([Array]+SubArraysOf(Array[1:],Array_))
 
 def permuter( inputs , n ) :
-    # permuter( inputs=['T2D','NGT','Female','Male'] , n=2 ) 
+    # permuter( inputs=['T2D','NGT','Female','Male'] , n=2 )
     return( [p[0] for p in zip(itertools.permutations(inputs,n))] )
 
 def grouper ( inputs, n ):
     iters = [iter(inputs)] * n
     return zip(*iters)
+
+from statsmodels.stats.multitest import multipletests
+def adjust_p ( pvalue_list , method = 'fdr_bh' , alpha = 0.05,
+               check_r_bh = False , is_sorted = False ,
+               returnsorted = False
+             ) :
+    """  WRAPPER FOR MULTIPLE HYPOTHESIS TESTING
+    pvalue_list = [0.00001,0.01,0.0002,0.00005,0.01,0.1,0.2,0.4,0.5,0.6,0.7,0.8,0.9,0.99,0.0114,0.15,0.23,0.20]
+    """
+    available_methods = set( [ 'bonferroni' , 'sidak',
+           'holm-sidak' , 'holm' , 'simes-hochberg' ,
+           'hommel' , 'fdr_bh' , 'fdr_by' , 'fdr_tsbh' ,
+           'fdr_tsbky' ] )
+    if method not in available_methods :
+        print ( available_methods )
+    r_equiv = { 'fdr_bh':'BH' }
+    if check_r_bh and method in r_equiv :
+        from rpy2.robjects.packages import importr
+        from rpy2.robjects.vectors import FloatVector
+        r_stats = importr('stats')
+        p_adjust = r_stats.p_adjust ( FloatVector(pvalue_list), method = r_equiv[method] )
+    else :
+        p_adjust_results = multipletests ( pvalue_list, alpha=alpha, method=method, 
+                       is_sorted = is_sorted , returnsorted = returnsorted )
+        p_adjust = [ p_adj for p_adj in p_adjust_results[1] ]
+    return ( p_adjust )
 
 def qvalues ( p_values_in , pi0=None ) :
     p_s = p_values_in
@@ -159,7 +185,7 @@ def group_significance( subset , all_analytes_df = None ,
                         AllAnalytes = None , SigAnalytes = None,
                         alternative = 'greater' ) :
     # FISHER ODDS RATIO CHECK
-    # CHECK FOR ALTERNATIVE:
+    # CHECK FOR ALTERNATIVE :
     #   'greater'   ( ENRICHMENT IN GROUP )
     #   'two-sided' ( DIFFERENTIAL GROUP EXPERSSION )
     #   'less'      ( DEPLETION IN GROUP )
@@ -176,6 +202,7 @@ def group_significance( subset , all_analytes_df = None ,
     AnB = len(Analytes&notSigAnalytes) ; nAnB = len(notAnalytes&notSigAnalytes)
     oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative)
     return ( pval , oddsratio )
+
 
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
                                  tolerance = 0.05 , p_label = 'C(Status),p' ,
@@ -374,8 +401,8 @@ if __name__ == '__main__' :
     test_type = 'random'
 
     path_ = './'
-    analyte_file = path_ + 'fine.txt'
-    journal_file = path_ + 'coarse.txt'
+    analyte_file  = path_ + 'fine.txt'
+    journal_file  = path_ + 'coarse.txt'
     grouping_file = path_ + 'groups.gmt'
 
     analyte_df = pd.read_csv(analyte_file,'\t' , index_col=0 )
