@@ -45,7 +45,9 @@ def parent_child_to_dag (
     pair_tuples = [ (p,c) for (p,c) in zip(n_df.iloc[:,i_p],n_df.iloc[:,i_c]) ]
     children_of = {} ; all_names = set([])
     for ( p,c ) in pair_tuples :
-        all_names = all_names | set([p]) | set([c_[0] if not 'str' in str(type(c_)) else c_ for c_ in c])
+        if not 'list' in str(type(c)):
+            C = [c]
+        all_names = all_names | set([p]) | set(C)
         if p in children_of :
             children_of[p] .append(c)
         else :
