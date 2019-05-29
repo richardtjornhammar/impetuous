@@ -122,13 +122,16 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
     pvalue = pv[1] ; statistic=pv[0]
     return ( pvalue , p_normality, statistic )
 
+from scipy.stats.mstats import kruskalwallis as kruskwall
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
     if 'glm' in statistical_formula.lower():
         print ( 'NOT IMPLEMENTED YET' )
     #
     # THE FALLBACK IS A TYPE2 ANOVA
+    ident = False
     if 'ttest' in statistical_formula.lower() :
-        result = None
+        ident = True ; result = None
+        #
         # WE CONDUCT SEPARATE TESTS FOR ALL THE UNIQUE PAIR LABELS PRESENT
         check = [ idx for idx in journal_df.index if idx in statistical_formula ]
         df = pd.concat( [journal_df,group_expression_df],axis=0 ).T
@@ -148,8 +151,21 @@ def parse_test ( statistical_formula, group_expression_df , journal_df , test_ty
                 else :
                     result = pd.concat([result,tdf])
                 result.name = 'PR>t'
-    else :
+
+    if 'kruskal wallis' in statistical_formula.replace('-',' ').lower():
+        #
+        print ( ' --==< WARNING :: UNTESTED IMPLEMENTATION >==-- ' )
+        ident = True
+        check = [ idx for idx in journal_df.index if idx in statistical_formula ]
+        df = pd.concat( [journal_df,group_expression_df],axis=0 ).T
+        s,p = kruskwall ( group_expression_df.values , journal_df.loc[check[0],:].values )
+        tdf = pd.DataFrame ( [[p,s]] , columns = [
+                            'KS('+statistical_formula.split('~')[0]+','+check[0]+'),p' ,
+                            'KW('+statistical_formula.split('~')[0]+','+check[0]+'),s' 
+                        ] )
+    if not ident :
         result = anova_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )
+
     return ( result )
 
 def prune_journal ( journal_df , remove_units_on = '_' ) :
@@ -203,7 +219,6 @@ def group_significance( subset , all_analytes_df = None ,
     oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative)
     return ( pval , oddsratio )
 
-
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
                                  tolerance = 0.05 , p_label = 'C(Status),p' ,
                                  group_prefix = '' ) :
@@ -243,7 +258,8 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
 dimred = PCA()
 def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
                       delimiter = '\t' , test_type = 'random' ,
-                      split_id = None , skip_line_char = '#' ) :
+                      split_id = None , skip_line_char = '#' 
+                    ) :
     statistical_formula = formula
     if not split_id is None :
         nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
