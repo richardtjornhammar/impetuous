@@ -124,7 +124,7 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
                                   ) :
     x_pc1 = CLUSTER.components_[0]
     y_pc2 = CLUSTER.components_[1]
-    L_C = len(CLUSTER.centroids_[0])
+    L_C   = len(CLUSTER.centroids_[0])
     #
     # MAKE CLUSTER COLORS
     make_hex_colors = lambda c : '#%02x%02x%02x' % (c[0]%256,c[1]%256,c[2]%256)

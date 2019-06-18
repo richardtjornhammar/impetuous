@@ -151,7 +151,44 @@ def flatten_dict( s2e ) :
             ndict[s] = e
     return ( ndict )
 
+def convert_rdata_to_dataframe ( filename ) :
+    #
+    from rpy2.robjects import r as R
+    from rpy2.robjects.packages import importr
+    from rpy2.robjects import pandas2ri
+    from rpy2.robjects.conversion import localconverter
+    import rpy2.robjects as ro
+    #
+    rd_ = R.load( filename )
+    column_names = [ [r for r in _rd_.colnames] for _rd_ in R[rd_[0]]]
+    index_names  = [ [r for r in _rd_.rownames] for _rd_ in R[rd_[0]]]
+    pandas2ri.activate()
+    #
+    # SMALL HELPER FUNCTION THAT TRANSFORMS A RDATA OBJECT INTO
+    # A PANDAS DATAFRAME. CURRENTLY THERE IS NO VALUE ERROR CHECKING
+    #
+    rd = R.load( filename )
+    raw_df_l = [] ; [ raw_df_l.append( rdf ) for rdf in ro.vectors.DataFrame(R[rd[0]]) ]  
+    full_df_dict = {} ; i_ = 0
+    for raw_df,colnames,rownames in zip( raw_df_l,column_names,index_names ) :
+        pdf = pd.DataFrame( raw_df , columns=colnames , index=rownames ) 
+        full_df_dict[i_] = pdf
+        i_ = i_ + 1
+    return ( full_df_dict )
+
 if __name__ == '__main__' :
+    #
+    bMOFA_data = False
+    if bMOFA_data :
+        df_dict = convert_rdata_to_dataframe( filename = '../data/CLL_data.RData' )
+        pruned_df = df_dict[3].T.dropna().T
+        journal_df = df_dict[4].loc[['IGHV'],:]
+        mask = [ v>=0 for v in journal_df.loc['IGHV'].values ]
+        journal_df = journal_df.iloc[ :,mask ]
+        use = list(set(pruned_df.columns)&set(journal_df.columns))
+
+        analyte_df = pruned_df.loc[:,use].apply(lambda x:np.log2(1+x))  )
+        journal_df = journal_df.loc[:,use]
 
     base = '../../../data/'
     convert_file = base + 'naming_and_annotations/conv.txt'

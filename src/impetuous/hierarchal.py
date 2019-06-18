@@ -17,6 +17,31 @@ import pandas as pd
 import numpy as np
 from impetuous.quantification import group_significance
 
+def pathway_frame_from_file ( filename , 
+        delimiter = '\t' , item_sep = ',' ) :
+    #
+    pdf = None
+    with open( filename,'r' ) as input :
+        for line in input :
+            lspl = line.replace('\n','').split(delimiter)
+            analytes_ = lspl[2:]
+            desc = lspl[1]
+            iden = lspl[0]
+            ps = pd.Series( [desc , item_sep.join(analytes_) ] , 
+                        name = iden , index = ['description','analytes'] )
+            pdf = pd.concat([pdf,pd.DataFrame(ps).T])
+    return ( pdf )
+
+def create_dag_representation_df ( pathway_file = '../data/GROUPDEFINITIONS.gmt' , 
+                                   pcfile = '../data/PCLIST.txt' 
+                                 ) :
+    pc_list_file = pcfile
+    tree , ance , desc = parent_child_to_dag ( pc_list_file )
+    pdf = make_pathway_ancestor_data_frame ( ance )
+    pdf_ = pathway_frame_from_file( pathway_file )
+    dag_df = pd.concat([pdf.T,pdf_.T]).T
+    return ( dag_df , tree )
+
 def HierarchalEnrichment (
             analyte_df , dag_df , dag_level_label = 'DAG,l' ,
             ancestors_id_label = 'aid' , id_name = None , threshold=0.05 ,

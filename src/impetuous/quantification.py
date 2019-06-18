@@ -16,8 +16,10 @@ limitations under the License.
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
+from impetuous.convert import create_synonyms , flatten_dict
 from scipy.stats import rankdata
-from impetuous.convert import create_synonyms,flatten_dict
+from scipy.stats import ttest_rel , ttest_ind , mannwhitneyu
+from scipy.stats.mstats import kruskalwallis as kruskwall
 import itertools
 
 def SubArraysOf(Array,Array_=None):
@@ -104,7 +106,6 @@ def anova_test ( formula, group_expression_df, journal_df, test_type = 'random' 
     table = sm.stats.anova_lm(model,typ=type_d[test_type])
     return table.iloc[ [(idx in formula) for idx in table.index],-1]
 
-from scipy.stats import ttest_rel,ttest_ind,mannwhitneyu
 def t_test ( df , endogen = 'expression' , group = 'disease' ,
              pair_values = ('Sick','Healthy') , test_type = 'independent',
              equal_var = False, alternative = 'greater' ) :
@@ -122,7 +123,6 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
     pvalue = pv[1] ; statistic=pv[0]
     return ( pvalue , p_normality, statistic )
 
-from scipy.stats.mstats import kruskalwallis as kruskwall
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
     if 'glm' in statistical_formula.lower():
         print ( 'NOT IMPLEMENTED YET' )
@@ -152,17 +152,18 @@ def parse_test ( statistical_formula, group_expression_df , journal_df , test_ty
                     result = pd.concat([result,tdf])
                 result.name = 'PR>t'
 
-    if 'kruskal wallis' in statistical_formula.replace('-',' ').lower():
-        #
+    if 'kruskal wallis' in statistical_formula.replace('-',' ').lower() :
         print ( ' --==< WARNING :: UNTESTED IMPLEMENTATION >==-- ' )
         ident = True
         check = [ idx for idx in journal_df.index if idx in statistical_formula ]
         df = pd.concat( [journal_df,group_expression_df],axis=0 ).T
-        s,p = kruskwall ( group_expression_df.values , journal_df.loc[check[0],:].values )
+        s , p = kruskwall ( group_expression_df.values , journal_df.loc[check[0],:].values )
         tdf = pd.DataFrame ( [[p,s]] , columns = [
                             'KS('+statistical_formula.split('~')[0]+','+check[0]+'),p' ,
                             'KW('+statistical_formula.split('~')[0]+','+check[0]+'),s' 
                         ] )
+        exit(1)
+
     if not ident :
         result = anova_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )
 
@@ -298,9 +299,9 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
             edf.loc[l] = q
     return ( edf.T )
 
-def quantify_analytes( analyte_df, journal_df, formula,
-                       delimiter = '\t', test_type = 'random',
-                       verbose = True, only_include = None ) :
+def quantify_analytes( analyte_df , journal_df , formula ,
+                       delimiter = '\t' , test_type = 'random',
+                       verbose = True , only_include = None ) :
     statistical_formula = formula
     sidx = set(analyte_df.index.values) ; nidx=len(sidx)
     eval_df = None ; N_ = len(analyte_df)
