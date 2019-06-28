@@ -106,9 +106,53 @@ def anova_test ( formula, group_expression_df, journal_df, test_type = 'random' 
     table = sm.stats.anova_lm(model,typ=type_d[test_type])
     return table.iloc[ [(idx in formula) for idx in table.index],-1]
 
+def glm (  formula , df , jdf , distribution='Gaussian' ) :
+    tmp_df = pd.concat([ jdf, df ])
+    family_description = """
+        Family(link, variance) # The parent class for one-parameter exponential families.
+        Binomial([link]) # Binomial exponential family distribution.
+        Gamma([link]) # Gamma exponential family distribution.
+        Gaussian([link]) # Gaussian exponential family distribution.
+        InverseGaussian([link]) # InverseGaussian exponential family.
+        NegativeBinomial([link, alpha]) # Negative Binomial exponential family.
+        Poisson([link]) # Poisson exponential family.
+        Tweedie([link, var_power, eql]) # Tweedie family.
+    """
+    if distribution == 'Gaussian' :
+        family = sm.families.Gaussian()
+    if distribution == 'Binomial' :
+        family = sm.families.Binomial()
+    if distribution == 'Gamma' :
+        family = sm.families.Gamma()
+    if distribution == 'InverseGaussian' :
+        family = sm.families.InverseGaussian()
+    if distribution == 'NegativeBinomial' :
+        family = sm.families.NegativeBinomial()
+    if distribution == 'Poisson' :
+        family = sm.families.Poisson()
+
+    formula = formula.replace( ' ','' )
+    gname = tmp_df.index.tolist()[-1]
+    formula_l = formula.split('~')
+    rename = { gname:formula_l[0] }
+    tmp_df .rename( index=rename, inplace=True )
+
+    tdf = tmp_df.T.iloc[ :,[ col in formula for col in tmp_df.T.columns] ].apply( pd.to_numeric )
+    y , X = patsy.dmatrices( formula, tdf, return_type='dataframe')
+    distribution_model = sm.GLM( y, X, family=family )
+    glm_results = distribution_model.fit()
+    if False:
+        print('Parameters: ', glm_results.params  )
+        print('T-values  : ', glm_results.tvalues )
+        print('p-values  : ', glm_results.pvalues )
+    table = glm_results.pvalues
+
+    return table.iloc[ [( idx.split('[')[0] in formula) for idx in table.index]]
+
+
 def t_test ( df , endogen = 'expression' , group = 'disease' ,
              pair_values = ('Sick','Healthy') , test_type = 'independent',
-             equal_var = False, alternative = 'greater' ) :
+             equal_var = False , alternative = 'greater' ) :
     group1 = df[df[group] == pair_values[0]][endogen].astype(float)
     group2 = df[df[group] == pair_values[1]][endogen].astype(float)
     if test_type == 'independent':
@@ -124,8 +168,10 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
     return ( pvalue , p_normality, statistic )
 
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
-    if 'glm' in statistical_formula.lower():
-        print ( 'NOT IMPLEMENTED YET' )
+    if 'glm' in statistical_formula.lower() :
+        if not test_type in set(['Gaussian','Binomial','Gamma','InverseGaussian','NegativeBinomial','Poisson'])
+            test_type = 'Gaussian'
+        result = gml_test( statistical_formula, group_expression_df , journal_df , distribution = test_type )
     #
     # THE FALLBACK IS A TYPE2 ANOVA
     ident = False

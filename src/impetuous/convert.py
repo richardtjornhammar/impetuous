@@ -20,6 +20,10 @@ from networkx.readwrite import json_graph
 import json
 import sys
 
+def drop_duplicate_indices( df ):
+    df_ = df.loc[~df.index.duplicated(keep='first')]
+    return df_
+
 def write_tree( tree , outfile='tree.json' ):
     root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
     o_json = json_graph.tree_data( tree , root )
@@ -37,9 +41,9 @@ def add_attributes_to_tree ( p_df , tree ):
         nx.set_node_attributes( tree , propd )
     return( tree )
 
-def parent_child_to_dag ( 
+def parent_child_to_dag (
              relationship_file = './PCLIST.txt' ,
-             i_p = 0 , i_c = 1 
+             i_p = 0 , i_c = 1
            ) :
     n_df = pd .read_csv ( relationship_file , '\t' )
     pair_tuples = [ (p,c) for (p,c) in zip(n_df.iloc[:,i_p],n_df.iloc[:,i_c]) ]
@@ -85,7 +89,7 @@ def make_group_analytes_unique( grouping_file , delimiter='\t' ):
                 nvec = [gid,gdesc] ; [ nvec.append(a) for a in analytes_ ]
                 print ( delimiter.join(nvec) , file = of )
 
-def read_conversions(file_name):
+def read_conversions(file_name) :
     gene2ens = {} ; non_unique = []
     with open( file_name , 'r' ) as infile:
         if sys.version_info[0] < 3:
@@ -187,20 +191,27 @@ def convert_rdata_to_dataframe ( filename ) :
     pandas2ri.deactivate()
     return ( full_df_dict )
 
+import os
 if __name__ == '__main__' :
-
-    bMOFA_data = False
+    #
+    bMOFA_data = True
     if bMOFA_data :
+        import os
+        # os.system('mkdir ../data')
+        # os.system('wget https://github.com/bioFAM/MOFAdata/blob/master/data/CLL_data.RData')
+        # os.system('mv CLL_data.RData ../data/.')
         df_dict = convert_rdata_to_dataframe( filename = '../data/CLL_data.RData' )
         pruned_df = df_dict[2].T.dropna().T
         journal_df = df_dict[3].loc[['IGHV'],:]
         mask = [ v>=0 for v in journal_df.loc['IGHV'].values ]
         journal_df = journal_df.iloc[ :,mask ]
         use = list(set(pruned_df.columns)&set(journal_df.columns))
+        analyte_df =  pruned_df .loc[ :,use ].apply( lambda x:np.log2(1+x) )
+        journal_df = journal_df .loc[ :,use ]
 
-        analyte_df =  pruned_df.loc[:,use].apply( lambda x:np.log2(1+x) )
-        journal_df = journal_df.loc[:,use]
-        print(analyte_df,journal_df)
+        print ( analyte_df,journal_df )
+
+        exit(1)
 
     base = '../../../data/'
     convert_file = base + 'naming_and_annotations/conv.txt'

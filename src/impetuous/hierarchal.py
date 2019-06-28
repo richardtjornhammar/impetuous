@@ -19,7 +19,6 @@ from impetuous.quantification import group_significance
 
 def pathway_frame_from_file ( filename , 
         delimiter = '\t' , item_sep = ',' ) :
-    #
     pdf = None
     with open( filename,'r' ) as input :
         for line in input :
@@ -61,6 +60,7 @@ def HierarchalEnrichment (
     SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
     if len( AllAnalytes ) == len( SigAnalytes ) :
         print ( 'THIS STATISTICAL TEST WILL BE NONSENSE' )
+        print ( 'TRY A DIFFERENT THRESHOLD' )
     marked_analytes = {} ; used_analytes = {} ; node_sig = {}
     for d in range( dag_depth, 0, -1 ) : 
         # ROOT IS NOT INCLUDED
