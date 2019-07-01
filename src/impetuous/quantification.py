@@ -106,7 +106,7 @@ def anova_test ( formula, group_expression_df, journal_df, test_type = 'random' 
     table = sm.stats.anova_lm(model,typ=type_d[test_type])
     return table.iloc[ [(idx in formula) for idx in table.index],-1]
 
-def glm (  formula , df , jdf , distribution='Gaussian' ) :
+def glm_test (  formula , df , jdf , distribution='Gaussian' ) :
     tmp_df = pd.concat([ jdf, df ])
     family_description = """
         Family(link, variance) # The parent class for one-parameter exponential families.
@@ -163,7 +163,7 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
         p_normality = mannwhitneyu( group1, group2, alternative=alternative )[1]
     except ValueError as err:
         print(err.args)
-        p_normality = 1.0    
+        p_normality = 1.0
     pvalue = pv[1] ; statistic=pv[0]
     return ( pvalue , p_normality, statistic )
 
@@ -174,7 +174,7 @@ def parse_test ( statistical_formula, group_expression_df , journal_df , test_ty
     if 'glm' in statistical_formula.lower() :
         if not test_type in set(['Gaussian','Binomial','Gamma','InverseGaussian','NegativeBinomial','Poisson']):
             test_type = 'Gaussian'
-        result = gml_test( statistical_formula, group_expression_df , journal_df , distribution = test_type )
+        result = glm_test( statistical_formula, group_expression_df , journal_df , distribution = test_type )
         ident = True
     if 'ttest' in statistical_formula.lower() :
         ident = True ; result = None
