@@ -168,13 +168,14 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
     return ( pvalue , p_normality, statistic )
 
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
-    if 'glm' in statistical_formula.lower() :
-        if not test_type in set(['Gaussian','Binomial','Gamma','InverseGaussian','NegativeBinomial','Poisson'])
-            test_type = 'Gaussian'
-        result = gml_test( statistical_formula, group_expression_df , journal_df , distribution = test_type )
     #
     # THE FALLBACK IS A TYPE2 ANOVA
     ident = False
+    if 'glm' in statistical_formula.lower() :
+        if not test_type in set(['Gaussian','Binomial','Gamma','InverseGaussian','NegativeBinomial','Poisson']):
+            test_type = 'Gaussian'
+        result = gml_test( statistical_formula, group_expression_df , journal_df , distribution = test_type )
+        ident = True
     if 'ttest' in statistical_formula.lower() :
         ident = True ; result = None
         #

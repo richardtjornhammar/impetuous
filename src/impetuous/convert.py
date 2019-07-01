@@ -180,7 +180,7 @@ def convert_rdata_to_dataframe ( filename ) :
     rd = R.load( filename )
     raw_df_l = []
     if 'ndarray' in str( type( R[rd[0]] ) ).lower() :
-        [ raw_df_l.append( R[rd[0]] ) ]        
+        [ raw_df_l.append( R[rd[0]] ) ]
     else :
         [ raw_df_l.append( rdf ) for rdf in ro.vectors.DataFrame(R[rd[0]]) ]
     full_df_dict = {} ; i_ = 0
@@ -200,6 +200,7 @@ if __name__ == '__main__' :
         # os.system('mkdir ../data')
         # os.system('wget https://github.com/bioFAM/MOFAdata/blob/master/data/CLL_data.RData')
         # os.system('mv CLL_data.RData ../data/.')
+
         df_dict = convert_rdata_to_dataframe( filename = '../data/CLL_data.RData' )
         pruned_df = df_dict[2].T.dropna().T
         journal_df = df_dict[3].loc[['IGHV'],:]
@@ -210,7 +211,9 @@ if __name__ == '__main__' :
         journal_df = journal_df .loc[ :,use ]
 
         print ( analyte_df,journal_df )
-
+        from impetuous.quantification import *
+        qdf = quantify_groups ( analyte_df , journal_df , 'anova~C(IGHV)' , '~/Work/data/naming_and_annotations/reactome/reactome.gmt' )
+        print(qdf)
         exit(1)
 
     base = '../../../data/'
