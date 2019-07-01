@@ -346,6 +346,51 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
             edf.loc[l] = q
     return ( edf.T )
 
+
+def righteous ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
+                delimiter = '\t' , test_type = 'random' ,
+                split_id = None , skip_line_char = '#' 
+              ) :
+    statistical_formula = formula
+    if not split_id is None :
+        nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
+        analyte_df.index = nidx
+    sidx = set( analyte_df.index.values ) ; nidx=len(sidx)
+    eval_df = None
+    with open ( grouping_file ) as input:
+        for line in input:
+            if line[0] == skip_line_char :
+                continue
+            vline = line.replace('\n','').split(delimiter)
+            gid,gdesc,analytes_ = vline[0],vline[1],vline[2:]
+            if not synonyms is None :
+                [ analytes_.append(synonyms[a]) for a in analytes_ if a in synonyms ]
+            try :
+                group = analyte_df.loc[[a for a in analytes_ if a in sidx] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
+            except KeyError as e :
+                continue
+            L_ = len( group ); str_analytes=','.join(group.index.values)
+            if L_>0 :
+                Xnew = dimred.fit_transform(group.T.values)
+                group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=[gid])
+                rdf = pd.DataFrame( parse_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )).T
+                rdf .columns = [ col+',p' if (not ',s' in col) else col+',s' for col in rdf.columns ]
+                rdf['description'] = gdesc+','+str(L_)
+                rdf['analytes'] = str_analytes
+                rdf.index = [ gid ] ; ndf = pd.concat([rdf.T,group_expression_df.T]).T
+                if eval_df is None :
+                    eval_df = ndf
+                else :
+                    eval_df = pd.concat([eval_df,ndf])
+    edf = eval_df.T
+    for col in eval_df.columns :
+        if ',p' in col :
+            q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
+            edf.loc[l] = q
+    return ( edf.T )
+
+
+
 def quantify_analytes( analyte_df , journal_df , formula ,
                        delimiter = '\t' , test_type = 'random',
                        verbose = True , only_include = None ) :
