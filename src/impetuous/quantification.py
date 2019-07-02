@@ -347,10 +347,31 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
     return ( edf.T )
 
 
+class RCA( object ) :
+    def __init__(self):
+        self.components_ = None
+        self.F_ = None
+        self.U_ , self.S_, self.V_ = None,None,None
+        self.evr_ = None
+        self.var_ = None
+
+    def fit_transform(self,X):
+        Xc = X - np.mean( X , 0 )
+        u, s, v = np.linalg.svd( Xc, full_matrices=False )
+        S = np.diag( s )
+        self.F_ = np.dot(u,S)
+        self.var_ = s ** 2 / Xc.shape[0]
+        self.explained_variance_ratio_ = self.var_/self.var_.sum()
+        self.U_, self.S_, self.V_ = u,s,v
+        self.components_ = self.V_
+        return(self.F_)
+
+
 def righteous ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
                 delimiter = '\t' , test_type = 'random' ,
                 split_id = None , skip_line_char = '#' 
               ) :
+    dimred = RCA()
     statistical_formula = formula
     if not split_id is None :
         nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
