@@ -247,7 +247,7 @@ def merge_significance ( significance_df , distance_type='euclidean' ) :
 def group_significance( subset , all_analytes_df = None ,
                         tolerance = 0.05 , significance_name = 'pVal' ,
                         AllAnalytes = None , SigAnalytes = None,
-                        alternative = 'greater' ) :
+                        alternative = 'two-sided' ) :
     # FISHER ODDS RATIO CHECK
     # CHECK FOR ALTERNATIVE :
     #   'greater'   ( ENRICHMENT IN GROUP )
@@ -269,7 +269,7 @@ def group_significance( subset , all_analytes_df = None ,
 
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
                                  tolerance = 0.05 , p_label = 'C(Status),p' ,
-                                 group_prefix = '' ) :
+                                 group_prefix = '' ,  alternative='two-sided'  ) :
     AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
     SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
     if len(AllAnalytes) == len(SigAnalytes) :
@@ -285,7 +285,7 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
                 continue
             L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_ > 0 :
-                pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes )
+                pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes , alternative=alternative )
                 rdf = pd.DataFrame( [[pv]], columns = [ group_prefix + 'Fisher_'+p_label ], index=[ gid ] )
                 rdf.columns = [ col+',p' if ',p' not in col else col for col in rdf.columns ]
                 rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes 
@@ -326,7 +326,7 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
                 group = analyte_df.loc[[a for a in analytes_ if a in sidx] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
             except KeyError as e :
                 continue
-            L_ = len( group ); str_analytes=','.join(group.index.values)
+            L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_>0 :
                 dimred.fit(group.values)
                 group_expression_df = pd.DataFrame([dimred.components_[0]],columns=analyte_df.columns.values,index=[gid])
@@ -365,7 +365,6 @@ class RCA( object ) :
         self.U_, self.S_, self.V_ = u,s,v
         self.components_ = self.V_
         return(self.F_)
-
 
 def righteous ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
                 delimiter = '\t' , test_type = 'random' ,
