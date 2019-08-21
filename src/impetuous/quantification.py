@@ -264,7 +264,7 @@ def group_significance( subset , all_analytes_df = None ,
     notSigAnalytes = AllAnalytes - SigAnalytes
     AB  = len(Analytes&SigAnalytes)    ; nAB  = len(notAnalytes&SigAnalytes)
     AnB = len(Analytes&notSigAnalytes) ; nAnB = len(notAnalytes&notSigAnalytes)
-    oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative)
+    oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative )
     return ( pval , oddsratio )
 
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
@@ -345,71 +345,6 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
             q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
             edf.loc[l] = q
     return ( edf.T )
-
-
-class RCA( object ) :
-    def __init__(self):
-        self.components_ = None
-        self.F_ = None
-        self.U_ , self.S_, self.V_ = None,None,None
-        self.evr_ = None
-        self.var_ = None
-
-    def fit_transform(self,X):
-        Xc = X - np.mean( X , 0 )
-        u, s, v = np.linalg.svd( Xc, full_matrices=False )
-        S = np.diag( s )
-        self.F_ = np.dot(u,S)
-        self.var_ = s ** 2 / Xc.shape[0]
-        self.explained_variance_ratio_ = self.var_/self.var_.sum()
-        self.U_, self.S_, self.V_ = u,s,v
-        self.components_ = self.V_
-        return(self.F_)
-
-def righteous ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
-                delimiter = '\t' , test_type = 'random' ,
-                split_id = None , skip_line_char = '#' 
-              ) :
-    dimred = RCA()
-    statistical_formula = formula
-    if not split_id is None :
-        nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
-        analyte_df.index = nidx
-    sidx = set( analyte_df.index.values ) ; nidx=len(sidx)
-    eval_df = None
-    with open ( grouping_file ) as input:
-        for line in input:
-            if line[0] == skip_line_char :
-                continue
-            vline = line.replace('\n','').split(delimiter)
-            gid,gdesc,analytes_ = vline[0],vline[1],vline[2:]
-            if not synonyms is None :
-                [ analytes_.append(synonyms[a]) for a in analytes_ if a in synonyms ]
-            try :
-                group = analyte_df.loc[[a for a in analytes_ if a in sidx] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
-            except KeyError as e :
-                continue
-            L_ = len( group ); str_analytes=','.join(group.index.values)
-            if L_>0 :
-                Xnew = dimred.fit_transform(group.T.values)
-                group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=[gid])
-                rdf = pd.DataFrame( parse_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )).T
-                rdf .columns = [ col+',p' if (not ',s' in col) else col+',s' for col in rdf.columns ]
-                rdf['description'] = gdesc+','+str(L_)
-                rdf['analytes'] = str_analytes
-                rdf.index = [ gid ] ; ndf = pd.concat([rdf.T,group_expression_df.T]).T
-                if eval_df is None :
-                    eval_df = ndf
-                else :
-                    eval_df = pd.concat([eval_df,ndf])
-    edf = eval_df.T
-    for col in eval_df.columns :
-        if ',p' in col :
-            q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
-            edf.loc[l] = q
-    return ( edf.T )
-
-
 
 def quantify_analytes( analyte_df , journal_df , formula ,
                        delimiter = '\t' , test_type = 'random',
