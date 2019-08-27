@@ -392,7 +392,7 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                 rdf .index = [ gid ]
                 if not analyte_formula is None :
                     group_analytes_pos_neg_ind_d = dict()
-                    qad   = quantify_analytes( group , journal_df , analyte_formula )
+                    qad   = quantify_analytes( group , journal_df , analyte_formula , bRegular=False )
                     loc_q = qad .loc[ :,[c for c in qad.columns.values if not 'mwu' in c and ',p' in c ] ]
                     metrics = [ c.split(',')[0] for c in loc_q.columns]
                     for metric in metrics:
