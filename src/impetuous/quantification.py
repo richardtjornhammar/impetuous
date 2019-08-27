@@ -241,6 +241,8 @@ def merge_significance ( significance_df , distance_type='euclidean' ) :
         distance = lambda x : np.sqrt(np.sum(x**2))
     if distance_type == 'extreme' :   # ANTI-CONSERVATIVE ESTIMATE
         distance = lambda x : np.max(x)
+    if distance_type == 'mean' :      # MEAN ESTIMATE
+        distance = lambda x : np.mean(x)
     get_pvalue = lambda x : 10**(-x)
     return ( significance_df.apply( lambda x: -1.*np.log10(x) ).T.apply(distance).apply(get_pvalue) )
 
@@ -346,9 +348,91 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
             edf.loc[l] = q
     return ( edf.T )
 
+from scipy.stats import combine_pvalues
+def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
+                    grouping_dictionary = dict() , synonyms = None ,
+                    delimiter = ':' ,test_type = 'random', tolerance = 0.05,
+                    supress_q = False , analyte_formula = None ) :
+
+    if not 'dict' in str(type(grouping_dictionary)) :
+        print ( 'INVALID GROUPING' )
+        return
+
+    statistical_formula = formula
+    if not split_id is None :
+        nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
+        analyte_df.index = nidx
+    sidx = set( analyte_df.index.values ) ; nidx=len(sidx)
+    eval_df = None
+    if True :
+        for line in grouping_dictionary.items() :
+            gid,analytes_ = line[0],line[1:][0]
+            gdesc = line[0].split(delimiter)[0]
+            if not synonyms is None :
+                [ analytes_.append(synonyms[a]) for a in analytes_ if a in synonyms ]
+            try :
+                group = analyte_df.loc[[a for a in analytes_ if a in sidx] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
+            except KeyError as e :
+                continue
+            L_ = len( group ) ; str_analytes=','.join(group.index.values)
+            if L_>0 :
+                dimred .fit( group.values )
+                ddf = None
+                for ic in range(len( dimred.components_ )) :
+                    group_expression_df = pd.DataFrame([dimred.components_[ic]],columns=analyte_df.columns.values,index=[gid])
+                    rdf = pd.DataFrame( parse_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )).T
+                    rdf .columns = [ col+',p' if (not ',s' in col) else col+',s' for col in rdf.columns ]
+                    if ddf is None:
+                        ddf = rdf
+                    else:
+                        ddf = pd.concat([ddf,rdf])
+                rdf = pd.DataFrame([ [ combine_pvalues( ddf[c].values )[1] for c in ddf.columns if ',p' in c ] ] , columns=ddf.columns )
+                rdf [ 'description' ] = gdesc + ',' + str( L_ )
+                rdf [ 'analytes' ] = str_analytes
+                rdf .index = [ gid ]
+                if not analyte_formula is None :
+                    group_analytes_pos_neg_ind_d = dict()
+                    qad   = quantify_analytes( group , journal_df , analyte_formula )
+                    loc_q = qad .loc[ :,[c for c in qad.columns.values if not 'mwu' in c and ',p' in c ] ]
+                    metrics = [ c.split(',')[0] for c in loc_q.columns]
+                    for metric in metrics:
+                        statistic = qad.loc[ :, [c for c in qad.columns if metric in c and ',s' in c] ]
+
+                        group_analytes_pos_neg_ind_d[ metric + ',N_positive' ] = np.sum ( 
+                            [ 1 if p<tolerance and s>0 else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ] 
+                        )
+                        group_analytes_pos_neg_ind_d[ metric + ',N_negative' ] = np.sum ( 
+                            [ 1 if p<tolerance and s<0 else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ] 
+                        )
+                        group_analytes_pos_neg_ind_d[ metric + ',N_indetermined' ] = np.sum ( 
+                            [ 1 if p>tolerance else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ] 
+                        )
+                        group_analytes_pos_neg_ind_d[ metric + ',N_tot' ] = len(statistic)
+
+                    loc_a_df = pd.DataFrame(group_analytes_pos_neg_ind_d.items(),columns=['name',gid] )
+                    loc_a_df.index = loc_a_df['name']; del loc_a_df['name']
+                    rdf = pd.concat([rdf.T,loc_a_df ]).T
+                if False : # SUPRESS GROUP EXPRESSION
+                    ndf = pd.concat([rdf.T,group_expression_df.T]).T
+                else :
+                    ndf = rdf
+                if eval_df is None :
+                    eval_df = ndf
+                else :
+                    eval_df = pd.concat([eval_df,ndf])
+    edf = eval_df.T
+    if not supress_q :
+        for col in eval_df.columns :
+            if ',p' in col :
+                q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
+                edf.loc[l] = q
+    return ( edf.T )
+
+
 def quantify_analytes( analyte_df , journal_df , formula ,
                        delimiter = '\t' , test_type = 'random',
-                       verbose = True , only_include = None ) :
+                       verbose = True , only_include = None ,
+                       bRegular = True ) :
     statistical_formula = formula
     sidx = set(analyte_df.index.values) ; nidx=len(sidx)
     eval_df = None ; N_ = len(analyte_df)
@@ -363,9 +447,12 @@ def quantify_analytes( analyte_df , journal_df , formula ,
             group_expression_df = pd.DataFrame([group.values[0]], columns=analyte_df.columns.values, index=[gid] )
             rdf = pd.DataFrame(parse_test( statistical_formula, group_expression_df, journal_df, test_type=test_type )).T
             rdf .columns = [ col+',p' if (not ',s' in col) else col+',s' for col in rdf.columns ]
-            rdf['description'] = gdesc+','+str(L_)
-            rdf['analytes'] = str_analytes
-            rdf .index = [ gid ] ; ndf = pd.concat([rdf.T,group_expression_df.T]).T
+            if bRegular :
+                rdf['description'] = gdesc+','+str(L_)
+                rdf['analytes'] = str_analytes
+            rdf .index = [ gid ] ; ndf = rdf
+            if bRegular :
+                ndf = pd.concat([rdf.T,group_expression_df.T]).T
             if eval_df is None :
                 eval_df = ndf
             else :
@@ -373,6 +460,8 @@ def quantify_analytes( analyte_df , journal_df , formula ,
         if verbose :
             print ( 'Done:', str(np.floor(float(iline)/N_*1000.)/10.)+'%'  , end="\r")
     edf = eval_df.T
+    if not bRegular :
+        return ( edf.T )
     for col in eval_df.columns :
         if ',p' in col :
             q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
@@ -446,7 +535,7 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     ddf = ddf.sort_values('Dist', ascending = False )
     return ( ddf )
 
-def add_kendalltau( analyte_results_df, journal_df, what='M') :
+def add_kendalltau( analyte_results_df , journal_df , what='M' ) :
     if what in set(journal_df.index.values) :
         # ADD IN CONCOORDINANCE WITH KENDALL TAU
         from scipy.stats import kendalltau
