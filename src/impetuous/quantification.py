@@ -353,11 +353,9 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                     grouping_dictionary = dict() , synonyms = None ,
                     delimiter = ':' ,test_type = 'random', tolerance = 0.05,
                     supress_q = False , analyte_formula = None ) :
-
     if not 'dict' in str(type(grouping_dictionary)) :
         print ( 'INVALID GROUPING' )
         return
-
     statistical_formula = formula
     if not split_id is None :
         nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
@@ -397,7 +395,6 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                     metrics = [ c.split(',')[0] for c in loc_q.columns]
                     for metric in metrics:
                         statistic = qad.loc[ :, [c for c in qad.columns if metric in c and ',s' in c] ]
-
                         group_analytes_pos_neg_ind_d[ metric + ',N_positive' ] = np.sum ( 
                             [ 1 if p<tolerance and s>0 else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ] 
                         )
@@ -538,13 +535,14 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
 def add_kendalltau( analyte_results_df , journal_df , what='M' ) :
     if what in set(journal_df.index.values) :
         # ADD IN CONCOORDINANCE WITH KENDALL TAU
-        from scipy.stats import kendalltau
+        from scipy.stats import kendalltau,spearmanr
         K = []
         patients = [ c for c in analyte_results_df.columns if '_' in c ]
         for idx in analyte_results_df.index :
             y = journal_df.loc[what,patients].values
             x = analyte_results_df.loc[[idx],patients].values[0] # IF DUPLICATE GET FIRST
             k = kendalltau( x,y )
+            k = spearmanr ( x,y )
             K .append( k )
         analyte_results_df['KendallTau'] = K
     return ( analyte_results_df )

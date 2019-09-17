@@ -16,6 +16,7 @@ limitations under the License.
 import pandas as pd
 import numpy as np
 from impetuous.quantification import group_significance
+from impetuous.convert import *
 
 def pathway_frame_from_file ( filename , 
         delimiter = '\t' , item_sep = ',' ) :
