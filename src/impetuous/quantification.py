@@ -581,10 +581,10 @@ def add_kendalltau( analyte_results_df , journal_df , what='M' ) :
             y = journal_df.loc[what,patients].values
             x = analyte_results_df.loc[[idx],patients].values[0] # IF DUPLICATE GET FIRST
             k = kendalltau( x,y )
-            k = spearmanr ( x,y )
             K .append( k )
         analyte_results_df['KendallTau'] = K
     return ( analyte_results_df )
+
 
 if __name__ == '__main__' :
 
