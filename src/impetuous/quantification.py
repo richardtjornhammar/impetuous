@@ -167,6 +167,45 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
     pvalue = pv[1] ; statistic=pv[0]
     return ( pvalue , p_normality, statistic )
 
+def mycov( x , full_matrices=0 ):
+    x = x - x.mean( axis=0 )
+    U, s, V = np.linalg.svd(x, full_matrices = full_matrices)
+    C = np.dot(np.dot(V.T,np.diag(s**2)),V)
+    return C / (x.shape[0]-1)
+
+from scipy.special import chdtrc as chi2_cdf
+def p_value_merger ( pvalues_df , p_label=',p' , axis = 0 ) :
+    # REQUIRED READING: doi: 10.1093/bioinformatics/btw438
+    pdf_   = pvalues_df.loc[:,[c for c in pvalues_df.columns.values if p_label in c]]
+    psi_df = pdf_.apply( lambda x:-2.0*np.log10(x) )
+    if axis == 1 :
+        pdf_   = pdf   .T.copy( ) ; psi_df = psi_df.T.copy( )
+
+    covar_matrix = mycov(psi_df.values)
+    m = int(covar_matrix.shape[0]) ; K = 2.*m
+    df_fisher , expectation = K,K
+    for i in range(m) :
+        covar_matrix[ i,i ] = 0
+    covar_2sum = np.sum( covar_matrix )
+
+    var = 4.0*m + covar_2sum
+    c = var / (2.0*expectation)
+    df_brown = expectation/c
+
+    if df_brown > df_fisher :
+        df_brown = df_fisher
+        c = 1.0
+    p_values = pvalues_df
+
+    x = 2.0*np.sum ( p_values.apply(lambda X:-np.log10(X)) , 1 ).values
+    p_brown  = chi2_cdf ( df_brown , 1.0*x/c )
+    p_fisher = chi2_cdf ( df_fisher, 1.0*x   )
+    result_df = pd.DataFrame( np.array([p_brown,p_fisher]) ,
+                              columns = pvalues_df.index   ,
+                              index=['Brown,p','Fisher,p'] ).T
+  
+    return ( result_df )
+
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
     #
     # THE FALLBACK IS A TYPE2 ANOVA
