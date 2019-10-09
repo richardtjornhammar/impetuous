@@ -1,7 +1,7 @@
 # Simple Group Analysis
 Decomposes a set of expressions into a group expression.
 The toolkit currently offers enrichment analysis, hierarchical
-enrichment analysis, a rudimentary factor analysis.
+enrichment analysis, PLS regression and rudimentary factor analysis.
 The expression regulation can be studied via a statistical
 test that relates it to the observables in the journal file. 
 The final p values are then FDR corrected and the resulting

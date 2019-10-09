@@ -39,6 +39,164 @@ def grouper ( inputs, n ):
     iters = [iter(inputs)] * n
     return zip(*iters)
 
+def whiten_data ( Xdf ) :
+    # REMEMBER BOYS AND GIRLS THIS IS SOMETHING YOU MIGHT NOT WANT TO DO :)
+    mean_center = lambda x: x-np.mean(x,0)
+    X = Xdf.values
+    u , s , v = np.linalg.svd( mean_center(X),full_matrices=False )
+    X_white = np.dot(X,np.dot( np.diag(s**-1),np.abs(v) )) # we don't know the sign
+    return ( pd.DataFrame( X_white,index=Xdf.index.values,columns=Xdf.columns ) )
+
+
+import re
+def find_category_variables( istr ) :
+    return ( re.findall( r'C\((.*?)\)', istr ) )
+
+def encode_categorical( G = ['Male','Male','Female'] ):
+    #
+    # CREATES AN BINARY ENCODING MATRIX FROM THE SUPPLIED LIST
+    # USES A PANDAS DATAFRAME AS INTERMEDIATE FOR ERROR CHECKING
+    # THIS PUTS THE O IN OPLS (ORTHOGONAL)
+    #
+    ugl = list(set(G)) ; n = len(ugl) ; m = len(G)
+    lgu = { u:j for u,j in zip(ugl,range(n)) }
+    enc_d = pd.DataFrame( np.zeros(m*n).reshape(-1,n),columns=ugl )
+    for i in range ( m ) :
+        j = lgu[G[i]]
+        enc_d.iloc[i,j] = 1
+    return ( enc_d )
+
+def create_encoding_journal( use_categories, journal_df ) :
+    encoding_df = None
+    for category in use_categories :
+        catvals = journal_df.loc[category].to_list()
+        cat_encoding = encode_categorical( catvals )
+        cat_encoding.index = journal_df.columns.values
+        if encoding_df is None :
+            encoding_df = cat_encoding.T
+        else :
+            encoding_df = pd.concat([encoding_df,cat_encoding.T])
+    return ( encoding_df )
+
+def quantify_density_probability ( rpoints , cutoff = None ) :
+    #
+    # DETERMINE P VALUES
+    loc_pdf = lambda X,mean,variance : [ 1./np.sqrt(2.*np.pi*variance)*np.exp(-((x-mean)/(2.*variance))**2) for x in X ]
+    from scipy.special import erf as erf_
+    loc_cdf = lambda X,mean,variance : [      0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+    loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+    M_,Var_ = np.mean(rpoints),np.std(rpoints)**2
+    corresponding_density = loc_pdf( rpoints,M_,Var_ )
+    corresponding_pvalue  = loc_Q  ( rpoints,M_,Var_ )
+    #
+    # HERE WE MIGHT BE DONE
+    if not cutoff is None :
+        resolution = 10. ; nbins = 100.
+        #
+        # ONLY FOR ASSESING 
+        h1,h2      = np.histogram(rpoints,bins=int(np.ceil(len(rpoints)/resolution)))
+        bin_radius = 0.5 * ( h2[1:] + h2[:-1] )
+        radial_density = np.cumsum( h1 )/np.sum( h1 ) # lt
+        #
+        # NOW RETRIEVE ALL DENSITIES OF THE RADII
+        tol = 1./nbins
+        corresponding_radius = np.min( bin_radius[radial_density > cutoff/nbins] )
+        return ( corresponding_pvalue , corresponding_density, corresponding_radius )
+    return ( corresponding_pvalue , corresponding_density )
+
+
+def run_rpls_regression ( analyte_df , journal_df , formula ,
+                          bVerbose = False , synonyms = None , blur_cutoff = 99.8 , 
+                          exclude_labels_from_centroids = ['']
+                        ) :
+    from sklearn.cross_decomposition import PLSRegression as PLS
+
+    use_categories = list(set(find_category_variables(formula.split('~')[1])))
+    encoding_df    = create_encoding_journal ( use_categories , journal_df ).T
+    rpls           = PLS(2)
+    rpls_res       = rpls.fit( X = analyte_df.T.values ,
+                             Y = encoding_df.values )
+    if bVerbose :
+        print ( rpls_res.get_params() )
+        print ( np.shape(rpls_res.x_weights_) )
+        print ( np.shape(rpls_res.y_weights_) )
+        print ( np.shape(rpls_res.y_scores_) )
+        print ( np.shape(rpls_res.x_scores_) )
+        print ( np.shape(rpls_res.x_loadings_) )
+        print ( np.shape(rpls_res.y_loadings_) )
+        print ( np.shape(rpls_res.coef_) )
+        print ( rpls_res.x_weights_ )
+    #
+    # THESE ARE THE CATEGORICAL DESCRIPTORS
+    # ASSIGN OWNER BY PROXIMITY TO CATEGORICALS
+    use_centroid_indices = [ i for i in range(len(encoding_df.columns.values)) if ( 
+                             encoding_df.columns.values[i] not in set( exclude_labels_from_centroids ) 
+                           ) ]
+    use_centroids = rpls_res.y_weights_[use_centroid_indices]
+    use_labels    = encoding_df.columns.values[use_centroid_indices]
+    transcript_owner = [ use_labels[np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
+    #
+    # PLS WEIGHT RADIUS
+    radius  = lambda vector:np.sqrt(np.sum((vector)**2)) # radii
+    #
+    # ESTABLISH LENGTH SCALES
+    xi_l    = np.max(np.abs(rpls_res.x_weights_),0) 
+    #
+    rpoints = np.array( [ radius( v/xi_l )    for v in rpls_res.x_weights_ ] ) # HERE WE MERGE THE AXES
+    xpoints = np.array( [ radius((v/xi_l)[0]) for v in rpls_res.x_weights_ ] ) # HERE WE USE THE X AXES
+    ypoints = np.array( [ radius((v/xi_l)[1]) for v in rpls_res.x_weights_ ] ) # HERE WE USE THE Y AXES
+    #
+    # THE EQUIDISTANT 1D STATS
+    corresponding_pvalue , corresponding_density , corresponding_radius = quantify_density_probability( rpoints , cutoff=blur_cutoff )
+    #
+    # THE TWO XY 1D STATS :: SHOULD ALIGN TO PLS AXES
+    corr_pvalue_0 , corr_density_0 = quantify_density_probability ( xpoints )
+    corr_pvalue_1 , corr_density_1 = quantify_density_probability ( ypoints )
+    #
+    bOrderedAlphas = False
+    if True :
+        # DO ALPHA LEVELS BASED ON DENSITY
+        bOrderedAlphas = True
+        use_points = rpoints > corresponding_radius
+        ordered_alphas = [ float(int(u))*0.5 + 0.01 for u in use_points ]
+
+    result_dfs = []
+    for (lookat,I_) in [ ( rpls_res.x_weights_,0 ) ,
+                         ( rpls_res.x_scores_ ,1 ) ] :
+        lookat = [ [ l[0],l[1] ] for l in lookat ]
+        if I_ == 1 :
+            aidx = journal_df.columns.values
+        else :
+            aidx = analyte_df.index.values
+        qdf = pd.DataFrame( [v[0] for v in lookat] , index=aidx , columns = ['x']  )
+        qdf['y'] = [ v[1] for v in lookat ]
+        names = aidx
+        if I_ == 0 :
+            qdf[ 'owner' ] = transcript_owner
+            qdf['Corr,p' ] = corresponding_pvalue
+            qdf['Corr,r' ] = corresponding_density
+            qdf['Corr0,p'] = corr_pvalue_0
+            qdf['Corr0,r'] = corr_density_0
+            qdf['Corr1,p'] = corr_pvalue_1
+            qdf['Corr1,r'] = corr_density_1
+            if bOrderedAlphas :
+                qdf[ 'alpha' ] = ordered_alphas
+            else :
+                qdf['alpha'] = [ '0.3' for a in transcript_owner ]
+        else :
+            if '_' in ''.join(names) :
+                qdf['owner'] = [ n.split('_')[0] for n in names ]
+            else:
+                qdf['owner'] = names
+            qdf['alpha'] = [ '0.2' for n in names ]
+        if synonyms is None :
+            qdf['name'] = names
+        else :
+            qdf['name'] = [ synonyms[v] if v in synonyms else v for v in names ]
+        result_dfs.append(qdf.copy())
+    return ( result_dfs )
+
+
 from statsmodels.stats.multitest import multipletests
 def adjust_p ( pvalue_list , method = 'fdr_bh' , alpha = 0.05,
                check_r_bh = False , is_sorted = False ,
@@ -169,13 +327,15 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
 
 def mycov( x , full_matrices=0 ):
     x = x - x.mean( axis=0 )
-    U, s, V = np.linalg.svd(x, full_matrices = full_matrices)
+    U, s, V = np.linalg.svd( x , full_matrices = full_matrices )
     C = np.dot(np.dot(V.T,np.diag(s**2)),V)
     return C / (x.shape[0]-1)
 
 from scipy.special import chdtrc as chi2_cdf
 def p_value_merger ( pvalues_df , p_label=',p' , axis = 0 ) :
+    #
     # REQUIRED READING: doi: 10.1093/bioinformatics/btw438
+    #
     pdf_   = pvalues_df.loc[:,[c for c in pvalues_df.columns.values if p_label in c]]
     psi_df = pdf_.apply( lambda x:-2.0*np.log10(x) )
     if axis == 1 :
@@ -215,6 +375,7 @@ def parse_test ( statistical_formula, group_expression_df , journal_df , test_ty
             test_type = 'Gaussian'
         result = glm_test( statistical_formula, group_expression_df , journal_df , distribution = test_type )
         ident = True
+
     if 'ttest' in statistical_formula.lower() :
         ident = True ; result = None
         #
@@ -463,7 +624,6 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                 q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
                 edf.loc[l] = q
     return ( edf.T )
-
 
 def quantify_analytes( analyte_df , journal_df , formula ,
                        delimiter = '\t' , test_type = 'random',
