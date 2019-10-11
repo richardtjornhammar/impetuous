@@ -115,16 +115,16 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     encoding_df    = create_encoding_journal ( use_categories , journal_df ).T
     rpls           = PLS(2)
     rpls_res       = rpls.fit( X = analyte_df.T.values ,
-                             Y = encoding_df.values )
+                               Y = encoding_df.values )
     if bVerbose :
         print ( rpls_res.get_params() )
-        print ( np.shape(rpls_res.x_weights_) )
-        print ( np.shape(rpls_res.y_weights_) )
-        print ( np.shape(rpls_res.y_scores_) )
-        print ( np.shape(rpls_res.x_scores_) )
+        print ( np.shape(rpls_res.x_weights_ ) )
+        print ( np.shape(rpls_res.y_weights_ ) )
+        print ( np.shape( rpls_res.y_scores_ ) )
+        print ( np.shape( rpls_res.x_scores_ ) )
         print ( np.shape(rpls_res.x_loadings_) )
         print ( np.shape(rpls_res.y_loadings_) )
-        print ( np.shape(rpls_res.coef_) )
+        print ( np.shape(   rpls_res.coef_   ) )
         print ( rpls_res.x_weights_ )
     #
     # THESE ARE THE CATEGORICAL DESCRIPTORS
@@ -146,10 +146,22 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     xpoints = np.array( [ radius((v/xi_l)[0]) for v in rpls_res.x_weights_ ] ) # HERE WE USE THE X AXES
     ypoints = np.array( [ radius((v/xi_l)[1]) for v in rpls_res.x_weights_ ] ) # HERE WE USE THE Y AXES
     #
+    # print ( 'ESTABLISH PROJECTION OF THE WEIGHTS ONTO THEIR AXES' )
+    proj = lambda B,A : np.dot(A,B) / np.sqrt( np.dot(A,A) )
+    proj_df = pd.DataFrame( [ [ np.abs(proj(P/xi_l,R/xi_l)) for P in rpls_res.x_weights_ ] for R in use_centroids ] ,
+                  index = use_labels , columns=analyte_df.index.values )
+    #
+    # P VALUES ALIGNED TO PLS AXES
+    for idx in proj_df.index :
+        proj_p,proj_rho = quantify_density_probability ( proj_df.loc[idx,:].values )
+        proj_df = proj_df.rename( index = {idx:idx+',r'} )
+        proj_df.loc[idx+',p']   = proj_p
+        proj_df.loc[idx+',rho'] = proj_rho
+    #
     # THE EQUIDISTANT 1D STATS
     corresponding_pvalue , corresponding_density , corresponding_radius = quantify_density_probability( rpoints , cutoff=blur_cutoff )
     #
-    # THE TWO XY 1D STATS :: SHOULD ALIGN TO PLS AXES
+    # THE TWO XY 1D STATS 
     corr_pvalue_0 , corr_density_0 = quantify_density_probability ( xpoints )
     corr_pvalue_1 , corr_density_1 = quantify_density_probability ( ypoints )
     #
@@ -161,8 +173,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
         ordered_alphas = [ float(int(u))*0.5 + 0.01 for u in use_points ]
 
     result_dfs = []
-    for (lookat,I_) in [ ( rpls_res.x_weights_,0 ) ,
-                         ( rpls_res.x_scores_ ,1 ) ] :
+    for ( lookat,I_ ) in [ ( rpls_res.x_weights_ , 0 ) ,
+                           ( rpls_res.x_scores_  , 1 ) ] :
         lookat = [ [ l[0],l[1] ] for l in lookat ]
         if I_ == 1 :
             aidx = journal_df.columns.values
@@ -179,6 +191,7 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
             qdf['Corr0,r'] = corr_density_0
             qdf['Corr1,p'] = corr_pvalue_1
             qdf['Corr1,r'] = corr_density_1
+            qdf = pd.concat([qdf.T,proj_df]).T
             if bOrderedAlphas :
                 qdf[ 'alpha' ] = ordered_alphas
             else :
@@ -693,7 +706,7 @@ def group_counts( analyte_df, grouping_file, delimiter = '\t',
                     eval_df = pd.concat ( [eval_df,ndf] )
     return ( eval_df.sort_values( group_prefix + 'FsigFrom' + p_label ) )
 
-def retrieve_genes_of( group_name, grouping_file, delimiter='\t', identifier='ENSG', skip_line_char='#' ):
+def retrieve_genes_of ( group_name, grouping_file, delimiter='\t', identifier='ENSG', skip_line_char='#' ):
     all_analytes = []
     with open ( grouping_file ) as input:
         for line_ in input :
