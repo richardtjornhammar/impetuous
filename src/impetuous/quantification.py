@@ -47,7 +47,6 @@ def whiten_data ( Xdf ) :
     X_white = np.dot(X,np.dot( np.diag(s**-1),np.abs(v) )) # we don't know the sign
     return ( pd.DataFrame( X_white,index=Xdf.index.values,columns=Xdf.columns ) )
 
-
 import re
 def find_category_variables( istr ) :
     return ( re.findall( r'C\((.*?)\)', istr ) )
@@ -113,6 +112,13 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
 
     use_categories = list(set(find_category_variables(formula.split('~')[1])))
     encoding_df    = create_encoding_journal ( use_categories , journal_df ).T
+    #
+    # ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS
+    # THIS TURNS THE MODEL INTO A MIXED LINEAR MODEL
+    add_df = journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]
+    if len(add_df)>0:
+        encode_df = pd.concat([encoding_df.T,journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]]).T
+
     rpls           = PLS(2)
     rpls_res       = rpls.fit( X = analyte_df.T.values ,
                                Y = encoding_df.values )
