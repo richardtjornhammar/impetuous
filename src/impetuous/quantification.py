@@ -111,14 +111,20 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     from sklearn.cross_decomposition import PLSRegression as PLS
 
     use_categories = list(set(find_category_variables(formula.split('~')[1])))
-    encoding_df    = create_encoding_journal ( use_categories , journal_df ).T
+    if len(use_categories)>0 :
+        encoding_df = create_encoding_journal ( use_categories , journal_df ).T
+    else :
+        encoding_df = None
     #
     # ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS
     # THIS TURNS THE MODEL INTO A MIXED LINEAR MODEL
     add_df = journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]
-    if len(add_df)>0:
-        encode_df = pd.concat([encoding_df.T,journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]]).T
-
+    if len(add_df)>0 :
+        if encoding_df is None :
+            encoding_df = add_df.T
+        else:
+            encoding_df = pd.concat([ encoding_df.T , 
+                            journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
     rpls           = PLS(2)
     rpls_res       = rpls.fit( X = analyte_df.T.values ,
                                Y = encoding_df.values )
