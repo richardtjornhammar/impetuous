@@ -32,12 +32,12 @@ def SubArraysOf(Array,Array_=None):
     return([Array]+SubArraysOf(Array[1:],Array_))
 
 def permuter( inputs , n ) :
-    # permuter( inputs=['T2D','NGT','Female','Male'] , n=2 )
+    # permuter( inputs = ['T2D','NGT','Female','Male'] , n = 2 )
     return( [p[0] for p in zip(itertools.permutations(inputs,n))] )
 
-def grouper ( inputs, n ):
+def grouper ( inputs, n ) :
     iters = [iter(inputs)] * n
-    return zip(*iters)
+    return zip ( *iters )
 
 def whiten_data ( Xdf ) :
     # REMEMBER BOYS AND GIRLS THIS IS SOMETHING YOU MIGHT NOT WANT TO DO :)
@@ -103,21 +103,38 @@ def quantify_density_probability ( rpoints , cutoff = None ) :
         return ( corresponding_pvalue , corresponding_density, corresponding_radius )
     return ( corresponding_pvalue , corresponding_density )
 
+def find_category_interactions ( istr ) :
+    all_cats = re.findall( r'C\((.*?)\)', istr )
+    interacting = [ ':' in c for c in istr.split(')') ][ 0:len(all_cats) ]
+    interacting_categories = [ [all_cats[i-1],all_cats[i]] for i in range(1,len(interacting)) if interacting[i] ]
+    return ( interacting_categories )
 
 def run_rpls_regression ( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 , 
                           exclude_labels_from_centroids = ['']
                         ) :
     from sklearn.cross_decomposition import PLSRegression as PLS
-
+    #
+    interaction_pairs = find_category_interactions ( formula.split('~')[1] )
+    add_pairs = []
+    if len( interaction_pairs )>0 :
+        for pair in interaction_pairs :
+            journal_df.loc[ ':'.join(pair) ] = [ p[0]+'-'+p[1] for p in journal_df.loc[ pair,: ].T.values ]
+            add_pairs.append(':'.join(pair))
     use_categories = list(set(find_category_variables(formula.split('~')[1])))
-    if len(use_categories)>0 :
+    use_categories = [ *use_categories,*add_pairs ]
+    #
+    if len( use_categories )>0 :
         encoding_df = create_encoding_journal ( use_categories , journal_df ).T
     else :
         encoding_df = None
+
+    if bVerbose :
+        print ( [ v for v in encoding_df.columns.values ] )
     #
     # ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS
     # THIS TURNS THE MODEL INTO A MIXED LINEAR MODEL
+    #
     add_df = journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]
     if len(add_df)>0 :
         if encoding_df is None :
@@ -220,7 +237,6 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
             qdf['name'] = [ synonyms[v] if v in synonyms else v for v in names ]
         result_dfs.append(qdf.copy())
     return ( result_dfs )
-
 
 from statsmodels.stats.multitest import multipletests
 def adjust_p ( pvalue_list , method = 'fdr_bh' , alpha = 0.05,
