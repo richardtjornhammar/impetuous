@@ -115,18 +115,15 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
                           exclude_labels_from_centroids = [''] ,
                           study_axii = None ,
                         ) :
-    #
     from sklearn.cross_decomposition import PLSRegression as PLS
     #
-    fend = formula.split('~')[1]
-    if ':' in fend :
-        interaction_pairs = find_category_interactions ( fend )
+    interaction_pairs = find_category_interactions ( formula.split('~')[1] )
     add_pairs = []
     if len( interaction_pairs )>0 :
         for pair in interaction_pairs :
             journal_df.loc[ ':'.join(pair) ] = [ p[0]+'-'+p[1] for p in journal_df.loc[ pair,: ].T.values ]
             add_pairs.append(':'.join(pair))
-    use_categories = list(set(find_category_variables( fend )))
+    use_categories = list(set(find_category_variables(formula.split('~')[1])))
     use_categories = [ *use_categories,*add_pairs ]
     #
     if len( use_categories )>0 :
