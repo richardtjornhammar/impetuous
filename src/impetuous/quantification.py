@@ -118,13 +118,15 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     #
     from sklearn.cross_decomposition import PLSRegression as PLS
     #
-    interaction_pairs = find_category_interactions ( formula.split('~')[1] )
+    fend = formula.split('~')[1]
+    if ':' in fend :
+        interaction_pairs = find_category_interactions ( fend )
     add_pairs = []
     if len( interaction_pairs )>0 :
         for pair in interaction_pairs :
             journal_df.loc[ ':'.join(pair) ] = [ p[0]+'-'+p[1] for p in journal_df.loc[ pair,: ].T.values ]
             add_pairs.append(':'.join(pair))
-    use_categories = list(set(find_category_variables(formula.split('~')[1])))
+    use_categories = list(set(find_category_variables( fend )))
     use_categories = [ *use_categories,*add_pairs ]
     #
     if len( use_categories )>0 :
@@ -182,14 +184,13 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     proj = lambda B,A : np.dot(A,B) / np.sqrt( np.dot(A,A) )
     #
     # HERE WE PROJECT THE WEIGHTS
-    # study_axii = None
     if 'list' in str( type( study_axii ) ) :
         for ax in study_axii :
             if len( set( ax ) - set( use_labels ) ) == 0 :
                 axis_direction = np .diff( rpls_res.y_weights_[ [ i for i in range(len(use_labels)) if use_labels[i] in set(ax) ]].T ).reshape(-1)
                 use_labels .append( '-'.join(ax) )
                 use_centroids .append( axis_direction )
-
+    #
     proj_df = pd.DataFrame( [ [ np.abs(proj(P/xi_l,R/xi_l)) for P in rpls_res.x_weights_ ] for R in use_centroids ] ,
                   index = use_labels , columns=analyte_df.index.values )
     #
