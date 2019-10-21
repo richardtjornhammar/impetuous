@@ -184,7 +184,7 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     if 'list' in str( type( study_axii ) ) :
         for ax in study_axii :
             if len( set( ax ) - set( use_labels ) ) == 0 :
-                axis_direction = np .diff( rpls_res.y_weights_[ [ i for i in range(len(use_labels)) if use_labels[i] in set(ax) ]].T ).reshape(-1)
+                axis_direction = np .diff( use_centroids[ [ i for i in range(len(use_labels)) if use_labels[i] in set(ax) ]].T ).reshape(-1)
                 use_labels .append( '-'.join(ax) )
                 use_centroids .append( axis_direction )
     #
