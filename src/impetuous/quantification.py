@@ -187,7 +187,7 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
         for ax in study_axii :
             if len( set( ax ) - set( use_labels ) ) == 0 :
                 axis_direction = np .diff( rpls_res.y_weights_[ [ i for i in range(len(use_labels)) if use_labels[i] in set(ax) ]].T ).reshape(-1)
-                use_labels .append( '/'.join(ax) )
+                use_labels .append( '-'.join(ax) )
                 use_centroids .append( axis_direction )
 
     proj_df = pd.DataFrame( [ [ np.abs(proj(P/xi_l,R/xi_l)) for P in rpls_res.x_weights_ ] for R in use_centroids ] ,
