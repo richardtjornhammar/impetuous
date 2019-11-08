@@ -188,12 +188,12 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
                 use_labels .append( '-'.join(ax) )
                 use_centroids .append( axis_direction )
     #
-    proj_df = pd.DataFrame( [ [ np.abs(proj(P/xi_l,R/xi_l)) for P in rpls_res.x_weights_ ] for R in use_centroids ] ,
+    proj_df = pd.DataFrame( [ [ proj(P/xi_l,R/xi_l) for P in rpls_res.x_weights_ ] for R in use_centroids ] ,
                   index = use_labels , columns=analyte_df.index.values )
     #
     # P VALUES ALIGNED TO PLS AXES
     for idx in proj_df.index :
-        proj_p,proj_rho = quantify_density_probability ( proj_df.loc[idx,:].values )
+        proj_p,proj_rho = quantify_density_probability ( [ np.abs(rho) for rho in proj_df.loc[idx,:].values] )
         proj_df = proj_df.rename( index = {idx:idx+',r'} )
         proj_df.loc[idx+',p']   = proj_p
         proj_df.loc[idx+',rho'] = proj_rho
@@ -524,7 +524,7 @@ def group_significance( subset , all_analytes_df = None ,
 
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
                                  tolerance = 0.05 , p_label = 'C(Status),p' ,
-                                 group_prefix = '' ,  alternative='two-sided'  ) :
+                                 group_prefix = '' ,  alternative = 'two-sided'  ) :
     AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
     SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
     if len(AllAnalytes) == len(SigAnalytes) :

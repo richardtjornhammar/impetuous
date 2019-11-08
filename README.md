@@ -15,10 +15,10 @@ Visit the active code via :
 https://github.com/richardtjornhammar/impetuous
 
 Visit the published code : 
-https://doi.org/10.5281/zenodo.2594691
+https://doi.org/10.5281/zenodo.2594690
 
 Cite using :
-DOI: 10.5281/zenodo.2594691
+DOI: 10.5281/zenodo.2594690
 
 Install with :
 pip install impetuous-gfa
