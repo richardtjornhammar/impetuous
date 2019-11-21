@@ -544,7 +544,7 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
                 rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes
                 rdf[ group_prefix + 'NGroupAnalytes'    ] = L_
                 rdf[ group_prefix + 'AllFracFilling'    ] = L_ / float( len(analytes_) )
-                present_sig = set(subset.index.values)&SigAnalytes
+                present_sig = set(group.index.values)&SigAnalytes
                 rdf[ group_prefix + 'SigFracGroupFill'  ] = float ( len ( present_sig ) ) / float( len(analytes_) )
                 ndf = rdf
                 if eval_df is None :
