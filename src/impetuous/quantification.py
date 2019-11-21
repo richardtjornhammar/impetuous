@@ -360,7 +360,6 @@ def glm_test (  formula , df , jdf , distribution='Gaussian' ) :
 
     return table.iloc[ [( idx.split('[')[0] in formula) for idx in table.index]]
 
-
 def t_test ( df , endogen = 'expression' , group = 'disease' ,
              pair_values = ('Sick','Healthy') , test_type = 'independent',
              equal_var = False , alternative = 'greater' ) :
@@ -416,7 +415,6 @@ def p_value_merger ( pvalues_df , p_label=',p' , axis = 0 ) :
     result_df = pd.DataFrame( np.array([p_brown,p_fisher]) ,
                               columns = pvalues_df.index   ,
                               index=['Brown,p','Fisher,p'] ).T
-  
     return ( result_df )
 
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
@@ -510,7 +508,7 @@ def group_significance( subset , all_analytes_df = None ,
     #   'less'      ( DEPLETION IN GROUP )
     if AllAnalytes is None :
         if all_analytes_df is None :
-            AllAnalytes = set(all_analytes_df.index.values)
+            AllAnalytes = set( all_analytes_df.index.values )
     if SigAnalytes is None :
         if all_analytes_df is None :
             SigAnalytes = set( all_analytes_df.iloc[(all_analytes_df<tolerance).loc[:,significance_name]].index.values )
@@ -527,7 +525,7 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
                                  group_prefix = '' ,  alternative = 'two-sided'  ) :
     AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
     SigAnalytes = set( analyte_df.iloc[ (analyte_df.loc[:,p_label].values < tolerance), : ].index.values )
-    if len(AllAnalytes) == len(SigAnalytes) :
+    if len( AllAnalytes ) == len(SigAnalytes) :
         print ( 'THIS STATISTICAL TEST WILL BE NONSENSE' )
     eval_df = None
     with open( grouping_file ) as input :
@@ -543,14 +541,16 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
                 pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes , alternative=alternative )
                 rdf = pd.DataFrame( [[pv]], columns = [ group_prefix + 'Fisher_'+p_label ], index=[ gid ] )
                 rdf.columns = [ col+',p' if ',p' not in col else col for col in rdf.columns ]
-                rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes 
-                rdf[ group_prefix + 'NGroupAnalytes' ] = L_
-                rdf[ group_prefix + 'FracGroupFill' ]  = L_ / float(len(analytes_))
+                rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes
+                rdf[ group_prefix + 'NGroupAnalytes'    ] = L_
+                rdf[ group_prefix + 'AllFracFilling'    ] = L_ / float( len(analytes_) )
+                present_sig = set(subset.index.values)&SigAnalytes
+                rdf[ group_prefix + 'SigFracGroupFill'  ] = float ( len ( present_sig ) ) / float( len(analytes_) )
                 ndf = rdf
                 if eval_df is None :
                     eval_df = ndf
                 else :
-                    eval_df = pd.concat([eval_df,ndf])
+                    eval_df = pd.concat( [ eval_df,ndf ] )
     edf = eval_df.T
     for col in eval_df.columns :
         if ',p' in col :
@@ -784,16 +784,25 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     ddf = ddf.sort_values('Dist', ascending = False )
     return ( ddf )
 
-def add_kendalltau( analyte_results_df , journal_df , what='M' ) :
+def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = None, ForceSpearman=False ) :
+    # ADD IN CONCORDANCE WITH KENDALL TAU
     if what in set(journal_df.index.values) :
-        # ADD IN CONCOORDINANCE WITH KENDALL TAU
         from scipy.stats import kendalltau,spearmanr
+        concordance = lambda x,y : kendalltau( x,y )
+        if ForceSpearman :
+            concordance = lambda x,y : spearmanr( x,y )
         K = []
-        patients = [ c for c in analyte_results_df.columns if '_' in c ]
+        if sample_names is not None :
+            patients = sample_names
+        else :
+            patients = [ c for c in analyte_results_df.columns if '_' in c ]
+        patients = [ p for p in sample_names if p in set(patients) &
+                     set( analyte_results_df.columns.values) & 
+                     set( journal_df.loc[[what],:].T.dropna().T.columns.values ) ]
         for idx in analyte_results_df.index :
-            y = journal_df.loc[what,patients].values
-            x = analyte_results_df.loc[[idx],patients].values[0] # IF DUPLICATE GET FIRST
-            k = kendalltau( x,y )
+            y = journal_df.loc[ what,patients ].values
+            x = analyte_results_df.loc[ [idx],patients ].values[0] # IF DUPLICATE GET FIRST
+            k = concordance( x,y )
             K .append( k )
         analyte_results_df['KendallTau'] = K
     return ( analyte_results_df )
