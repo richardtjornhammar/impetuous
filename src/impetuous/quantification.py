@@ -109,12 +109,12 @@ def find_category_interactions ( istr ) :
     interacting_categories = [ [all_cats[i-1],all_cats[i]] for i in range(1,len(interacting)) if interacting[i] ]
     return ( interacting_categories )
 
-
 def run_rpls_regression ( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
                           exclude_labels_from_centroids = [''] ,
-                          study_axii = None ,
+                          study_axii = None , owner_by = 'tesselation'
                         ) :
+
     from sklearn.cross_decomposition import PLSRegression as PLS
     #
     interaction_pairs = find_category_interactions ( formula.split('~')[1] )
@@ -134,9 +134,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     if bVerbose :
         print ( [ v for v in encoding_df.columns.values ] )
     #
-    # ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS
+    # print ( 'ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS' )
     # THIS TURNS THE MODEL INTO A MIXED LINEAR MODEL
-    #
     add_df = journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]
     if len(add_df)>0 :
         if encoding_df is None :
@@ -159,18 +158,23 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
         print ( rpls_res.x_weights_ )
     #
     # THESE ARE THE CATEGORICAL DESCRIPTORS
-    # ASSIGN OWNER BY PROXIMITY TO CATEGORICALS
+    # print ( 'ASSIGN OWNER BY PROXIMITY TO CATEGORICALS' )
     use_centroid_indices = [ i for i in range(len(encoding_df.columns.values)) if ( 
                              encoding_df.columns.values[i] not in set( exclude_labels_from_centroids ) 
                            ) ]
     use_centroids = list(rpls_res.y_weights_[use_centroid_indices])
     use_labels    = list(encoding_df.columns.values[use_centroid_indices])
-    transcript_owner = [ use_labels[np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
+
+    if owner_by == 'tesselation': 
+        transcript_owner = [ use_labels[ np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
+    if owner_by == 'angle':
+        anglular_proximity = lambda B,A : 1 - np.dot(A,B) / np.sqrt( np.dot(A,A)*np.dot(B,B) )
+        transcript_owner = [ use_labels[ np.argmin([ anglular_proximity(xw,cent) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
     #
-    # PLS WEIGHT RADIUS
+    # print ( 'PLS WEIGHT RADIUS' )
     radius  = lambda vector:np.sqrt(np.sum((vector)**2)) # radii
     #
-    # ESTABLISH LENGTH SCALES
+    # print ( 'ESTABLISH LENGTH SCALES' )
     xi_l    = np.max(np.abs(rpls_res.x_weights_),0) 
     #
     rpoints = np.array( [ radius( v/xi_l )    for v in rpls_res.x_weights_ ] ) # HERE WE MERGE THE AXES
@@ -180,28 +184,29 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     # print ( 'ESTABLISH PROJECTION OF THE WEIGHTS ONTO THEIR AXES' )
     proj = lambda B,A : np.dot(A,B) / np.sqrt( np.dot(A,A) )
     #
-    # HERE WE PROJECT THE WEIGHTS
+    # print ( 'HERE WE PROJECT THE WEIGHTS' )
     if 'list' in str( type( study_axii ) ) :
         for ax in study_axii :
             if len( set( ax ) - set( use_labels ) ) == 0 :
-                axis_direction = np .diff( use_centroids[ [ i for i in range(len(use_labels)) if use_labels[i] in set(ax) ]].T ).reshape(-1)
+                axis_direction = np .diff( [ use_centroids[i]  for i in range(len(use_labels)) if use_labels[i] in set(ax)  ] ).reshape(-1)
                 use_labels .append( '-'.join(ax) )
                 use_centroids .append( axis_direction )
     #
+    # print ( 'THE SIGN SHOULD NOT BE USED HERE (STUDY FOLD CHANGES TO CONVINCE YOURSELF WHY)' )
     proj_df = pd.DataFrame( [ [ np.abs(proj(P/xi_l,R/xi_l)) for P in rpls_res.x_weights_ ] for R in use_centroids ] ,
                   index = use_labels , columns=analyte_df.index.values )
     #
-    # P VALUES ALIGNED TO PLS AXES
+    # print ( 'P VALUES ALIGNED TO PLS AXES' )
     for idx in proj_df.index :
         proj_p,proj_rho = quantify_density_probability ( proj_df.loc[idx,:].values )
         proj_df = proj_df.rename( index = {idx:idx+',r'} )
         proj_df.loc[idx+',p']   = proj_p
         proj_df.loc[idx+',rho'] = proj_rho
     #
-    # THE EQUIDISTANT 1D STATS
+    # print ( 'THE EQUIDISTANT 1D STATS' )
     corresponding_pvalue , corresponding_density , corresponding_radius = quantify_density_probability ( rpoints , cutoff = blur_cutoff )
     #
-    # THE TWO XY 1D STATS 
+    # print ( 'THE TWO XY 1D STATS' ) 
     corr_pvalue_0 , corr_density_0 = quantify_density_probability ( xpoints )
     corr_pvalue_1 , corr_density_1 = quantify_density_probability ( ypoints )
     #
@@ -213,6 +218,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
         ordered_alphas = [ float(int(u))*0.5 + 0.01 for u in use_points ]
 
     result_dfs = []
+    #
+    # print ( 'COMPILE RESULTS FRAME' )
     for ( lookat,I_ ) in [ ( rpls_res.x_weights_ , 0 ) ,
                            ( rpls_res.x_scores_  , 1 ) ] :
         lookat = [ [ l[0],l[1] ] for l in lookat ]
@@ -249,6 +256,19 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
         result_dfs.append(qdf.copy())
     return ( result_dfs )
 
+def add_foldchanges ( df, information_df , group='', fc_type=0 , foldchange_indentifier = 'FC,') :
+
+    all_vals = list(set(information_df.loc[group].values))
+    pair_values = [all_vals[i] for i in range(len(all_vals)) if i<2 ]
+    df_ = pd.concat([ df,information_df.loc[[group]] ]).T
+    group1 = df_[df_[group] == pair_values[0]]
+    group2 = df_[df_[group] == pair_values[1]]
+    if fc_type == 0:
+        FC = np.mean(group1,0) - np.mean(group2,0)
+    if fc_type == 1:
+        FC = np.log2( np.mean(group1,0) - np.mean(group2,0) )
+    df.loc[:,foldchange_indentifier+'-'.join(pair_values) ] = FC 
+    return ( df )
 
 from statsmodels.stats.multitest import multipletests
 def adjust_p ( pvalue_list , method = 'fdr_bh' , alpha = 0.05,
@@ -538,9 +558,9 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
                 continue
             L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_ > 0 :
-                pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes , alternative=alternative )
-                rdf = pd.DataFrame( [[pv]], columns = [ group_prefix + 'Fisher_'+p_label ], index=[ gid ] )
-                rdf.columns = [ col+',p' if ',p' not in col else col for col in rdf.columns ]
+                pv , odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes , alternative=alternative )
+                rdf = pd.DataFrame( [[pv]], columns = [ group_prefix + 'Fisher_' + p_label ] , index = [ gid ] )
+                rdf .columns = [ col+',p' if ',p' not in col else col for col in rdf.columns ]
                 rdf[ 'description' ] = gdesc+',' + str(L_) ; rdf['analytes'] = str_analytes
                 rdf[ group_prefix + 'NGroupAnalytes'    ] = L_
                 rdf[ group_prefix + 'AllFracFilling'    ] = L_ / float( len(analytes_) )
@@ -613,7 +633,7 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
     if not split_id is None :
         nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
         analyte_df.index = nidx
-    sidx = set( analyte_df.index.values ) ; nidx=len(sidx)
+    sidx = set( analyte_df.index.values ) ; nidx = len(sidx)
     eval_df = None
     if True :
         for line in grouping_dictionary.items() :
