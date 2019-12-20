@@ -85,7 +85,10 @@ def quantify_density_probability ( rpoints , cutoff = None ) :
     loc_cdf = lambda X,mean,variance : [      0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
     loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
     M_,Var_ = np.mean(rpoints),np.std(rpoints)**2
-    corresponding_density = loc_pdf( rpoints,M_,Var_ )
+    #
+    # INSTEAD OF THE PROBABILTY DENSITY WE RETURN THE FRACTIONAL RANKS
+    # SINCE THIS ALLOWS US TO CALCULATE RANK STATISTICS FOR THE PROJECTION
+    corresponding_density = rankdata (rpoints,'average') / len(rpoints) # loc_pdf( rpoints,M_,Var_ )
     corresponding_pvalue  = loc_Q  ( rpoints,M_,Var_ )
     #
     # HERE WE MIGHT BE DONE
@@ -114,7 +117,6 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
                           exclude_labels_from_centroids = [''] ,
                           study_axii = None , owner_by = 'tesselation'
                         ) :
-
     from sklearn.cross_decomposition import PLSRegression as PLS
     #
     interaction_pairs = find_category_interactions ( formula.split('~')[1] )
@@ -162,13 +164,14 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     use_centroid_indices = [ i for i in range(len(encoding_df.columns.values)) if ( 
                              encoding_df.columns.values[i] not in set( exclude_labels_from_centroids ) 
                            ) ]
-    use_centroids = list(rpls_res.y_weights_[use_centroid_indices])
-    use_labels    = list(encoding_df.columns.values[use_centroid_indices])
-
-    if owner_by == 'tesselation': 
+    #
+    use_centroids = list(  rpls_res.y_weights_[use_centroid_indices]  )
+    use_labels    = list( encoding_df.columns.values[use_centroid_indices] )
+    #
+    if owner_by == 'tesselation' :
         transcript_owner = [ use_labels[ np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
-    if owner_by == 'angle':
-        anglular_proximity = lambda B,A : 1 - np.dot(A,B) / np.sqrt( np.dot(A,A)*np.dot(B,B) )
+    if owner_by == 'angle' :
+        anglular_proximity = lambda B,A : 1 - np.dot(A,B) / ( np.sqrt(np.dot(A,A))*np.sqrt(np.dot(B,B)) )
         transcript_owner = [ use_labels[ np.argmin([ anglular_proximity(xw,cent) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
     #
     # print ( 'PLS WEIGHT RADIUS' )
@@ -256,6 +259,7 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
         result_dfs.append(qdf.copy())
     return ( result_dfs )
 
+
 def add_foldchanges ( df, information_df , group='', fc_type=0 , foldchange_indentifier = 'FC,') :
 
     all_vals = list(set(information_df.loc[group].values))
@@ -296,10 +300,10 @@ def adjust_p ( pvalue_list , method = 'fdr_bh' , alpha = 0.05,
         p_adjust = [ p_adj for p_adj in p_adjust_results[1] ]
     return ( p_adjust )
 
-def qvalues ( p_values_in , pi0=None ) :
+def qvalues ( p_values_in , pi0 = None ) :
     p_s = p_values_in
     if pi0 is None :
-        pi0 = 1
+        pi0 = 1.
     qs_ = []
     m = float(len(p_s)) ; itype = str( type( p_s[0] ) ) ; added_info = False
     if 'list' in itype or 'tuple' in itype :
@@ -311,12 +315,13 @@ def qvalues ( p_values_in , pi0=None ) :
     ifrp_ = [ ( (p<=f)*f + p*(p>f) ) for p,f in zip(ps,frp_) ]
     for ip in range(len(ps)) :
         p_ = ps[ ip ] ; f_ = frp_[ip]
-        q_ = p_ / ifrp_[ip]
+        q_ = pi0 * p_ / ifrp_[ip]
         qs_.append( (q_,p_) )
     if added_info :
         q   = [ tuple( [qvs[0]]+list(pinf) ) for ( qvs,pinf ) in zip(qs_,p_s) ]
         qs_ = q
     return qs_
+
 
 from scipy import stats
 from statsmodels.stats.anova import anova_lm as anova
@@ -336,6 +341,7 @@ def anova_test ( formula, group_expression_df, journal_df, test_type = 'random' 
     model .model.data.design_info = X.design_info
     table = sm.stats.anova_lm(model,typ=type_d[test_type])
     return table.iloc[ [(idx in formula) for idx in table.index],-1]
+
 
 def glm_test (  formula , df , jdf , distribution='Gaussian' ) :
     tmp_df = pd.concat([ jdf, df ])
