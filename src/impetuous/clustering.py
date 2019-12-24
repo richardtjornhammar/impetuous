@@ -7,11 +7,13 @@ clustering_algorithm = None
 clustering_algorithm = sc.KMeans(10) # CHOOSE SOMETHING YOU LIKE NOT THIS
 
 class Cluster(object):
-    def __init__( self, nbins=50 ) :
+    def __init__( self, nbins=50, nclusters=-1 , use_ranks = False ) :
         from sklearn.cluster import KMeans
         from sklearn.decomposition import PCA
         from numpy import histogram2d
         from scipy.stats import rankdata
+        self.use_ranks = use_ranks
+        self.nclusters = nclusters
         self.nbins = nbins
         self.histogram2d = histogram2d
         self.KMeans = KMeans
@@ -30,7 +32,9 @@ class Cluster(object):
         if nbins is None :
             nbins = self.nbins
         self.df_= df
-        frac_df = df.apply( lambda x:self.rankdata( x , method='average' )/float(len(x)) )
+        frac_df = df
+        if self.use_ranks :
+            frac_df .apply( lambda x:self.rankdata( x , method='average' )/float(len(x)) )
         self.pca_f.fit(frac_df.T.values)
         self.components_ = self.pca_f.components_
         vals,xe,ye = self.histogram2d(self.pca_f.components_[0],self.pca_f.components_[1],bins=nbins)
@@ -40,10 +44,18 @@ class Cluster(object):
         # IS THERE A DENSITY PEAK SEPARABLE FROM THE MEAN
         # SHOULD DO GRADIENT REJECTION BASED ON TTEST PVALUES
         hits = vals>mvs+0.5*svs
-
-        xe_,ye_=0.5*(xe[:1]+xe[1:]),0.5*(ye[:1]+ye[1:])
+        #
+        xe_,ye_ = 0.5*(xe[:1]+xe[1:]) , 0.5*(ye[:1]+ye[1:])
         idx = np.where(hits); xi,yj = idx[0],idx[1]
         centroids = [ (xe[ri],ye[rj]) for (ri,rj) in zip(xi,yj) ]
+        if self.nclusters == -1 :
+            self.nclusters = len ( centroids )
+        if self.nclusters  < len ( centroids ) :
+            import heapq
+            from scipy.spatial import distance as distance_
+            a = distance_.cdist ( centroids, centroids, 'euclidean' )
+            cent_idx = heapq.nlargest ( self.nclusters, range(len(a)), a.reshape(-1).__getitem__ )
+            centroids = [ centroids[ idx ] for idx in cent_idx ]
 
         kmeans = self.KMeans(len(centroids),init=np.array(centroids))
         kmeans.fit(self.pca_f.components_.T)
@@ -58,6 +70,7 @@ class Cluster(object):
         with open(filename,'w') as of :
             for k,v in self.analyte_dict_.items() :
                 print ( 'CLU-'+str(k),'\tDESCRIPTION\t'+'\t'.join(v), file=of )
+
 
 class ManifoldClustering ( Cluster ) :
     def __init__( self , nbins=50 ) :
