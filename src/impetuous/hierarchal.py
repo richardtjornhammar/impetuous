@@ -39,6 +39,8 @@ def create_dag_representation_df ( pathway_file = '../data/GROUPDEFINITIONS.gmt'
     tree , ance , desc = parent_child_to_dag ( pc_list_file )
     pdf = make_pathway_ancestor_data_frame ( ance )
     pdf_ = pathway_frame_from_file( pathway_file )
+    pdf.index = [v.replace(' ','') for v in  pdf.index.values]
+    pdf_.index= [v.replace(' ','') for v in pdf_.index.values]
     dag_df = pd.concat([pdf.T,pdf_.T]).T
     return ( dag_df , tree )
 
