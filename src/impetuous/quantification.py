@@ -584,7 +584,59 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
             edf.loc[l] = q
     return ( edf.T )
 
+class sPCA( object ) :
+    #
+    # THIS CLASS PERFORMS A SPARSE PCA
+    # IT USES THE SPARSE SVD ALGORITHM
+    # FOUND IN SCIPY
+    #
+    def __init__ ( self,X,k=-1,fillna=None ) :
+        from scipy.sparse import csc_matrix
+        from scipy.sparse.linalg import svds
+        self.svds_,self.smatrix_ = svds,csc_matrix
+        self.components_ = None
+        self.F_ = None
+        self.U_ , self.S_, self.V_ = None,None,None
+        self.evr_ = None
+        self.var_ = None
+        self.fillna_ = fillna
+        self.X_   = self.interpret_input(X)
+        self.k_   = k
+
+    def interpret_input ( self,X ) :
+        if 'pandas' in str(type(X)) :
+            for idx in X.index :
+                X.loc[idx] = [ np.nan if 'str' in str(type(v)) else v for v in X.loc[idx].values ]
+            if 'float' in str(type(self.fillna_)) or 'int' in str(type(self.fillna_)) :
+                X = X.fillna(self.fillna_)
+            self.X_ = X.values
+        else :
+            self.X_ = X
+        return( self.X_ )
+
+    def fit ( self , X=None ) :
+        self.fit_transform( X=X )
+
+    def fit_transform ( self , X=None ) :
+        X = self.X_
+        if not X is None : # DID THE USER SUPPLY NEW DATA
+            X = self.interpret_input(X)
+        Xc = X - np.mean( X , 0 )
+        if self.k_<=0:
+            k_ = np.min(np.shape(X))-1
+        else:
+            k_ = self.k_
+        u, s, v = self.svds_ ( self.smatrix_(Xc, dtype=float) , k=k_ )
+        S = np.diag( s )
+        self.F_   = np.dot(u,S)
+        self.var_ = s ** 2 / Xc.shape[0]
+        self.explained_variance_ratio_ = self.var_/self.var_.sum()
+        self.U_ , self.S_ , self.V_ = u,s,v
+        self.components_ = self.V_        
+        return ( self.F_ )
+
 dimred = PCA()
+
 def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
                       delimiter = '\t' , test_type = 'random' ,
                       split_id = None , skip_line_char = '#' 
@@ -628,10 +680,16 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
     return ( edf.T )
 
 from scipy.stats import combine_pvalues
+
 def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                     grouping_dictionary = dict() , synonyms = None ,
                     delimiter = ':' ,test_type = 'random', tolerance = 0.05,
-                    supress_q = False , analyte_formula = None ) :
+                    supress_q = False , analyte_formula = None,
+                    use_sparse_pca=False , k=-1 ) :
+
+    if use_sparse_pca :
+        dimred = sPCA(X=analyte_df,k=k)
+
     if not 'dict' in str(type(grouping_dictionary)) :
         print ( 'INVALID GROUPING' )
         return
@@ -703,6 +761,8 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                 q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
                 edf.loc[l] = q
     return ( edf.T )
+
+
 
 def quantify_analytes( analyte_df , journal_df , formula ,
                        delimiter = '\t' , test_type = 'random',
