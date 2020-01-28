@@ -1,5 +1,5 @@
 """
-Copyright 2019 RICHARD TJÖRNHAMMAR
+Copyright 2020 RICHARD TJÖRNHAMMAR
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -584,16 +584,16 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
             edf.loc[l] = q
     return ( edf.T )
 
-class sPCA( object ) :
+class APCA ( object ) :
     #
     # THIS CLASS PERFORMS A SPARSE PCA
     # IT USES THE SPARSE SVD ALGORITHM
     # FOUND IN SCIPY
     #
-    def __init__ ( self,X,k=-1,fillna=None ) :
+    def __init__ ( self , X=None , k=-1 , fillna=None , transcending=True) :
         from scipy.sparse import csc_matrix
         from scipy.sparse.linalg import svds
-        self.svds_,self.smatrix_ = svds,csc_matrix
+        self.svds_ , self.smatrix_ = svds , csc_matrix
         self.components_ = None
         self.F_ = None
         self.U_ , self.S_, self.V_ = None,None,None
@@ -602,6 +602,7 @@ class sPCA( object ) :
         self.fillna_ = fillna
         self.X_   = self.interpret_input(X)
         self.k_   = k
+        self.transcending_ = transcending
 
     def interpret_input ( self,X ) :
         if 'pandas' in str(type(X)) :
@@ -612,28 +613,42 @@ class sPCA( object ) :
             self.X_ = X.values
         else :
             self.X_ = X
-        return( self.X_ )
+        return ( self.X_ )
 
     def fit ( self , X=None ) :
         self.fit_transform( X=X )
 
     def fit_transform ( self , X=None ) :
-        X = self.X_
-        if not X is None : # DID THE USER SUPPLY NEW DATA
+        if X is None:
+            X = self.X_
+        if not X is None :
             X = self.interpret_input(X)
         Xc = X - np.mean( X , 0 )
-        if self.k_<=0:
-            k_ = np.min(np.shape(X))-1
+        if self.k_<=0 :
+            k_ = np.min( np.shape(Xc) ) - 1
         else:
             k_ = self.k_
         u, s, v = self.svds_ ( self.smatrix_(Xc, dtype=float) , k=k_ )
+        if self.transcending_ :
+            u, s, v = self.transcending_order(u,s,v)
         S = np.diag( s )
         self.F_   = np.dot(u,S)
         self.var_ = s ** 2 / Xc.shape[0]
         self.explained_variance_ratio_ = self.var_/self.var_.sum()
         self.U_ , self.S_ , self.V_ = u,s,v
-        self.components_ = self.V_        
+        self.components_ = self.V_
         return ( self.F_ )
+
+    def transcending_order(self,u,s,v) :
+        return ( u[:,::-1],s[::-1],v[::-1,:] )
+
+    def apply_matrix( self , R ) :
+        self.U_ = np.dot( self.U_,R.T  )
+        self.V_ = np.dot( self.V_.T,R.T ).T
+        self.F_ = np.dot( self.F_,R.T )
+        self.components_ = self.V_
+        return ( self.F_ )
+
 
 dimred = PCA()
 
@@ -685,10 +700,10 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                     grouping_dictionary = dict() , synonyms = None ,
                     delimiter = ':' ,test_type = 'random', tolerance = 0.05,
                     supress_q = False , analyte_formula = None,
-                    use_sparse_pca=False , k=-1 ) :
+                    use_loc_pca=False , k=-1 ) :
 
-    if use_sparse_pca :
-        dimred = sPCA(X=analyte_df,k=k)
+    if use_loc_pca :
+        dimred = APCA(X=analyte_df,k=k)
 
     if not 'dict' in str(type(grouping_dictionary)) :
         print ( 'INVALID GROUPING' )

@@ -46,9 +46,9 @@ def create_dag_representation_df ( pathway_file = '../data/GROUPDEFINITIONS.gmt'
 
 def HierarchalEnrichment (
             analyte_df , dag_df , dag_level_label = 'DAG,l' ,
-            ancestors_id_label = 'aid' , id_name = None , threshold=0.05 ,
-            p_label = 'C(Status),p', analyte_name_label = 'analytes',
-            item_delimiter = ',' , alexa_elim=False
+            ancestors_id_label = 'aid' , id_name = None , threshold = 0.05 ,
+            p_label = 'C(Status),p', analyte_name_label = 'analytes' ,
+            item_delimiter = ',' , alexa_elim=False , alternative = 'two-sided'
         ) :
     #
     # NEEDS AN ANALYTE SIGNIFICANCE FRAME:
@@ -83,7 +83,7 @@ def HierarchalEnrichment (
             L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_ > 0 :
                 used_analytes[node] = ','.join( group.index.values )
-                pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes , tolerance = threshold )
+                pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes , tolerance = threshold , alternative=alternative )
                 node_sig[node] = pv ; marked_ = set( group.index.values )
                 ancestors = df.loc[node,ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
                 if alexa_elim and pv > threshold : # USE ALEXAS ELIM ALGORITHM : IS NOT DEFAULT
