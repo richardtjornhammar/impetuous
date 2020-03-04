@@ -126,6 +126,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
             journal_df.loc[ ':'.join(pair) ] = [ p[0]+'-'+p[1] for p in journal_df.loc[ pair,: ].T.values ]
             add_pairs.append(':'.join(pair))
     use_categories = list(set(find_category_variables(formula.split('~')[1])))
+    use_categories =  [u for u in use_categories if 'C('+u+')' in set(formula.replace(' ','').split('~')[1].split('+'))]
+    #
     use_categories = [ *use_categories,*add_pairs ]
     #
     if len( use_categories )>0 :
