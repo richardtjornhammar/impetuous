@@ -95,7 +95,7 @@ def ShapeAlignment( P,Q , bReturnTransform=False, bShiftModel=True ) :
      ORDERING AND THAT THEY SHARE A COMMON SECOND DIMENSION
      
      IN THIS ROUTINE THE FINE GRAINED DATA IS MOVED TO FIT THE
-     COURSE GRAINED DATA ( THE MODEL )
+     COARSE GRAINED DATA ( THE MODEL )
     """
 
     N,DIM  = np.shape( P )
@@ -132,7 +132,6 @@ def ShapeAlignment( P,Q , bReturnTransform=False, bShiftModel=True ) :
 
 def low_missing_value_imputation ( fdf , fraction = 0.9 , absolute = 'True' ) :
     # THIS SVD BASED IMPUTATION METHOD WAS FIRST WRITTEN FOR THE RANKOR PACKAGE
-    # BY ME (RICHARD TJÖRNHAMMAR) AND HAS BEEN MOVED HERE FOR COMPLETENESS
     # ORIGINAL CODE IN https://github.com/richardtjornhammar/rankor/blob/master/src/rankor/imputation.py
     #
     import numpy as np
