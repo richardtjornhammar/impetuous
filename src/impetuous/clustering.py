@@ -1,3 +1,19 @@
+"""
+Copyright 2020 RICHARD TJÖRNHAMMAR
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import sklearn.cluster as sc
 import pandas as pd
 import numpy as np
@@ -165,16 +181,78 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
     clustering_df.to_csv( output_name , '\t' )
     return ( clustering_df )
 
+
+def connectivity ( B , val, bVerbose=True ) :
+	# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+	# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+	# AROUND LINE 2277
+	# CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
+	# A LOT FASTER
+	# 
+	nr_sq,mr_sq = np.shape(B)
+	if nr_sq != mr_sq :
+		print ( 'ERROR' )
+		exit (1)
+	N = mr_sq
+	res , nvisi, s, NN, ndx, C = [], [], [], [], [], 0
+	res .append(0)
+	for i in range(N) :
+		nvisi.append(i+1)
+		res.append(0); res.append(0)
+		ndx.append(i)
+		
+	while ( len(ndx)>0 ) :
+		i = ndx[-1] ; ndx = ndx[:-1]
+		NN = []
+		if ( nvisi[i]>0 ) :
+			C-=1
+			for j in range(N) :
+				if ( B[i,j]<val ) :
+					NN.append(j)
+			while ( len(NN)>0 ) :
+				# back pop_back
+				k = NN[-1]; NN = NN[:-1]
+				nvisi[k] = C
+				for j in range(N):
+					if ( B[j,k]<val ) :
+						for q in range(N) :
+							if ( nvisi[q] == j+1 ) :
+								NN.append(q)
+	if bVerbose : # VERBOSE
+		print("INFO "+str(-1*C) +" clusters" )
+	Nc = [ 0 for i in range(-1*C) ]
+	for q in range(N) :
+		res[  q*2+1 ] = q;
+		res[  q*2   ] = nvisi[q]-C;
+		Nc [res[q*2]]+= 1;
+		if bVerbose :
+			print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
+	for i in range(-1*C) :
+		print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
+	return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+
 if __name__ == '__main__' :
-    #
-    # TEST DEPENDS ON THE DIABETES DATA FROM BROAD INSTITUTE
-    filename = './Diabetes_collapsed_symbols.gct'
-    df_ = pd.read_csv(filename,'\t',index_col=0,header=2)
-    ddf = df_.loc[:,[ col for col in df_.columns if '_' in col ]] 
-    ddf .index = [idx.split('/')[0] for idx in ddf.index]
-    run_clustering_and_write_gmt( ddf , clustering_algorithm )
-    #
-    CLU = Cluster()
-    CLU.approximate_density_clustering(ddf)
-    CLU.write_gmt()
+
+    if False :
+        #
+        # TEST DEPENDS ON THE DIABETES DATA FROM BROAD INSTITUTE
+        filename = './Diabetes_collapsed_symbols.gct'
+        df_ = pd.read_csv(filename,'\t',index_col=0,header=2)
+        ddf = df_.loc[:,[ col for col in df_.columns if '_' in col ]] 
+        ddf .index = [idx.split('/')[0] for idx in ddf.index]
+        run_clustering_and_write_gmt( ddf , clustering_algorithm )
+        #
+        CLU = Cluster()
+        CLU .approximate_density_clustering(ddf)
+        CLU .write_gmt()
+
+    if True :
+        A = np.array( [ [0.00, 0.10, 0.10, 9.00, 9.00, 9.00],
+        		[0.10, 0.00, 0.15, 9.00, 9.00, 9.00],
+        		[0.10, 0.15, 0.00, 9.00, 9.00, 9.00],
+        		[9.00, 9.00, 9.00, 0.00, 0.10, 0.10],
+        		[9.10, 9.00, 9.00, 0.10, 0.00, 0.15],
+        		[9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
+        print( connectivity(A,1.) )
+
 
