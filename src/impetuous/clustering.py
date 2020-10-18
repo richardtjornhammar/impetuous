@@ -188,7 +188,9 @@ def connectivity ( B , val, bVerbose=True ) :
 	# AROUND LINE 2277
 	# CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
 	# A LOT FASTER
-	# 
+	# FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
+	# https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+	#
 	nr_sq,mr_sq = np.shape(B)
 	if nr_sq != mr_sq :
 		print ( 'ERROR' )
