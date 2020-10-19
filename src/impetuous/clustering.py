@@ -183,6 +183,9 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
 
 
 def connectivity ( B , val, bVerbose=True ) :
+	description="""
+This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive definite).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems.
+        """
 	# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
 	# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
 	# AROUND LINE 2277
@@ -201,8 +204,7 @@ def connectivity ( B , val, bVerbose=True ) :
 	for i in range(N) :
 		nvisi.append(i+1)
 		res.append(0); res.append(0)
-		ndx.append(i)
-		
+		ndx.append(i)		
 	while ( len(ndx)>0 ) :
 		i = ndx[-1] ; ndx = ndx[:-1]
 		NN = []
@@ -233,6 +235,94 @@ def connectivity ( B , val, bVerbose=True ) :
 		print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
 	return ( Nc , np.array(res[:-1]).reshape(-1,2) )
 
+
+try:
+	from numba import jit
+	bUseNumba = True
+except ImportError:
+	bUseNumba = False
+
+if bUseNumba:
+	@jit(nopython=True)
+	def seeded_kmeans( dat, cent ):
+		#
+		# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+		# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+		# AROUND LINE 2345
+		# AGAIN CONSIDER USING THE C++ VERSION SINCE IT IS ALOT FASTER
+		# HERE WE SPEED IT UP USING NUMBA IF THE USER HAS IT INSTALLAED AS A MODULE
+		#
+		NN , MM = np.shape ( dat  )
+		KK , LL = np.shape ( cent )
+		if not LL == MM :
+			print ( 'WARNING DATA FORMAT ERROR. NON COALESCING COORDINATE AXIS' )
+
+		labels = [ int(z) for z in np.zeros(NN) ]
+		w = labels
+		counts = np.zeros(KK)
+		tmp_ce = np.zeros(KK*MM).reshape(KK,MM)
+		old_error , error , TOL = 0. , 1. , 1.0E-10
+		while abs ( error - old_error ) > TOL :
+			old_error = error
+			error = 0.
+			counts = counts * 0.
+			tmp_ce = tmp_ce * 0.
+			# START BC
+			for h in range ( NN ) :
+				min_distance = 1.0E30
+				for i in range ( KK ) :
+					distance = np.sum( ( dat[h]-cent[i] )**2 ) 
+					if distance < min_distance :
+						labels[h] = i
+						min_distance = distance
+				tmp_ce[labels[h]] += dat[ h ]
+				counts[labels[h]] += 1.0
+				error += min_distance
+			# END BC
+			for i in range ( KK ) :
+				if counts[i]>0:
+					cent[i] = tmp_ce[i]/counts[i]
+		centroids = cent
+		return ( labels, centroids )
+else :
+	def seeded_kmeans( dat, cent ):
+		#
+		# SLOW SLUGGISH KMEANS WITH A DUBBLE FOR LOOP
+		# IN PYTHON! WOW! SUCH SPEED!
+		#
+		NN , MM = np.shape ( dat  )
+		KK , LL = np.shape ( cent )
+		if not LL == MM :
+			print ( 'WARNING DATA FORMAT ERROR. NON COALESCING COORDINATE AXIS' )
+		labels = [ int(z) for z in np.zeros(NN) ]
+		w = labels
+		counts = np.zeros(KK)
+		tmp_ce = np.zeros(KK*MM).reshape(KK,MM)
+		old_error , error , TOL = 0. , 1. , 1.0E-10
+		while abs ( error - old_error ) > TOL :
+			old_error = error
+			error = 0.
+			counts = counts * 0.
+			tmp_ce = tmp_ce * 0.
+			# START BC
+			for h in range ( NN ) :
+				min_distance = 1.0E30
+				for i in range ( KK ) :
+					distance = np.sum( ( dat[h]-cent[i] )**2 ) 
+					if distance < min_distance :
+						labels[h] = i
+						min_distance = distance
+				tmp_ce[labels[h]] += dat[ h ]
+				counts[labels[h]] += 1.0
+				error += min_distance
+			# END BC
+			for i in range ( KK ) :
+				if counts[i]>0:
+					cent[i] = tmp_ce[i]/counts[i]
+		centroids = cent
+		return ( labels, centroids )
+
+
 if __name__ == '__main__' :
 
     if False :
@@ -244,7 +334,7 @@ if __name__ == '__main__' :
         ddf .index = [idx.split('/')[0] for idx in ddf.index]
         run_clustering_and_write_gmt( ddf , clustering_algorithm )
         #
-        CLU = Cluster()
+        CLU = Cluster( )
         CLU .approximate_density_clustering(ddf)
         CLU .write_gmt()
 
@@ -255,6 +345,4 @@ if __name__ == '__main__' :
         		[9.00, 9.00, 9.00, 0.00, 0.10, 0.10],
         		[9.10, 9.00, 9.00, 0.10, 0.00, 0.15],
         		[9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
-        print( connectivity(A,1.) )
-
-
+        print( connectivity(A,0.01) )
