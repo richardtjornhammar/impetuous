@@ -275,7 +275,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
                           bDeveloperTesting = False ,
                           study_axii = None , owner_by = 'tesselation'
                         ) :
-                        
+    NOTE__ = "Edward Tjörnhammar early major contributor to this method"
+    
     encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
     from sklearn.cross_decomposition import PLSRegression as PLS
 
@@ -297,6 +298,37 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
 
 import impetuous.fit as ifit
 import impetuous.clustering as icluster
+def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose = False ):
+
+	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
+
+	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
+	P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
+
+	centroids = ifit.ShapeAlignment( P, Q ,
+				bReturnTransform = False ,
+				bShiftModel = True ,
+				bUnrestricted = True )
+	#
+	# FOR DIAGNOSTIC PURPOSES
+	centroids_df = pd.DataFrame ( centroids ,
+			index = encoding_df.columns ,
+			columns = encoding_df.index )
+	lookup_ = {i:n for n,i in zip( centroids_df.index,range(len(centroids_df.index)) ) }
+
+	labels , centroids = icluster.seeded_kmeans( P , centroids )
+
+	res_df = pd.DataFrame( [labels] , columns=analyte_df.index , index=['cluster index'] )
+	nam_df = pd.DataFrame( [ lookup_[l] for l in labels ] ,
+				 columns=['cluster name'] ,
+				 index = analyte_df.index ).T
+
+	res_df = pd.concat( [ res_df , nam_df ] )
+	clusters_df = pd.concat( [ centroids_df, pd.DataFrame( res_df.T.groupby('cluster name').apply(len),columns=['size']) ] ,axis=1 )
+
+	return ( res_df , clusters_df )
+
+
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
                           exclude_labels_from_centroids = [''] ,
