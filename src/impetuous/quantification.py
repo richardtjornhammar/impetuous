@@ -15,12 +15,14 @@ limitations under the License.
 """
 import numpy as np
 import pandas as pd
-from sklearn.decomposition import PCA
 from impetuous.convert import create_synonyms , flatten_dict
 from scipy.stats import rankdata
 from scipy.stats import ttest_rel , ttest_ind , mannwhitneyu
 from scipy.stats.mstats import kruskalwallis as kruskwall
+from sklearn.decomposition import PCA
 import itertools
+
+inventors__ = "Richard Tjörnhammar and Edward Tjörnhammar"
 
 def SubArraysOf ( Array,Array_=None ) :
     if Array_ == None :
@@ -112,13 +114,12 @@ def find_category_interactions ( istr ) :
     interacting_categories = [ [all_cats[i-1],all_cats[i]] for i in range(1,len(interacting)) if interacting[i] ]
     return ( interacting_categories )
 
-def run_rpls_regression ( analyte_df , journal_df , formula ,
-                          bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
-                          exclude_labels_from_centroids = [''] ,
-                          study_axii = None , owner_by = 'tesselation'
-                        ) :
-    from sklearn.cross_decomposition import PLSRegression as PLS
+def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
     #
+    # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)
+    # THE ANALYTE_DF IS THE   FINE GRAINED DATA  (THE DATA)
+    # THE FORMULA IS THE SEMANTIC DESCRIPTION OF THE PROBLEM
+    # 
     interaction_pairs = find_category_interactions ( formula.split('~')[1] )
     add_pairs = []
     if len( interaction_pairs )>0 :
@@ -127,18 +128,17 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
             add_pairs.append(':'.join(pair))
     use_categories = list(set(find_category_variables(formula.split('~')[1])))
     use_categories =  [u for u in use_categories if 'C('+u+')' in set(formula.replace(' ','').split('~')[1].split('+'))]
-    #
     use_categories = [ *use_categories,*add_pairs ]
     #
     if len( use_categories )>0 :
         encoding_df = create_encoding_journal ( use_categories , journal_df ).T
     else :
         encoding_df = None
-
+    #
     if bVerbose :
         print ( [ v for v in encoding_df.columns.values ] )
+        print ( 'ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS' )
     #
-    # print ( 'ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS' )
     # THIS TURNS THE MODEL INTO A MIXED LINEAR MODEL
     add_df = journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]
     if len(add_df)>0 :
@@ -147,58 +147,65 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
         else :
             encoding_df = pd.concat([ encoding_df.T , 
                             journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
-    rpls     = PLS(2)
-    rpls_res = rpls.fit( X = analyte_df.T.values ,
-                         Y = encoding_df .values )
+    return ( encoding_df )
+
+
+def calculate_alginment_properties ( encoding_df , quantx, quanty, scorex,
+			analyte_df = None , journal_df = None ,
+			bVerbose=False,synonyms=None,
+			blur_cutoff = 99.8 , exclude_labels_from_centroids = [''] ,
+			study_axii = None , owner_by = 'tesselation' ):
+
     if bVerbose :
-        print ( rpls_res.get_params() )
-        print ( np.shape(rpls_res.x_weights_ ) )
-        print ( np.shape(rpls_res.y_weights_ ) )
-        print ( np.shape( rpls_res.y_scores_ ) )
-        print ( np.shape( rpls_res.x_scores_ ) )
-        print ( np.shape(rpls_res.x_loadings_) )
-        print ( np.shape(rpls_res.y_loadings_) )
-        print ( np.shape(   rpls_res.coef_   ) )
-        print ( rpls_res.x_weights_ )
+        print ( np.shape(encoding_df) )
+        print ( np.shape(analyte_df)  )
+        print ( 'qx:',np.shape(quantx) )
+        print ( 'qy:',np.shape(quanty) )
+        print ( 'sx:',np.shape(scorex) )
+        print ( 'WILL ASSIGN OWNER BY PROXIMITY TO CATEGORICALS' )
+
+    if analyte_df is None or journal_df is None:
+        print ( 'USER MUST SUPPLY ANALYTE AND JOURNAL DATA FRAMES' )
+        exit(1)
     #
     # THESE ARE THE CATEGORICAL DESCRIPTORS
-    # print ( 'ASSIGN OWNER BY PROXIMITY TO CATEGORICALS' )
     use_centroid_indices = [ i for i in range(len(encoding_df.columns.values)) if ( 
                              encoding_df.columns.values[i] not in set( exclude_labels_from_centroids ) 
                            ) ]
     #
-    use_centroids = list(  rpls_res.y_weights_[use_centroid_indices]  )
-    use_labels    = list( encoding_df.columns.values[use_centroid_indices] )
-    #
+    use_centroids = list(  quanty[use_centroid_indices]  )
+    use_labels    = list( encoding_df.columns.values[use_centroid_indices] )  
+    
     if owner_by == 'tesselation' :
-        transcript_owner = [ use_labels[ np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
+        transcript_owner = [ use_labels[ np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in quantx ]
     if owner_by == 'angle' :
         anglular_proximity = lambda B,A : 1 - np.dot(A,B) / ( np.sqrt(np.dot(A,A))*np.sqrt(np.dot(B,B)) )
-        transcript_owner = [ use_labels[ np.argmin([ anglular_proximity(xw,cent) for cent in use_centroids ])] for xw in rpls_res.x_weights_ ]
+        transcript_owner   = [ use_labels[ np.argmin([ anglular_proximity(xw,cent) for cent in use_centroids ])] for xw in quantx ]
     #
     # print ( 'PLS WEIGHT RADIUS' )
     radius  = lambda vector:np.sqrt(np.sum((vector)**2)) # radii
     #
     # print ( 'ESTABLISH LENGTH SCALES' )
-    xi_l    = np.max(np.abs(rpls_res.x_weights_),0) 
+    xi_l    = np.max(np.abs(quantx),0)
     #
-    rpoints = np.array( [ radius( v/xi_l )    for v in rpls_res.x_weights_ ] ) # HERE WE MERGE THE AXES
-    xpoints = np.array( [ radius((v/xi_l)[0]) for v in rpls_res.x_weights_ ] ) # HERE WE USE THE X AXES
-    ypoints = np.array( [ radius((v/xi_l)[1]) for v in rpls_res.x_weights_ ] ) # HERE WE USE THE Y AXES
+    rpoints = np.array( [ radius( v/xi_l )    for v in quantx ] ) # HERE WE MERGE THE AXES
+    xpoints = np.array( [ radius((v/xi_l)[0]) for v in quantx ] ) # HERE WE USE THE X AXES
+    ypoints = np.array( [ radius((v/xi_l)[1]) for v in quantx ] ) # HERE WE USE THE Y AXES
     #
     # print ( 'ESTABLISH PROJECTION OF THE WEIGHTS ONTO THEIR AXES' )
     proj = lambda B,A : np.dot(A,B) / np.sqrt( np.dot(A,A) )
     #
-    # print ( 'HERE WE PROJECT THE WEIGHTS' )
-    if 'list' in str( type( study_axii ) ) :
+    # ADDING IN ADDITIONAL DIRECTIONS
+    # THAT WE MIGHT BE INTERESTED IN
+    if 'list' in str( type( study_axii ) ):
         for ax in study_axii :
-            if len( set( ax ) - set( use_labels ) ) == 0 :
-                axis_direction = np .diff( [ use_centroids[i]  for i in range(len(use_labels)) if use_labels[i] in set(ax)  ] ).reshape(-1)
+            if len( set( ax ) - set( use_labels ) ) == 0 and len(ax)==2 :
+                axsel = np.array([ use_centroids[i]  for i in range(len(use_labels)) if use_labels[i] in set(ax)  ])
+                axis_direction = axsel[0]-axsel[1]
                 use_labels .append( '-'.join(ax) )
-                use_centroids .append( axis_direction )
-    #
-    # print ( 'THE SIGN SHOULD NOT BE USED HERE (STUDY FOLD CHANGES TO CONVINCE YOURSELF WHY)' )
-    proj_df = pd.DataFrame( [ [ np.abs(proj(P/xi_l,R/xi_l)) for P in rpls_res.x_weights_ ] for R in use_centroids ] ,
+                use_centroids .append( np.array(axis_direction) )
+
+    proj_df = pd.DataFrame( [ [ np.abs(proj(P/xi_l,R/xi_l)) for P in quantx ] for R in use_centroids ] ,
                   index = use_labels , columns=analyte_df.index.values )
     #
     # print ( 'P VALUES ALIGNED TO PLS AXES' )
@@ -225,8 +232,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     result_dfs = []
     #
     # print ( 'COMPILE RESULTS FRAME' )
-    for ( lookat,I_ ) in [ ( rpls_res.x_weights_ , 0 ) ,
-                           ( rpls_res.x_scores_  , 1 ) ] :
+    for ( lookat,I_ ) in [ ( quantx , 0 ) ,
+                           ( scorex  , 1 ) ] :
         lookat = [ [ l[0],l[1] ] for l in lookat ]
         if I_ == 1 :
             aidx = journal_df.columns.values
@@ -260,6 +267,70 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
             qdf['name'] = [ synonyms[v] if v in synonyms else v for v in names ]
         result_dfs.append(qdf.copy())
     return ( result_dfs )
+
+
+def run_rpls_regression ( analyte_df , journal_df , formula ,
+                          bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
+                          exclude_labels_from_centroids = [''] , pls_components = 2,
+                          bDeveloperTesting = False ,
+                          study_axii = None , owner_by = 'tesselation'
+                        ) :
+                        
+    encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
+    from sklearn.cross_decomposition import PLSRegression as PLS
+
+    if not bDeveloperTesting :
+        pls_components = 2
+
+    rpls     = PLS( pls_components )
+    rpls_res = rpls.fit( X = analyte_df.T.values ,
+                         Y = encoding_df .values )
+    quantx,quanty = rpls_res.x_weights_ , rpls_res.y_weights_
+    scorex = rpls_res.x_scores_
+
+    res_df = calculate_alginment_properties ( encoding_df , analyte_df ,
+			quantx, quanty, scorex, blur_cutoff = blur_cutoff , bVerbose = bVerbose,
+			exclude_labels_from_centroids = exclude_labels_from_centroids ,
+			study_axii = study_axii , owner_by = owner_by )
+    
+    return ( result_dfs )
+
+import impetuous.fit import as ifit
+def run_shape_alignment_regression( analyte_df , journal_df , formula ,
+                          bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
+                          exclude_labels_from_centroids = [''] ,
+                          study_axii = None , owner_by = 'tesselation'):
+
+
+	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
+
+	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
+	P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
+
+	centroids = ifit.ShapeAlignment( P, Q ,
+				bReturnTransform = False ,
+				bShiftModel = True ,
+				bUnrestricted = True )
+	#
+	# FOR DIAGNOSTIC PURPOSES
+	centroids_df = pd.DataFrame ( centroids ,
+			index = encoding_df.columns ,
+			columns = encoding_df.index )
+			
+	xws = ifit.WeightsAndScoresOf( P )
+	yws = ifit.WeightsAndScoresOf( centroids )
+
+	W = np.min( [*np.shape(xws[0]),*np.shape(yws[0])] )
+	
+	quantx , quanty = xws[0][:,:W] , yws[0]
+	scorex = xws[1][:,:W]
+
+	res_df = calculate_alginment_properties ( encoding_df , quantx, quanty, scorex,
+			analyte_df = analyte_df , journal_df = journal_df ,
+			blur_cutoff = blur_cutoff , bVerbose = bVerbose,
+			exclude_labels_from_centroids = exclude_labels_from_centroids ,
+			study_axii = study_axii , owner_by = owner_by, synonyms=synonyms )		
+	return ( res_df )
 
 
 def add_foldchanges ( df, information_df , group='', fc_type=0 , foldchange_indentifier = 'FC,') :

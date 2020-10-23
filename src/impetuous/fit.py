@@ -81,28 +81,43 @@ def KabschAlignment( P,Q ):
 
     return ( B )
 
-def ShapeAlignment( P,Q , bReturnTransform=False, bShiftModel=True ) :
+
+def WeightsAndScoresOf( P , bFA=False ) :
+	p0 = np.mean( P,0 )
+	U, S, VT = np.linalg.svd( P-p0 , full_matrices=False )
+	weights = U
+	if bFA :
+		scores = np.dot(S,VT).T
+		return ( weights , scores )	
+	scores = VT.T
+	return ( weights , scores )
+
+	
+def ShapeAlignment( P, Q ,
+		 bReturnTransform = False ,
+		 bShiftModel = True ,
+		 bUnrestricted = False ) :
     #
     # [*] C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
     # FIND SHAPE FIT FOR A SIMILIAR CODE IN THE RICHFIT REPO
     #
     description = """
      A NAIVE SHAPE FIT PROCEDURE TO WHICH MORE SOPHISTICATED
-     VERSIONS WRITTEN IN C++ CAN BE FOUND IN MY [*] REPO
+     VERSIONS WRITTEN IN C++ CAN BE FOUND IN MY C++[*] REPO
      
      HERE WE WORK UNDER THE ASSUMPTION THAT Q IS THE MODEL
      SO THAT WE SHOULD HAVE SIZE Q < SIZE P WITH UNKNOWN 
      ORDERING AND THAT THEY SHARE A COMMON SECOND DIMENSION
      
-     IN THIS ROUTINE THE FINE GRAINED DATA IS MOVED TO FIT THE
-     COARSE GRAINED DATA ( THE MODEL )
+     IN THIS ROUTINE THE COARSE GRAINED DATA ( THE MODEL ) IS
+     MOVED TO FIT THE FINE GRAINED DATA ( THE DATA )
     """
 
     N,DIM  = np.shape( P )
     M,DIM  = np.shape( Q )
     W = (N<M)*N+(N>=M)*M
 
-    if DIM>W or N<M :
+    if (DIM>W or N<M) and not bUnrestricted :
         print ( 'MALFORMED PROBLEM' )
         print ( description )
         exit ( 1 )
