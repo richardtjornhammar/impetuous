@@ -150,7 +150,7 @@ def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
     return ( encoding_df )
 
 
-def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
+def calculate_alginment_properties ( encoding_df , quantx, quanty, scorex,
 			analyte_df = None , journal_df = None ,
 			bVerbose=False,synonyms=None,
 			blur_cutoff = 99.8 , exclude_labels_from_centroids = [''] ,
@@ -288,15 +288,14 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     quantx,quanty = rpls_res.x_weights_ , rpls_res.y_weights_
     scorex = rpls_res.x_scores_
 
-    res_df = calculate_alignment_properties ( encoding_df , analyte_df ,
+    res_df = calculate_alginment_properties ( encoding_df , analyte_df ,
 			quantx, quanty, scorex, blur_cutoff = blur_cutoff , bVerbose = bVerbose,
 			exclude_labels_from_centroids = exclude_labels_from_centroids ,
 			study_axii = study_axii , owner_by = owner_by )
     
     return ( result_dfs )
 
-import impetuous.fit as ifit
-import impetuous.clustering as icluster
+import impetuous.fit import as ifit
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
                           exclude_labels_from_centroids = [''] ,
@@ -326,7 +325,7 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
 	quantx , quanty = xws[0][:,:W] , yws[0]
 	scorex = xws[1][:,:W]
 
-	res_df = calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
+	res_df = calculate_alginment_properties ( encoding_df , quantx, quanty, scorex,
 			analyte_df = analyte_df , journal_df = journal_df ,
 			blur_cutoff = blur_cutoff , bVerbose = bVerbose,
 			exclude_labels_from_centroids = exclude_labels_from_centroids ,
