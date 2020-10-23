@@ -296,10 +296,12 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     
     return ( result_dfs )
 
+
 import impetuous.fit as ifit
 import impetuous.clustering as icluster
 def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose = False ):
 
+	NOTE_ = "This is just a standard kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
 	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
 
 	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
@@ -333,7 +335,8 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
                           exclude_labels_from_centroids = [''] ,
                           study_axii = None , owner_by = 'tesselation'):
-
+                          
+	NOTE__ = "Richard Tjörnhammars method that evolved as a synthesis of the work done together with Edward Tjörnhammar on the rpls method method"
 
 	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
 
@@ -518,7 +521,9 @@ def mycov( x , full_matrices=0 ):
 from scipy.special import chdtrc as chi2_cdf
 def p_value_merger ( pvalues_df , p_label=',p' , axis = 0 ) :
     #
-    # REQUIRED READING: doi: 10.1093/bioinformatics/btw438
+    print( " REQUIRED READING: doi: 10.1093/bioinformatics/btw438" )
+    print( " ALSO MAKE SURE TO ADD THAT ARTICLE AS ADDITIONAL CITATION" )
+    print( " IF THIS METHOD IS EMPLOYED" )
     #
     pdf_   = pvalues_df.loc[:,[c for c in pvalues_df.columns.values if p_label in c]]
     psi_df = pdf_.apply( lambda x:-2.0*np.log10(x) )
@@ -556,6 +561,8 @@ def parse_test ( statistical_formula, group_expression_df , journal_df , test_ty
     if 'glm' in statistical_formula.lower() :
         if not test_type in set(['Gaussian','Binomial','Gamma','InverseGaussian','NegativeBinomial','Poisson']):
             test_type = 'Gaussian'
+            print('ONLY GAUSSIAN TESTS ARE SUPPORTED')
+        print('THIS TEST IS NO LONGER SUPPORTED')
         result = glm_test( statistical_formula, group_expression_df , journal_df , distribution = test_type )
         ident = True
 
@@ -581,18 +588,6 @@ def parse_test ( statistical_formula, group_expression_df , journal_df , test_ty
                 else :
                     result = pd.concat([result,tdf])
                 result.name = 'PR>t'
-
-    if 'kruskal wallis' in statistical_formula.replace('-',' ').lower() :
-        print ( ' --==< WARNING :: UNTESTED IMPLEMENTATION >==-- ' )
-        ident = True
-        check = [ idx for idx in journal_df.index if idx in statistical_formula ]
-        df = pd.concat( [journal_df,group_expression_df],axis=0 ).T
-        s , p = kruskwall ( group_expression_df.values , journal_df.loc[check[0],:].values )
-        tdf = pd.DataFrame ( [[p,s]] , columns = [
-                            'KS('+statistical_formula.split('~')[0]+','+check[0]+'),p' ,
-                            'KW('+statistical_formula.split('~')[0]+','+check[0]+'),s' 
-                        ] )
-        exit(1)
 
     if not ident :
         result = anova_test( statistical_formula, group_expression_df , journal_df , test_type=test_type )

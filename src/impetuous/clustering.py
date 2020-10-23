@@ -311,7 +311,6 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
                 else df.index.values[i] for i in range(len(px))]
         else :
             synonyms = df.index.values
-    #
     data = []
     for (x,y,t,cl,co) in zip( x_pc1,y_pc2,synonyms , [cl for cl in CLUSTER.labels_] ,
                               [cluster_colors[cl] for cl in CLUSTER.labels_] ) :
@@ -321,6 +320,10 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
         clustering_df.index =  df.index.values 
     clustering_df.to_csv( output_name , '\t' )
     return ( clustering_df )
+
+
+from scipy.spatial.distance import squareform , pdist
+abolsute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
 
 
 if __name__ == '__main__' :
