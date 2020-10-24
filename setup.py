@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = "impetuous-gfa",
-    version = "0.19.1",
+    version = "0.19.2",
     author = "Richard Tjörnhammar",
     author_email = "richard.tjornhammar@gmail.com",
     description = "Impetuous Quantification, Alignments, Enrichments and Group Analysis",

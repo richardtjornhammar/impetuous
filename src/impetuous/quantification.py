@@ -294,7 +294,7 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     			bVerbose = bVerbose, exclude_labels_from_centroids = exclude_labels_from_centroids ,
 			study_axii = study_axii , owner_by = owner_by )
     
-    return ( result_dfs )
+    return ( res_df )
 
 
 import impetuous.fit as ifit
