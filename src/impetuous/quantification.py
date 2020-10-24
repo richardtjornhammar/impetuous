@@ -152,7 +152,7 @@ def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
 
 def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
 			analyte_df = None , journal_df = None ,
-			bVerbose=False,synonyms=None,
+			bVerbose = False , synonyms = None ,
 			blur_cutoff = 99.8 , exclude_labels_from_centroids = [''] ,
 			study_axii = None , owner_by = 'tesselation' ):
 
@@ -289,9 +289,9 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     quantx,quanty = rpls_res.x_weights_ , rpls_res.y_weights_
     scorex = rpls_res.x_scores_
 
-    res_df = calculate_alignment_properties ( encoding_df , analyte_df ,
-			quantx, quanty, scorex, blur_cutoff = blur_cutoff , bVerbose = bVerbose,
-			exclude_labels_from_centroids = exclude_labels_from_centroids ,
+    res_df = calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
+    			journal_df = journal_df, analyte_df = analyte_df , blur_cutoff = blur_cutoff ,
+    			bVerbose = bVerbose, exclude_labels_from_centroids = exclude_labels_from_centroids ,
 			study_axii = study_axii , owner_by = owner_by )
     
     return ( result_dfs )
@@ -336,7 +336,8 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           exclude_labels_from_centroids = [''] ,
                           study_axii = None , owner_by = 'tesselation'):
                           
-	NOTE__ = "Richard Tjörnhammars method that evolved as a synthesis of the work done together with Edward Tjörnhammar on the rpls method method"
+	NOTE__ = "Richard Tjörnhammars method that evolved as a synthesis of the work done together with Edward Tjörnhammar on the rpls method"
+	print('WARNING: STILL UNDER DEVELOPMENT')
 
 	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
 
