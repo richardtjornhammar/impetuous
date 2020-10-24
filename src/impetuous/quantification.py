@@ -371,18 +371,18 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
 
 
 def add_foldchanges ( df, information_df , group='', fc_type=0 , foldchange_indentifier = 'FC,') :
-
     all_vals = list(set(information_df.loc[group].values))
     pair_values = [all_vals[i] for i in range(len(all_vals)) if i<2 ]
-    df_ = pd.concat([ df,information_df.loc[[group]] ]).T
-    group1 = df_[df_[group] == pair_values[0]]
-    group2 = df_[df_[group] == pair_values[1]]
+    group1 = df.iloc[:,[n in pair_values[0] for n in information_df.loc[group].values] ].T
+    group2 = df.iloc[:,[n in pair_values[1] for n in information_df.loc[group].values] ].T
     if fc_type == 0:
-        FC = np.mean(group1,0) - np.mean(group2,0)
+        FC = np.mean(group1.values,0) - np.mean(group2.values,0)
     if fc_type == 1:
-        FC = np.log2( np.mean(group1,0) - np.mean(group2,0) )
-    df.loc[:,foldchange_indentifier+'-'.join(pair_values) ] = FC 
+        FC = np.log2( np.mean(group1.values,0) - np.mean(group2.values,0) )
+    FCdf = pd.DataFrame(FC,index=df.index,columns=[foldchange_indentifier+'-'.join(pair_values) ] )
+    df = pd.concat([df.T,FCdf.T]).T
     return ( df )
+
 
 from statsmodels.stats.multitest import multipletests
 def adjust_p ( pvalue_list , method = 'fdr_bh' , alpha = 0.05,
