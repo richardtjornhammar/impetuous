@@ -22,8 +22,6 @@ from scipy.stats.mstats import kruskalwallis as kruskwall
 from sklearn.decomposition import PCA
 import itertools
 
-inventors__ = "Richard Tjörnhammar and Edward Tjörnhammar"
-
 def SubArraysOf ( Array,Array_=None ) :
     if Array_ == None :
         Array_ = Array[:-1]
@@ -275,7 +273,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
                           bDeveloperTesting = False ,
                           study_axii = None , owner_by = 'tesselation'
                         ) :
-    NOTE__ = "Edward Tjörnhammar early major contributor to this method"
+    inventors__ = "Richard Tjörnhammar (RT) and Edward Tjörnhammar"
+    NOTE__ = "Edward Tjörnhammar (ET) early major contributor to this method. Inventors: "+inventors__+". RT is the main developer."
     
     encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
     from sklearn.cross_decomposition import PLSRegression as PLS
@@ -331,18 +330,21 @@ def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose
 	return ( res_df , clusters_df )
 
 
+crop = lambda x,W:x[:,:W]
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
                           exclude_labels_from_centroids = [''] ,
-                          study_axii = None , owner_by = 'tesselation'):
-                          
+                          study_axii = None , owner_by = 'tesselation' ,
+                          transform = crop ) :
+
 	NOTE__ = "Richard Tjörnhammars method that evolved as a synthesis of the work done together with Edward Tjörnhammar on the rpls method"
-	print('WARNING: STILL UNDER DEVELOPMENT')
+	print ( 'WARNING: STILL UNDER DEVELOPMENT' )
+	print ( 'WARNING: DEFAULT IS TO CROP ALIGNED FACTORS!!')
 
 	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
 
-	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
-	P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
+	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).copy().values
+	P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).copy().values
 
 	centroids = ifit.ShapeAlignment( P, Q ,
 				bReturnTransform = False ,
@@ -358,12 +360,13 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
 	yws = ifit.WeightsAndScoresOf( centroids )
 
 	W = np.min( [*np.shape(xws[0]),*np.shape(yws[0])] )
-	
-	quantx , quanty = xws[0][:,:W] , yws[0]
-	scorex = xws[1][:,:W]
+
+	quantx = transform( xws[0],W )
+	quanty = transform( yws[0],W )
+	scorex = transform( xws[1],W )
 
 	res_df = calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
-			analyte_df = analyte_df , journal_df = journal_df ,
+			analyte_df = analyte_df.copy() , journal_df = journal_df.copy() ,
 			blur_cutoff = blur_cutoff , bVerbose = bVerbose,
 			exclude_labels_from_centroids = exclude_labels_from_centroids ,
 			study_axii = study_axii , owner_by = owner_by, synonyms=synonyms )		
