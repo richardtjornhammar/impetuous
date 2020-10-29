@@ -689,13 +689,17 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
             edf.loc[l] = q
     return ( edf.T )
 
+
+
 class APCA ( object ) :
     #
-    # THIS CLASS PERFORMS A SPARSE PCA
-    # IT USES THE SPARSE SVD ALGORITHM
-    # FOUND IN SCIPY
+    # THIS CLASS PERFORMS A SPARSE PCA IF REQUESTED
+    # IT THEN USES THE SPARSE SVD ALGORITHM FOUND IN SCIPY
+    # THE STANDARD IS TO USE THE NUMPY SVD
     #
-    def __init__ ( self , X=None , k=-1 , fillna=None , transcending=True) :
+    def __init__ ( self , X = None , k =-1 ,
+		fillna = None , transcending = True ,
+		not_sparse = True ) :
         from scipy.sparse import csc_matrix
         from scipy.sparse.linalg import svds
         self.svds_ , self.smatrix_ = svds , csc_matrix
@@ -708,6 +712,7 @@ class APCA ( object ) :
         self.X_   = self.interpret_input(X)
         self.k_   = k
         self.transcending_ = transcending
+        self.not_sparse = not_sparse
 
     def interpret_input ( self,X ) :
         if 'pandas' in str(type(X)) :
@@ -733,7 +738,13 @@ class APCA ( object ) :
             k_ = np.min( np.shape(Xc) ) - 1
         else:
             k_ = self.k_
-        u, s, v = self.svds_ ( self.smatrix_(Xc, dtype=float) , k=k_ )
+
+        if self.not_sparse :
+                u, s, v = np.linalg.svd( Xc , full_matrices = False )
+                self.transcending_ = False
+        else :
+                u, s, v = self.svds_ ( self.smatrix_(Xc, dtype=float) , k=k_ )
+
         if self.transcending_ :
             u, s, v = self.transcending_order(u,s,v)
         S = np.diag( s )
