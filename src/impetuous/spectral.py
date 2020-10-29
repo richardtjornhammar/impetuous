@@ -39,6 +39,19 @@ def transform_to_resonances( spectrum ) :
                 .apply(lambda X:[ 2.*x-1. for x in X] )
     return ( reso )
 
+def calc_autocorrelation( tv , dt=1 ,bMeanCentered=True ) :
+    # If you studied Statistical mechanics you would
+    # know about the Wiener Kinchin theorem
+    if bMeanCentered :
+        # So for stocks you might want
+        # to remove the mean
+        tv-=np.mean(tv)
+    ftv = np.fft.fft(tv)
+    rt  = np.fft.ifft(ftv*np.conj(ftv))
+    rt  = rt/rt[0]
+    rt  = rt[:int(np.floor(len(rt)*0.5))]
+    return( [dt*t for t in range(len(rt))], [np.real(r) for r in rt] )
+
 if __name__ == '__main__' :
     print ( 'SORRY: NO TESTS HERE' )
     print ( 'DEVELOPMENTAL VERSION')
