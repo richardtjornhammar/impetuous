@@ -19,18 +19,22 @@ from scipy.stats import rankdata
 
 beta2M = lambda b : math.log2( (b/(1-b)) )
 M2beta = lambda M : 2**M/(2**M+1)
-
+#
+#	FRACTIONAL RANKS ON [0,1] ARE RECAST TO +- INFINITY
 map_df_to_spectral_order_domain = lambda df: \
 	df .apply ( lambda x:(rankdata(x,'average')-0.5)/len(x) ) \
            .apply ( lambda B:[ beta2M(b) for b in B] )
 
 power = lambda s : np.dot( s.T,np.conj(s) )
+#
+#	THE RANK SPECTRUM IS TRANSFORMED INTO A POWER SPECTRUM
 spectre_to_power = lambda sdf: \
 	pd.DataFrame ( \
 		power ( sdf.T.apply(np.fft.fft) ) , \
 			index = sdf.index , columns = sdf.index \
 		)
-
+#
+#	THE BELOW METHOD IS HIGHLY EXPERIMENTAL
 def transform_to_resonances( spectrum ) :
     # assumes spectrum is a square symmetric matrix
     f_ls = np.mean( np.abs(spectrum.iloc[0,:].quantile([0.01,0.99])) )
@@ -38,9 +42,11 @@ def transform_to_resonances( spectrum ) :
                 .apply(lambda X:[x/f_ls for x in X]) .apply(M2beta) \
                 .apply(lambda X:[ 2.*x-1. for x in X] )
     return ( reso )
-
+#
+#	TIME AUTOCORRELATIONS ARE NOT THE SAME THING
+#	AS PEARSON AUTOCORRELATIONS
 def calc_autocorrelation( tv , dt=1 ,bMeanCentered=True ) :
-    # If you studied Statistical mechanics you would
+    # If you studied statistical mechanics you would
     # know about the Wiener Kinchin theorem
     if bMeanCentered :
         # So for stocks you might want
