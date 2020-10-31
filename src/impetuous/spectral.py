@@ -27,7 +27,7 @@ map_df_to_spectral_order_domain = lambda df: \
 
 power = lambda s : np.dot( s.T,np.conj(s) )
 #
-#	THE RANK SPECTRUM IS TRANSFORMED INTO A POWER SPECTRUM
+#	THE SPECTRUM IS TRANSFORMED INTO A POWER SPECTRUM
 spectre_to_power = lambda sdf: \
 	pd.DataFrame ( \
 		power ( sdf.T.apply(np.fft.fft) ) , \
