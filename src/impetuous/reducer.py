@@ -32,26 +32,16 @@ e_contrast = lambda x   : 1 - e_flatness(x)
 pi0 = lambda pvs : 1.
 
 def padded_rolling_average( tv , tau ) :
+	# AS OF THIS PANDAS VERSION ( 1.1.0 )
+	# WINDOW CALCULATION WAS NOT PADDED SO
+	# THIS IS A NUMPY ONLY IMPLEMENTATION
 	if tau==1 :
 		return ( tv )
 	if len(tv)<tau :
 		return ( [ np.mean(v_) for v_ in tv ] )
-	window_size = tau
-	mvalues = pd.DataFrame(tv).rolling(window=window_size).mean().dropna().values.reshape(-1)
-	window_padding = [ int(np.floor(window_size*0.5)) , int(np.ceil(window_size*0.5))-1 ]
-	#
-	# YES THIS LOOKS LIKE SHIT
-	hwp = int(np.floor( window_padding[0] ))
-	# ( BELOW IS JUST ME PLAYING WITH NESTED LAMBDAS )
-	cropped_range = lambda j,w,logic: (j-w) * int ( logic(j,w) )
-	a = 0 ; b = window_padding[0]
-	head_m = [ np.mean(tv[ cropped_range( i,hwp, lambda i,hwp:i-hwp>0 ) : i+hwp ]) for i in range(a,b-1) ]
-	hwp = int(np.floor( window_padding[1] ))
-	b = len(tv) ; a = b - hwp
-	tail_m = [ np.mean(tv[a+(i-b):b]) for i in range(a-1,b) ]
-	mvalues = np.array([*head_m,*mvalues,*tail_m]).reshape(-1)
-	# BUT IT WORKS
-	#
+	centered = lambda x:(np.min(x),np.max(x)) ; N=len(tv);
+	w = int(np.floor(np.abs(tau)*0.5)) ; idx = [ centered( [int((i-w)>0)*(i-w)%N,i,int(i+w<N)*(i+w)%N]) for i in range(N) ]
+	mvalues = [ np.mean(tv[i[0]:i[1]]) for i in idx ]
 	return ( mvalues )
 
 
