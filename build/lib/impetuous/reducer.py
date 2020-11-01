@@ -40,11 +40,10 @@ def padded_rolling_average( tv , tau ) :
 	if len(tv)<tau :
 		return ( [ np.mean(v_) for v_ in tv ] )
 	centered = lambda x:(np.min(x),np.max(x)) ; N=len(tv);
-	w = int(np.floor(np.abs(tau)*0.5)) ;
-	jid = lambda i,w,N:[int((i-w)>0)*(i-w)%N,i,int(i+w<N)*(i+w)%N+int(i+w>=N)*(N-1)]
-	idx = [ centered( jid(i,w,N) ) for i in range(N) ]
+	w = int(np.floor(np.abs(tau)*0.5)) ; idx = [ centered( [int((i-w)>0)*(i-w)%N,i,int(i+w<N)*(i+w)%N]) for i in range(N) ]
 	mvalues = [ np.mean(tv[i[0]:i[1]]) for i in idx ]
 	return ( mvalues )
+
 
 def svd_reduced_mean ( x,axis=0,keep=[0] ) :
     if True :
@@ -192,7 +191,7 @@ if __name__ == '__main__' :
     v0 = [1.9,1.8,2.1,1.1,8.,1.2,2.2,3.5,2.0,2.0,3.1,2.1,2.9]
     a2 = np.array([[2,2,2,1,1,1,2,3,2,2,3,2,3],v0])
     NW = 100
-    if False:  
+    if True:  
         for i in range(NW):
             for w in range(1,i-1):
                 dat = np.random.rand(i)
