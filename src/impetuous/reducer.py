@@ -39,9 +39,9 @@ def padded_rolling_average( tv , tau ) :
 		return ( tv )
 	if len(tv)<tau :
 		return ( [ np.mean(v_) for v_ in tv ] )
-	centered = lambda x:(np.min(x),np.max(x)) ; N=len(tv);
+	centered = lambda x:(x[0],x[1]) ; N=len(tv);
 	w = int(np.floor(np.abs(tau)*0.5)) ;
-	jid = lambda i,w,N:[int((i-w)>0)*(i-w)%N,i,int(i+w<N)*(i+w)%N+int(i+w>=N)*(N-1)]
+	jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
 	idx = [ centered( jid(i,w,N) ) for i in range(N) ]
 	mvalues = [ np.mean(tv[i[0]:i[1]]) for i in idx ]
 	return ( mvalues )
