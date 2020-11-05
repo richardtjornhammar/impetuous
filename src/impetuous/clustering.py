@@ -105,6 +105,41 @@ else :
 		centroids = cent
 		return ( labels, centroids )
 
+from scipy.spatial.distance import squareform , pdist
+absolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
+
+if bUseNumba :
+	@jit(nopython=True)
+	def distance_matrix_to_absolute_coordinates ( D , bSquareForm = True, n_dimensions=2 ):
+		D = D**2.
+		DIM = n_dimensions
+		DIJ = D*0.
+		M = len(D)
+		for i in range(M) :
+			for j in range(M) :
+				DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
+		D = DIJ
+		U,S,Vt = np.linalg.svd ( D , full_matrices = True )
+		S[DIM:] *= 0.
+		Z = np.diag(S**0.5)[:,:DIM]
+		xr = np.dot( Z.T,Vt )
+		return ( xr )
+else :
+        def distance_matrix_to_absolute_coordinates ( D , bSquareForm = True, n_dimensions=2 ):
+                D = D**2
+                DIM = n_dimensions
+                DIJ = D*0.
+                M = len(D)
+                for i in range(M) :
+                        for j in range(M) :
+                                DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
+                D = DIJ
+                U,S,Vt = np.linalg.svd ( D , full_matrices = True )
+                S[DIM:] *= 0.
+                Z = np.diag(S**0.5)[:,:DIM]
+                xr = np.dot( Z.T,Vt )
+                return ( xr )
+
 
 def connectivity ( B , val, bVerbose=True ) :
 	description="""
@@ -321,9 +356,6 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
     clustering_df.to_csv( output_name , '\t' )
     return ( clustering_df )
 
-
-from scipy.spatial.distance import squareform , pdist
-abolsute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
 
 
 if __name__ == '__main__' :
