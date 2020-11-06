@@ -501,20 +501,28 @@ def glm_test (  formula , df , jdf , distribution='Gaussian' ) :
 
 def t_test ( df , endogen = 'expression' , group = 'disease' ,
              pair_values = ('Sick','Healthy') , test_type = 'independent',
-             equal_var = False , alternative = 'greater' ) :
-    group1 = df[df[group] == pair_values[0]][endogen].astype(float)
-    group2 = df[df[group] == pair_values[1]][endogen].astype(float)
-    if test_type == 'independent':
-        pv = ttest_ind( group1, group2 , equal_var = equal_var )
-    if test_type == 'related':
-        pv = ttest_rel( group1, group2 )
+             equal_var = False , alternative = 'greater' ,
+             bDeprecated = False ) :
+
+    if bDeprecated :
+    	print ( 'WILL BE REMOVED IN FUTURE VERSIONS' ) 
+        group1 = df[df[group] == pair_values[0]][endogen].astype(float)
+        group2 = df[df[group] == pair_values[1]][endogen].astype(float)
+    else :
+        group1 = df.iloc[:,[n in pair_values[0] for n in df.loc[group,:].values] ].loc[endogen,:].astype(float)
+        group2 = df.iloc[:,[n in pair_values[1] for n in df.loc[group,:].values] ].loc[endogen,:].astype(float)
+
+    if test_type == 'independent' :
+        pv = ttest_ind ( group1, group2 , equal_var = equal_var )
+    if test_type == 'related' :
+        pv = ttest_rel ( group1, group2 )
     try :
-        p_normality = mannwhitneyu( group1, group2, alternative=alternative )[1]
+        p_mannu = mannwhitneyu( group1, group2, alternative=alternative )[1]
     except ValueError as err:
         print(err.args)
-        p_normality = 1.0
+        p_mannu = 1.0
     pvalue = pv[1] ; statistic=pv[0]
-    return ( pvalue , p_normality, statistic )
+    return ( pvalue , p_mannu, statistic )
 
 def mycov( x , full_matrices=0 ):
     x = x - x.mean( axis=0 )
@@ -963,6 +971,7 @@ def group_counts( analyte_df, grouping_file, delimiter = '\t',
                     eval_df = pd.concat ( [eval_df,ndf] )
     return ( eval_df.sort_values( group_prefix + 'FsigFrom' + p_label ) )
 
+
 def retrieve_genes_of ( group_name, grouping_file, delimiter='\t', identifier='ENSG', skip_line_char='#' ):
     all_analytes = []
     with open ( grouping_file ) as input:
@@ -1000,6 +1009,7 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
         ddf.loc[:,col] = bdf.loc[:,col]
     ddf = ddf.sort_values('Dist', ascending = False )
     return ( ddf )
+
 
 def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = None, ForceSpearman=False ) :
     # ADD IN CONCORDANCE WITH KENDALL TAU

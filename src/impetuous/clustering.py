@@ -108,10 +108,19 @@ else :
 from scipy.spatial.distance import squareform , pdist
 absolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
 
+distance_matrix_to_geometry_conversion_notes = """
+*) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED ANALOG OF THAT OLD METHOD. IT IS POTENTIALLY EXTREMELY USEFUL IN CERTAIN FIELDS SUCH AS NMR STRUCTURE DETERMINATION SPECTROSCOPY WHERE YOU OBTAIN A DEGENERATE ANALOG OF THE DISTANCE MATRIX DIRECTLY FROM EXPERIMENTS. ONE HAS GOT TO TRANSFORM IT FROM THE DEGENERATE RESONANCE INFORMATION USING SOME SIMPLE BUT CLEVER INSIGHTS. I WILL NOT TELL YOU HOW AT THIS STAGE THOUGH. YOUR BIOPHYSICS PROFESSOR CAN PROBABLY TELL YOU HOW... AND IT IS A LOT MORE FUN TO SOLVE REAL PROBLEMS YOURSELF NO ?
+
+*) PDIST REALLY LIKES TO COMPUTE SQUARE ROOT OF THINGS SO WE SQUARE THE RESULT IF IT IS NOT SQUARED.
+
+*) IN SHORT THE DISTANCE MATRIX IN THE CONVERSION ROUTINE BACK TO ABSOLUTE COORDINATES USES R2 DISTANCES.
+"""
+
 if bUseNumba :
 	@jit(nopython=True)
-	def distance_matrix_to_absolute_coordinates ( D , bSquareForm = True, n_dimensions=2 ):
-		D = D**2.
+	def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+		if not bSquared :
+			D = D**2.
 		DIM = n_dimensions
 		DIJ = D*0.
 		M = len(D)
@@ -125,8 +134,9 @@ if bUseNumba :
 		xr = np.dot( Z.T,Vt )
 		return ( xr )
 else :
-        def distance_matrix_to_absolute_coordinates ( D , bSquareForm = True, n_dimensions=2 ):
-                D = D**2
+        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+                if not bSquared :
+		        D = D**2.
                 DIM = n_dimensions
                 DIJ = D*0.
                 M = len(D)
@@ -355,7 +365,6 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
         clustering_df.index =  df.index.values 
     clustering_df.to_csv( output_name , '\t' )
     return ( clustering_df )
-
 
 
 if __name__ == '__main__' :
