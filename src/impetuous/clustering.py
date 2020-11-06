@@ -136,7 +136,7 @@ if bUseNumba :
 else :
         def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
                 if not bSquared :
-		        D = D**2.
+                        D = D**2.
                 DIM = n_dimensions
                 DIJ = D*0.
                 M = len(D)
