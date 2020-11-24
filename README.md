@@ -1,4 +1,4 @@
-# A Statistical Learning Library for Humans
+# A Statistical Learning library for Humans
 Decomposes a set of expressions into a group expression. The toolkit currently offers enrichment analysis, hierarchical enrichment analysis, PLS regression, Shape alignment or clustering as well as  rudimentary factor analysis.
 
 The expression regulation can be studied via a statistical test that relates it to the observables in the journal file. The final p values are then FDR corrected and the resulting adjusted p values are produced.
