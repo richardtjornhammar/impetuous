@@ -298,9 +298,8 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
 
 import impetuous.fit as ifit
 import impetuous.clustering as icluster
-def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose = False ):
-
-	NOTE_ = "This is just a standard kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
+def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose = False ) :
+	NOTE_ = "This is just a kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
 	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
 
 	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
@@ -328,6 +327,40 @@ def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose
 	clusters_df = pd.concat( [ centroids_df, pd.DataFrame( res_df.T.groupby('cluster name').apply(len),columns=['size']) ] ,axis=1 )
 
 	return ( res_df , clusters_df )
+
+def knn_clustering_alignment( P , Q ) :
+    
+    NOTE_ = "This is just a standard kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
+    ispanda = lambda P: 'pandas' in str(type(P)).lower()
+    BustedPanda = lambda R : R.values if ispanda(R) else R
+    P_ = BustedPanda ( P )
+    Q_ = BustedPanda ( Q )
+
+    centroids = ifit .ShapeAlignment ( P_ , Q_ ,
+                    bReturnTransform = False ,
+                    bShiftModel      = True  ,
+                    bUnrestricted    = True  )
+    
+    if ispanda ( Q ) :
+        #
+        # FOR DIAGNOSTIC PURPOSES
+        centroids_df = pd.DataFrame ( centroids ,
+        index = Q.index ,
+        columns = Q.columns )
+        lookup_ = {i:n for n,i in zip( centroids_df.index,range(len(centroids_df.index)) ) }
+
+    labels , centroids = icluster.seeded_kmeans( P_ , centroids )
+
+    if ispanda ( Q ) and ispanda ( P ) :
+        #
+        # MORE DIAGNOSTICS
+        res_df = pd.DataFrame( [labels] , columns=P.index , index=['cluster index'] )
+        res_df .loc[ 'cluster name' ] = [ lookup_[l] for l in res_df.loc['cluster index'].values ]
+        print ( res_df )
+
+    return ( np.array(labels), np.array(centroids) )
+
+
 
 
 crop = lambda x,W:x[:,:W]

@@ -17,34 +17,6 @@ limitations under the License.
 import numpy as np
 import pandas as pd
 
-def demo3d ( R = None, colors = None , marker='$+$' ,
-             figure=1 , show=True, ax=None ) :
-
-    __desc__ = """
-    Scatterplot in 3D
-    """
-
-    from mpl_toolkits.mplot3d import Axes3D
-    import matplotlib.pyplot as plt
-
-    fig = plt.figure(figure)
-    if ax is None:
-        ax = fig.add_subplot(111, projection='3d')
-
-    if R is None :
-        print('demo3d :: NOTHING TO SHOW')
-        return
-    else :
-        ax.scatter(R[:,0],R[:,1], R[:,2], c=colors, marker=marker )
-
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
-    if show :
-        plt.show()
-    else :
-        return ax
-
 def read_xyz(name='data/naj.xyz',header=2,sep=' '):
     mol_str = pd.read_csv(name,header=header)
     P=[]
@@ -92,7 +64,6 @@ def WeightsAndScoresOf( P , bFA=False ) :
 	scores = VT.T
 	return ( weights , scores )
 
-	
 def ShapeAlignment( P, Q ,
 		 bReturnTransform = False ,
 		 bShiftModel = True ,
@@ -140,7 +111,7 @@ def ShapeAlignment( P, Q ,
     if bShiftModel :# SHIFT THE COARSE GRAINED DATA
         B = np.dot(ROT,Q.T).T +p0 - np.dot(ROT,q0)
     else : # SHIFT THE FINE GRAINED DATA    
-        B = np.dot(ROT,P.T).T +q0 - np.dot(ROT,p0)    
+        B = np.dot(ROT,P.T).T +q0 - np.dot(ROT,p0)
 
     return ( B )
 
@@ -176,42 +147,28 @@ if __name__ == '__main__' :
 	# https://github.com/richardtjornhammar/RichTools
 	# WHERE YOU CAN FIND THE FILES USED HERE
 	#
-	if False :
+	if True :
 		colors = {'H':'#777777','C':'#00FF00','N':'#FF00FF','O':'#FF0000','P':'#FAFAFA'}
-		Q = read_xyz( name='../data/naj.xyz'   , header=2 , sep=' ' )
+		Q = read_xyz( name='data/naj.xyz'   , header=2 , sep=' ' )
         
 	if False : # TEST KABSCH ALGORITHM
 		P = Q .copy()
 		Q = Q * -1
 		Q = Q + np.random.rand(Q.size).reshape(np.shape(Q.values))
 	   
-		if True :
-			ax = demo3d ( R=P.values, colors=[colors[c_] for c_ in P.index.values ] ,
-				figure=1 , show=False, marker='$P$' )
-			ax = demo3d ( R=Q.values, colors=[colors[c_] for c_ in Q.index.values ] ,
-				figure=1  , show=False, marker='$Q$', ax=ax )
-	    
 		P_ , Q_ = P.copy() , Q.copy()
 		P = P_.values
 		Q = Q_.values
 		B = KabschAlignment( P,Q )
+		B = pd.DataFrame( B , index = P_.index.values ); print( pd.concat([Q,B],1))
+   
+	if True : # TEST MY SHAPE ALGORITHM
+            P = read_xyz ( name='data/cluster0.xyz' , header=2 , sep='\t' )
+            P_ , Q_= P.values,Q.values
+            B_ = ShapeAlignment( P_,Q_ )
+            B = pd.DataFrame(B_, index=Q.index,columns=Q.columns)
+            pd.concat([B,P],0).to_csv('data/shifted.xyz','\t')
 
-		B = pd.DataFrame( B , index = P_.index.values )
 
-		if True :
-			ax = demo3d ( R=B.values, colors = [ "#000000" for c_ in B.index.values ] ,
-				figure=1  , show=True, marker='$R$', ax=ax )    
-    
-	if False : # TEST MY SHAPE ALGORITHM
-		P = read_xyz ( name='data/cloud.xyz' , header=2 , sep='\t' )
-		P_ , Q_= P.values,Q.values
 
-		B = ShapeAlignment( P_,Q_ )
-		
-		ax = demo3d ( R=Q.values, colors=[colors[c_] for c_ in Q.index.values ] ,
-				figure=1  , show=False, marker='$Q$' )
-		ax = demo3d ( R=P.values, colors=[colors[c_] for c_ in P.index.values ] ,
-				figure=1  , show=False, marker='$P$', ax=ax )
-		ax = demo3d ( R=B, colors=["#0011BB" for c_ in range(len(B)) ] ,
-				figure=1  , show=True, marker='$B$', ax=ax )
-
+            
