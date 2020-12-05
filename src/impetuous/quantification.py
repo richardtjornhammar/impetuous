@@ -538,7 +538,7 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
              bDeprecated = False ) :
 
     if bDeprecated :
-    	print ( 'WILL BE REMOVED IN FUTURE VERSIONS' ) 
+        print ( 'WILL BE REMOVED IN FUTURE VERSIONS' ) 
         group1 = df[df[group] == pair_values[0]][endogen].astype(float)
         group2 = df[df[group] == pair_values[1]][endogen].astype(float)
     else :
@@ -738,9 +738,7 @@ class APCA ( object ) :
     # IT THEN USES THE SPARSE SVD ALGORITHM FOUND IN SCIPY
     # THE STANDARD IS TO USE THE NUMPY SVD
     #
-    def __init__ ( self , X = None , k =-1 ,
-		fillna = None , transcending = True ,
-		not_sparse = True ) :
+    def __init__ ( self , X = None , k =-1 , fillna = None , transcending = True , not_sparse = True ) :
         from scipy.sparse import csc_matrix
         from scipy.sparse.linalg import svds
         self.svds_ , self.smatrix_ = svds , csc_matrix
