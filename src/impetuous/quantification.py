@@ -173,12 +173,15 @@ def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
     #
     use_centroids = list(  quanty[use_centroid_indices]  )
     use_labels    = list( encoding_df.columns.values[use_centroid_indices] )  
-    
+    #
     if owner_by == 'tesselation' :
         transcript_owner = [ use_labels[ np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in quantx ]
+        sample_owner     = [ use_labels[ np.argmin([ np.sum((yw-cent)**2) for cent in use_centroids ])] for yw in scorex ]
+    #
     if owner_by == 'angle' :
         anglular_proximity = lambda B,A : 1 - np.dot(A,B) / ( np.sqrt(np.dot(A,A))*np.sqrt(np.dot(B,B)) )
-        transcript_owner   = [ use_labels[ np.argmin([ anglular_proximity(xw,cent) for cent in use_centroids ])] for xw in quantx ]
+        transcript_owner = [ use_labels[ np.argmin([ anglular_proximity(xw,cent) for cent in use_centroids ])] for xw in quantx ]
+        sample_owner = [ use_labels[ np.argmin([ anglular_proximity(yw,cent) for cent in use_centroids ])] for yw in scorex ]
     #
     # print ( 'PLS WEIGHT RADIUS' )
     radius  = lambda vector:np.sqrt(np.sum((vector)**2)) # radii
@@ -254,10 +257,9 @@ def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
             else :
                 qdf['alpha'] = [ '0.3' for a in transcript_owner ]
         else :
-            if '_' in ''.join(names) :
-                qdf['owner'] = [ n.split('_')[0] for n in names ]
-            else:
-                qdf['owner'] = names
+            print(qdf,sample_owner)
+            print(len(sample_owner))
+            qdf['owner'] = sample_owner # The default should be the aligned projection weight
             qdf['alpha'] = [ '0.2' for n in names ]
         if synonyms is None :
             qdf['name'] = names
