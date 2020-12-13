@@ -334,7 +334,7 @@ def run_clustering_and_write_gmt( df , ca , filename = './approx_cluster_file.gm
             print ( 'CLU-'+str(ulab),'\tDESCRIPTION\t'+'\t'.join(analytes), file=of )
 
 
-def projection_knn_assignment ( projected_coords , df , NMaxGuess=-1 ) :
+def projection_knn_assignment ( projected_coords , df , NMaxGuess=-1 , n_dimensions=2  ) :
     coords_s = projected_coords.dropna( 0 )
     centroid_coordinates = []
     for row in df.T :
