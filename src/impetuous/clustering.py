@@ -109,7 +109,7 @@ from scipy.spatial.distance import squareform , pdist
 absolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
 
 distance_matrix_to_geometry_conversion_notes = """
-*) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED ANALOG OF THAT OLD METHOD.
+*) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED ANALOG OF THAT OLD METHOD. IT IS POTENTIALLY EXTREMELY USEFUL IN CERTAIN FIELDS SUCH AS NMR STRUCTURE DETERMINATION SPECTROSCOPY WHERE YOU OBTAIN A DEGENERATE ANALOG OF THE DISTANCE MATRIX DIRECTLY FROM EXPERIMENTS. ONE HAS GOT TO TRANSFORM IT FROM THE DEGENERATE RESONANCE INFORMATION USING SOME SIMPLE BUT CLEVER INSIGHTS. I WILL NOT TELL YOU HOW AT THIS STAGE THOUGH. YOUR BIOPHYSICS PROFESSOR CAN PROBABLY TELL YOU HOW... AND IT IS A LOT MORE FUN TO SOLVE REAL PROBLEMS YOURSELF NO ?
 
 *) PDIST REALLY LIKES TO COMPUTE SQUARE ROOT OF THINGS SO WE SQUARE THE RESULT IF IT IS NOT SQUARED.
 
@@ -365,6 +365,46 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
         clustering_df.index =  df.index.values 
     clustering_df.to_csv( output_name , '\t' )
     return ( clustering_df )
+
+
+
+def exact_backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
+                                                   bDoFeatures=True , bDoSamples=True ):
+    from scipy.stats import rankdata
+    if bRanked:
+        rana_df = analyte_df .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) )
+    else:
+        rana_df = analyte_df
+
+    dimcrdnames = [ 'd'+str(i) for i in n_dimensions ]
+    #
+    # Do backprojection clustering with backprojection
+    cluster_coords_f = None
+    if bDoFeatures :
+        #
+        dM1 = absolute_coordinates_to_distance_matrix( rana_df.values   )
+        pd.DataFrame(dM1,index=rana_df.index,columns=rana_df.index).to_csv('../data/dM1.tsv','\t')
+        #
+        # Project it back onto first two components
+        max_var_projection = distance_matrix_to_absolute_coordinates ( dM1 , n_dimensions=n_dimensions )
+        cluster_coords_f = pd.DataFrame( max_var_projection ,
+                                    columns = rana_df.index ,
+                                    index = dimcrdnames ).T
+    cluster_coords_s = None
+    if bDoSamples :
+        #
+        # And again for all the samples
+        dM2 = absolute_coordinates_to_distance_matrix( rana_df.T.values )
+        pd.DataFrame(dM2,index=rana_df.columns,columns=rana_df.columns).to_csv('../data/dM2.tsv','\t')
+        #
+        # This algorithm is exact but scales somewhere between n^2 and n log n
+        max_var_projection = distance_matrix_to_absolute_coordinates ( dM2 , n_dimensions=n_dimensions )
+        cluster_coords_s = pd.DataFrame( max_var_projection ,
+                                    columns = rana_df.columns ,
+                                    index = dimcrdnames ).T
+        cluster_coords_s.to_csv('../data/conclust_s.tsv','\t')
+
+    return ( cluster_coords_f,cluster_coords_s )
 
 
 if __name__ == '__main__' :
