@@ -334,6 +334,26 @@ def run_clustering_and_write_gmt( df , ca , filename = './approx_cluster_file.gm
             print ( 'CLU-'+str(ulab),'\tDESCRIPTION\t'+'\t'.join(analytes), file=of )
 
 
+def projection_knn_assignment ( projected_coords , df , NMaxGuess=-1 ) :
+    coords_s = projected_coords.dropna( 0 )
+    centroid_coordinates = []
+    for row in df.T :
+        guess = sorted ( [ (v,i) for (v,i) in zip( df.loc[row].values,df.loc[row].index ) ] ) [::-1][:NMaxGuess]
+        maxWeights = [ i[1] for i in guess ]
+        use = df.loc[row,maxWeights]
+        S = np.sum ( use.values )
+        S = 1. if S==0 else S
+        crd = np.dot(use.values,coords_s.loc[use.index.values].values)/S
+        centroid_coordinates.append(crd)
+
+    centroids_df = pd.DataFrame ( centroid_coordinates , index=df.index , columns=[ 'C'+str(i) for i in range(n_dimensions) ] )
+    labels , centroids = seeded_kmeans( coords_s.values,centroids_df.values )
+    coords_s.loc[:,'owner'] = centroids_df.iloc[labels].index.values
+    for i in range(len(centroids.T)) :
+        centroids_df.loc[:,'E'+str(i) ] = (centroids.T)[i]
+    return ( centroids_df , coords_s )
+
+
 def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False ,
                                     output_name = 'feature_clusters_output.csv' 
                                   ) :
