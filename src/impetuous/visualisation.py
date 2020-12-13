@@ -1,3 +1,16 @@
+"""
+Copyright 2020 RICHARD TJÖRNHAMMAR
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import numpy as np
 import pandas as pd
 import bokeh
@@ -15,7 +28,9 @@ nice_colors = list( set( [ '#c5c8c6' , '#1d1f21' , '#282a2e' , '#373b41' , '#a54
                 '#8c9440' , '#b5bd68' , '#de935f' , '#f0c674' , '#5f819d' , '#81a2be' ,
                 '#85678f' , '#b294bb' , '#5e8d87' , '#8abeb7' , '#707880' ] ) )
 
-def bscatter( X , Y , additional_dictionary=None , title='' , color='#ff0000' , p=None, legend_label = None , alpha=1 , axis_labels = None ) :
+make_hex_colors = lambda c : '#%02x%02x%02x' % (c[0]%256,c[1]%256,c[2]%256)
+
+def bscatter ( X , Y , additional_dictionary=None , title='' , color='#ff0000' , p=None, legend_label = None , alpha=1 , axis_labels = None ) :
     from bokeh.plotting import figure, output_file, ColumnDataSource
     from bokeh.models   import HoverTool, Range1d, Text
     from bokeh.models   import Arrow, OpenHead, NormalHead, VeeHead, Line
@@ -24,10 +39,15 @@ def bscatter( X , Y , additional_dictionary=None , title='' , color='#ff0000' , 
         colors_ = [ color for v in X ]
     else :
         colors_ = color
+
+    if 'list' in str(type(alpha)):
+        alphas_ = alpha
+    else :
+        alphas_ = [ alpha for v in X ]
         
     data = { **{'x' : X , 'y' : Y ,
                 'color': colors_ ,
-                'alpha': [ alpha for v in X ] } }
+                'alpha': alphas_ } }
     ttips = [   ("index "  , "$index"   ) ,
                 ("(x,y) "  , "(@x, @y)" ) ]
     
