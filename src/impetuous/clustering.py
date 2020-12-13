@@ -109,7 +109,7 @@ from scipy.spatial.distance import squareform , pdist
 absolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
 
 distance_matrix_to_geometry_conversion_notes = """
-*) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED ANALOG OF THAT OLD METHOD
+*) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED ANALOG OF THAT OLD METHOD.
 
 *) PDIST REALLY LIKES TO COMPUTE SQUARE ROOT OF THINGS SO WE SQUARE THE RESULT IF IT IS NOT SQUARED.
 
@@ -366,17 +366,15 @@ def make_clustering_visualisation_df ( CLUSTER , df=None , add_synonyms = False 
     clustering_df.to_csv( output_name , '\t' )
     return ( clustering_df )
 
-
-
-def exact_backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
-                                                   bDoFeatures=True , bDoSamples=True ):
+def backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
+                                bDoFeatures=True , bDoSamples=True ) :
     from scipy.stats import rankdata
-    if bRanked:
+    if bRanked :
         rana_df = analyte_df .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) )
-    else:
+    else :
         rana_df = analyte_df
 
-    dimcrdnames = [ 'd'+str(i) for i in n_dimensions ]
+    dimcrdnames = [ 'd'+str(i) for i in range(n_dimensions) ]
     #
     # Do backprojection clustering with backprojection
     cluster_coords_f = None
