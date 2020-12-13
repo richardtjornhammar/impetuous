@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = "impetuous-gfa",
-    version = "0.35.1",
+    version = "0.35.2",
     author = "Richard Tjörnhammar",
     author_email = "richard.tjornhammar@gmail.com",
-    description = "Impetuous Quantification, Alignments, Enrichments and Group Analysis",
+    description = "Impetuous Quantification, a Statistical Learning library for Humans : Alignments, Clustering, Enrichments and Group Analysis",
     long_description = long_description,
     long_description_content_type = "text/markdown",
     url = "https://github.com/richardtjornhammar/impetuous",
