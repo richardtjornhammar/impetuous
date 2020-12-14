@@ -1090,8 +1090,8 @@ def calculate_rates( known_df , inferred_df ,
             called = set( [ called ] )
         not_called = known_set_values - called
         
-        TP += int( len ( called - thisSet ) == 0 )
-        FP += int( len ( not_Set - called ) < len(not_Set) )
+        TP += int( len ( called - thisSet  ) == 0 )
+        FP += int( len ( called - not_Set  ) == 0 )
         TN += int( len ( not_Set - not_called ) < len(not_Set) )
         FN += int( len ( thisSet - not_called ) < len(thisSet) )
 
