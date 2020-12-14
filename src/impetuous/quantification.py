@@ -179,9 +179,9 @@ def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
         sample_owner     = [ use_labels[ np.argmin([ np.sum((yw-cent)**2) for cent in use_centroids ])] for yw in scorex ]
     #
     if owner_by == 'angle' :
-        anglular_proximity = lambda B,A : 1 - np.dot(A,B) / ( np.sqrt(np.dot(A,A))*np.sqrt(np.dot(B,B)) )
-        transcript_owner = [ use_labels[ np.argmin([ anglular_proximity(xw,cent) for cent in use_centroids ])] for xw in quantx ]
-        sample_owner = [ use_labels[ np.argmin([ anglular_proximity(yw,cent) for cent in use_centroids ])] for yw in scorex ]
+        angular_proximity = lambda B,A : 1 - np.dot(A,B) / ( np.sqrt(np.dot(A,A))*np.sqrt(np.dot(B,B)) )
+        transcript_owner = [ use_labels[ np.argmin([ angular_proximity(xw,cent) for cent in use_centroids ])] for xw in quantx ]
+        sample_owner = [ use_labels[ np.argmin([ angular_proximity(yw,cent) for cent in use_centroids ])] for yw in scorex ]
     #
     # print ( 'PLS WEIGHT RADIUS' )
     radius  = lambda vector:np.sqrt(np.sum((vector)**2)) # radii
@@ -1064,6 +1064,72 @@ def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = 
             K .append( k )
         analyte_results_df['KendallTau'] = K
     return ( analyte_results_df )
+
+
+
+def calculate_rates( known_df , inferred_df ,
+                     formula , inference_label = 'owner',
+                     interaction_sep = '-') :
+
+    bHaveInteraction = ':' in formula
+    known_set_values = set(known_df.values.reshape(-1))
+
+    inferred_labels = []
+    vals = inferred_df .loc[:,inference_label] .values
+    TP,FP,FN,TN = 0,0,0,0
+    
+    for idx in inferred_df.index.values :
+
+        thisSet = set( known_df.loc[idx].values )
+        not_Set = known_set_values - thisSet
+        called = inferred_df.loc[ idx,inference_label ]
+
+        if bHaveInteraction and called.count(interaction_sep) == 1 :
+            called = set( called.split(interaction_sep) )
+        else :
+            called = set( [ called ] )
+        not_called = known_set_values - called
+        
+        TP += int( len ( called - thisSet ) == 0 )
+        FP += int( len ( not_Set - called ) < len(not_Set) )
+        TN += int( len ( not_Set - not_called ) < len(not_Set) )
+        FN += int( len ( thisSet - not_called ) < len(thisSet) )
+
+    results_lookup = {  'TP':TP , 'TN':TN ,
+                'FN':FN , 'FP':FP ,
+                'sensitivity' : TP / ( TP+FN ) ,
+                'specificity' : TN / ( TN+FP ) ,
+                'precision'   : TP / ( TP+FP ) ,
+                'accuracy'    : ( TP+TN ) / ( TP+TN+FP+FN ) ,
+                'negation'    : TN / ( TN+FN ) , # FNR
+                'FPR'         : FP / ( FP+TN ) , # False positive rate
+                'FDR'         : FP / ( FP+TP )   # False discovery rate
+    }
+    return ( results_lookup )
+
+
+def assign_quality_measures( journal , result_dfs ,
+                             formula , inference_label='owner' ,
+                             plabel = ',p' , qlabel = ',q' ) :
+
+    for label in [ col for col in result_dfs[0].columns if plabel in col[-2:] ] :
+        result_dfs[0].loc[:, label[:-2]+',q'] = [ qvs[0] for qvs in qvalues( result_dfs[0].loc[:,label].values ) ]
+
+    check = []
+    for idx in journal_df.index.values:
+        if idx in formula :
+            check.append( idx )
+    check = list( set(check) )
+    
+    if len( check ) == 0 :
+        print( 'Cannot assert quality' )
+        results_lookup = dict( )
+    else :
+        results_lookup = calculate_rates ( journal_df.loc[check,:].T , res_df[1] ,
+                          formula , inference_label = inference_label )
+    return( results_lookup )
+
+
 
 
 if __name__ == '__main__' :
