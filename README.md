@@ -68,11 +68,13 @@ import numpy as np
 
 import impetuous.quantification as impq
 
-adf = pd.read_csv( 'analytes.csv' , '\t' , index_col=0 )
-jdf = pd.read_csv( 'journal.csv'  , '\t' , index_col=0 )
+analyte_df = pd.read_csv( 'analytes.csv' , '\t' , index_col=0 )
+journal_df = pd.read_csv( 'journal.csv'  , '\t' , index_col=0 )
 
-res_dfs = impq.run_rpls_regression ( adf , jdf , 'S ~ C(industry)' , owner_by = 'angle' )
-results_lookup = impq.assign_quality_measures( journal_df , res_df , formula )
+formula = 'S ~ C(industry) : C(block) + C(industry) + C(block)'
+
+res_dfs 	= impq.run_rpls_regression ( analyte_df , journal_df , formula , owner_by = 'angle' )
+results_lookup	= impq.assign_quality_measures( journal_df , res_dfs , formula )
 
 print ( results_lookup )
 print ( res_dfs )
