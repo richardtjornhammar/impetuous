@@ -72,7 +72,9 @@ adf = pd.read_csv( 'analytes.csv' , '\t' , index_col=0 )
 jdf = pd.read_csv( 'journal.csv'  , '\t' , index_col=0 )
 
 res_dfs = impq.run_rpls_regression ( adf , jdf , 'S ~ C(industry)' , owner_by = 'angle' )
+results_lookup = impq.assign_quality_measures( journal_df , res_df , formula )
 
+print ( results_lookup )
 print ( res_dfs )
 ```
 
