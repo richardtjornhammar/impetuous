@@ -18,4 +18,5 @@ from impetuous.quantification import *
 import sys
 
 if __name__ == '__main__' :
-	inventors__ = "Richard Tjörnhammar and Edward Tjörnhammar"
+	contributions__ = { "Richard Tjörnhammar": "All methods" ,
+                        "Edward Tjörnhammar" : "RPLS method" }

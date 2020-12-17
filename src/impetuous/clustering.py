@@ -151,7 +151,7 @@ else :
                 return ( xr )
 
 
-def connectivity ( B , val, bVerbose=True ) :
+def connectivity ( B , val, bVerbose=False ) :
 	description="""
 This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive definite).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems.
         """
@@ -180,14 +180,14 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
 		if ( nvisi[i]>0 ) :
 			C-=1
 			for j in range(N) :
-				if ( B[i,j]<val ) :
+				if ( B[i,j]<=val ) :
 					NN.append(j)
 			while ( len(NN)>0 ) :
 				# back pop_back
 				k = NN[-1]; NN = NN[:-1]
 				nvisi[k] = C
 				for j in range(N):
-					if ( B[j,k]<val ) :
+					if ( B[j,k]<=val ) :
 						for q in range(N) :
 							if ( nvisi[q] == j+1 ) :
 								NN.append(q)
@@ -200,8 +200,9 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
 		Nc [res[q*2]]+= 1;
 		if bVerbose :
 			print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
-	for i in range(-1*C) :
-		print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
+	if bVerbose:
+		for i in range(-1*C) :
+			print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
 	return ( Nc , np.array(res[:-1]).reshape(-1,2) )
 
 
@@ -396,7 +397,7 @@ def backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
 
     dimcrdnames = [ 'd'+str(i) for i in range(n_dimensions) ]
     #
-    # Do backprojection clustering with backprojection
+    # Do backprojection clustering
     cluster_coords_f = None
     if bDoFeatures :
         #
