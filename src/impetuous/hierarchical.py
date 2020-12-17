@@ -136,15 +136,17 @@ def calculate_hierarchy_matrix ( data_frame = None ,
     if not distance_matrix is None :
         if bVerbose :
             print ( distance_matrix )
-            
-    uco_v = sorted(list(set(distance_matrix.reshape(-1))))  
+
+    uco_v = sorted(list(set(distance_matrix.reshape(-1))))
     hierarchy_matrix = None
     hsers = []
+    level_distance_lookup = {}
     for icut in range(len(uco_v)) :
         cutoff = uco_v[icut]
         clusternames , nclustercontacts = connectivity ( distance_matrix , cutoff ,
                                                         bVerbose=bVerbose )
         pid2clusterid = nclustercontacts[:,0]
+        level_distance_lookup['level'+str(icut)] = [ icut , cutoff ]
         hser = pd.Series(pid2clusterid,name='level'+str(icut),index=range(len(distance_matrix)))
         hsers.append(hser)
         if len(set(hser.values))==1:
@@ -163,8 +165,9 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         print ("BELONG TOGETHER IN A CLUSTER. THAT IS: I.E. CLUSTER 0 ON LEVEL 12 MIGHT NOT CORRESPOND")
         print ("TO CLUSTER 0 ON LEVEL 13. THE CALCULATED CLUSTER MATRIX IS: ")
         print ( res_df )
-    return ( res_df )
-
+        print ("AND THESE ARE THE DISTANCES THE HIERARCHY LEVELS CORRESPOND TO:" )
+        print ( level_distance_lookup )
+    return ( res_df , level_distance_lookup )
     
 if __name__ == '__main__':
     
