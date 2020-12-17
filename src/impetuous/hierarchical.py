@@ -184,4 +184,13 @@ if __name__ == '__main__':
                        index    = ['pid'+str(i) for i in range(30)] ,
                        columns  = ['x','y','z'] )
 
-    print ( calculate_hierarchy_matrix ( pdf ) )
+    M,L = calculate_hierarchy_matrix ( pdf )
+    print ( M )
+    
+    from impetuous.visualisation import *
+    X,Y = [],[]
+    for item in L.items():
+        X.append(item[1][1])
+        Y.append(len(set(M.loc[item[0]].values)))
+    from bokeh.plotting import show
+    show ( bscatter(X,Y,title='cluster coordination function') )
