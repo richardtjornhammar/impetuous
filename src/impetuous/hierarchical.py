@@ -142,7 +142,7 @@ def calculate_hierarchy_matrix ( data_frame = None ,
     level_distance_lookup = {}
     for icut in range(len(uco_v)) :
         cutoff = uco_v[icut]
-        # clustercontacts : clusterid to particleid
+        # clustercontacts : clusterid , particleid relation
         # clustercontent : clusterid to number of particles in range
         clustercontent , clustercontacts = connectivity ( distance_matrix , cutoff ,
                                                         bVerbose=bVerbose )
@@ -161,7 +161,7 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         names = range(len(distance_matrix))
     res_df = pd.DataFrame ( hsers )
     res_df .columns = names
-    
+
     hierarchy_matrix = res_df
     if bVerbose:
         print ()
