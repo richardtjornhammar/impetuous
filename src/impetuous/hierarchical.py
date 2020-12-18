@@ -149,9 +149,6 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         #
         # internal ordering is a range so this does not need to be a dict
         pid2clusterid = clustercontacts[:,0]
-        if icut==10 and False:
-            print(clustercontent,clustercontacts,np.mean(clustercontent))
-            exit(1)
         level_distance_lookup['level'+str(icut)] = [ icut , cutoff , np.mean(clustercontent) ]
         hser = pd.Series(pid2clusterid,name='level'+str(icut),index=range(len(distance_matrix)))
         hsers.append(hser)
