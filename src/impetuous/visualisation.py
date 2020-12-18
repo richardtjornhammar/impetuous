@@ -77,7 +77,7 @@ def bscatter ( X , Y , additional_dictionary=None , title='' , color='#ff0000' ,
     return( p )
 
 
-def plotter ( x = np.random.rand(10) , y = np.random.rand(10) , colors = '#ff0000' ,
+def plotter ( x = np.random.rand(10) , y = np.random.rand(10) , colors = '#ff0000' , title='',
              legends=None, axis_labels = None, bSave = False, name='scatter.html' ):
 
     from bokeh.plotting import output_file, show, save
@@ -91,7 +91,7 @@ def plotter ( x = np.random.rand(10) , y = np.random.rand(10) , colors = '#ff000
             x_ , y_ , color = x[i] , y[i] , colors[i]
             if list_typecheck([legends,axis_labels],'list',all):
                 label = legends[i]
-                p = bscatter(  x_ , y_ , color = color , p = p , legend_label = label , axis_labels=axis_labels )           
+                p = bscatter(  x_ , y_ , color = color , p = p , legend_label = label , axis_labels=axis_labels )        
             else :
                 p = bscatter(  x_ , y_ , color = color , p = p )
         outp ( p )

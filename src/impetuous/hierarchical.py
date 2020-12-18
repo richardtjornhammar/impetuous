@@ -116,7 +116,7 @@ def HierarchicalEnrichment (
 def calculate_hierarchy_matrix ( data_frame = None ,
                                  distance_matrix = None ,
                                  bVerbose = False ) :
-    info__ = """ This is the saiga you are looking for """
+    info__ = """ This is the saiga/pelican/panda you are looking for """
     from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
     import operator
     if not operator.xor( data_frame is None , distance_matrix is None ) :
@@ -138,15 +138,21 @@ def calculate_hierarchy_matrix ( data_frame = None ,
             print ( distance_matrix )
 
     uco_v = sorted(list(set(distance_matrix.reshape(-1))))
-    hierarchy_matrix = None
     hsers = []
     level_distance_lookup = {}
     for icut in range(len(uco_v)) :
         cutoff = uco_v[icut]
-        clusternames , nclustercontacts = connectivity ( distance_matrix , cutoff ,
+        # clustercontacts : clusterid to particleid
+        # clustercontent : clusterid to number of particles in range
+        clustercontent , clustercontacts = connectivity ( distance_matrix , cutoff ,
                                                         bVerbose=bVerbose )
-        pid2clusterid = nclustercontacts[:,0]
-        level_distance_lookup['level'+str(icut)] = [ icut , cutoff ]
+        #
+        # internal ordering is a range so this does not need to be a dict
+        pid2clusterid = clustercontacts[:,0]
+        if icut==10 and False:
+            print(clustercontent,clustercontacts,np.mean(clustercontent))
+            exit(1)
+        level_distance_lookup['level'+str(icut)] = [ icut , cutoff , np.mean(clustercontent) ]
         hser = pd.Series(pid2clusterid,name='level'+str(icut),index=range(len(distance_matrix)))
         hsers.append(hser)
         if len(set(hser.values))==1:
@@ -158,19 +164,21 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         names = range(len(distance_matrix))
     res_df = pd.DataFrame ( hsers )
     res_df .columns = names
+    
+    hierarchy_matrix = res_df
     if bVerbose:
         print ()
         print ("TAKE NOTE THAT THE CLUSTER INDEXING BETWEEN LEVELS MIGHT NOT BE THE SAME")
         print ("YOU HAVE TO USE THE CLUSTER ID NUMBERS ACROSS A LEVEL TO DEDUCE WHICH PARTICLES")
         print ("BELONG TOGETHER IN A CLUSTER. THAT IS: I.E. CLUSTER 0 ON LEVEL 12 MIGHT NOT CORRESPOND")
         print ("TO CLUSTER 0 ON LEVEL 13. THE CALCULATED CLUSTER MATRIX IS: ")
-        print ( res_df )
+        print ( hierarchy_matrix )
         print ("AND THESE ARE THE DISTANCES THE HIERARCHY LEVELS CORRESPOND TO:" )
         print ( level_distance_lookup )
-    return ( res_df , level_distance_lookup )
-    
+    return ( hierarchy_matrix , level_distance_lookup )
+
 if __name__ == '__main__':
-    
+
     print ( "hierarchy matrix test"  )
     R = np.random.rand(90).reshape(30,3)
     P = np.zeros(90).reshape(30,3)
@@ -186,11 +194,18 @@ if __name__ == '__main__':
 
     M,L = calculate_hierarchy_matrix ( pdf )
     print ( M )
-    
     from impetuous.visualisation import *
-    X,Y = [],[]
+    X,Y,W,Z = [],[],[],[]
     for item in L.items():
         X.append(item[1][1])
+        W.append(item[1][1])
+        Z.append(item[1][2])
         Y.append(len(set(M.loc[item[0]].values)))
     from bokeh.plotting import show
-    show ( bscatter(X,Y,title='cluster coordination function') )
+    #
+    # SHOW THE COODINATION AND SEGREGATION FUNCTIONS
+    # BOTH ARE WELL KNOWN FROM STATISTICAL PHYSICS
+    show ( plotter( [X,W] , [Y,Z] ,
+                   [nice_colors[0],nice_colors[2]] ,
+                   legends = ['segregation','coordination'],
+                   axis_labels = ['distance','Number']) )
