@@ -174,6 +174,87 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         print ( level_distance_lookup )
     return ( hierarchy_matrix , level_distance_lookup )
 
+
+def parent_child_matrix_relationships ( hierarchy_matrix ,
+                                        bVerbose = False ,
+                                        bRemoveRedundant = True ) :
+    M = hierarchy_matrix
+    ns,ms = np.shape(M)
+    if not 'pandas' in str(type(M)):
+        print ( "hierarchy_matrix MUST BE A PANDAS DATA FRAME" )
+    if not ( len(set(M.index.values)) == ns and  len(set(M.columns.values)) == ms ):
+        print( "USE UNIQUE COLUMN AND INDEX NAMES")
+        exit(1)
+    if bVerbose :
+        print ( "THE hierarchy_matrix MUST BE ORDERED FROM THE LEAVES TO THE ROOT")
+        print ( "LOWER INDICES THUS CORRESPONDS TO CHILDREN OF HIGHER ONES")
+    n,c,levels = len(M),M.columns.values,M.index.values
+    ancestor_offspring_relationships = []
+    pc_df = None
+    lookup = {}
+    for i in range(n)[::-1][:-1]:
+        I = i
+        J = i-1
+        parents = M.T.groupby(M.iloc[I,:].values).apply(lambda x:x.index)
+        children = M.T.groupby(M.iloc[J,:].values).apply(lambda x:x.index)
+        parents_level_name = levels[I]
+        children_level_name = levels[J]
+        if bVerbose:
+            print ( i )
+            print ( parents.values , parents.index )
+            print ( children.values , children.index )
+        for p__,pidx in zip( parents.values , parents.index ):
+            for c__,cidx in zip( children , children.index ):
+                pcrel = []
+                p_ = set(p__)
+                c_ = set(c__)
+                if len ( p_ & c_ ) > 0 and len( c_-p_) == 0 :
+                    if bRemoveRedundant:
+                        ps = '.'.join(p__)
+                        cs = '.'.join(c__)
+                        pcs= ps+'+'+cs
+                        if not pcs in lookup:
+                            lookup[pcs] = [(parents_level_name,pidx,I,children_level_name,cidx,J)]
+                        else :
+                            lookup[pcs] .append((parents_level_name,pidx,I,children_level_name,cidx,J))
+                            continue                    
+                    pcser = pd.Series( [ parents_level_name , pidx ,
+                            children_level_name , cidx ] ,
+                            index = ['Parent level label','Parent level cluster index',
+                                     'Child level label','Child level cluster index'] ,
+                            name = str(I)+'_'+str(pidx)+'-'+str(J)+'_'+str(cidx)  ) 
+                    pcrel .append ( pd.DataFrame(pcser) )
+                    if len ( pcrel ) > 0 :
+                        if pc_df is None :
+                            pc_df = pd.DataFrame(pcser)
+                        else:
+                            pc_df = pd.concat([pc_df.T,pd.DataFrame(pcser).T]).T
+                        ancestor_offspring_relationships.append( pcrel )
+    pc_df = pc_df.T
+    if bRemoveRedundant:    
+        idx_rename = {}
+        for item in lookup.items():
+            if len(item[1])>1 :
+                orig = str(item[1][0][2])  + '_' + str(item[1][0][ 1]) + '-' + \
+                        str(item[1][0][-1])  + '_' + str(item[1][0][-2])
+                    
+                new = str(item[1][0][2])  + '_' + str(item[1][0][ 1]) + '-' + \
+                        str(item[1][-1][-1]) + '_' + str(item[1][-1][-2])
+                if bVerbose :
+                    print ( item )
+                    print ( str(item[1][0][2])  + '_' + str(item[1][0][ 1]) )
+                    print ( str(item[1][0][-1])  + '_' + str(item[1][0][-2]) )
+                    print ( str(item[1][-1][-1]) + '_' + str(item[1][-1][-2]) )
+                    print ( orig , new )
+                    print ( pc_df.loc[orig,:])
+                pc_df.loc[orig,'Child level label'] = item[1][-1][-3]
+                pc_df.loc[orig,'Child level cluster index'] = item[1][-1][-2]
+                idx_rename[orig] = new
+        pc_df = pc_df.rename(index=idx_rename)
+    print ( pc_df )
+
+
+
 if __name__ == '__main__':
 
     print ( "hierarchy matrix test"  )
@@ -191,6 +272,8 @@ if __name__ == '__main__':
 
     M,L = calculate_hierarchy_matrix ( pdf )
     print ( M )
+    parent_child_matrix_relationships ( M )
+    
     from impetuous.visualisation import *
     X,Y,W,Z = [],[],[],[]
     for item in L.items():
