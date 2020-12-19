@@ -168,7 +168,7 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         print ("TAKE NOTE THAT THE CLUSTER INDEXING BETWEEN LEVELS MIGHT NOT BE THE SAME")
         print ("YOU HAVE TO USE THE CLUSTER ID NUMBERS ACROSS A LEVEL TO DEDUCE WHICH PARTICLES")
         print ("BELONG TOGETHER IN A CLUSTER. THAT IS: I.E. CLUSTER 0 ON LEVEL 12 MIGHT NOT CORRESPOND")
-        print ("TO CLUSTER 0 ON LEVEL 13. THE CALCULATED CLUSTER MATRIX IS: ")
+        print ("TO CLUSTER 0 ON LEVEL 13. THE CALCULATED HIERARCHY MATRIX IS: ")
         print ( hierarchy_matrix )
         print ("AND THESE ARE THE DISTANCES THE HIERARCHY LEVELS CORRESPOND TO:" )
         print ( level_distance_lookup )
@@ -204,7 +204,7 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
             print ( parents.values , parents.index )
             print ( children.values , children.index )
         for p__,pidx in zip( parents.values , parents.index ):
-            for c__,cidx in zip( children , children.index ):
+            for c__,cidx in zip( children.values , children.index ):
                 pcrel = []
                 p_ = set(p__)
                 c_ = set(c__)
@@ -237,7 +237,6 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
             if len(item[1])>1 :
                 orig = str(item[1][0][2])  + '_' + str(item[1][0][ 1]) + '-' + \
                         str(item[1][0][-1])  + '_' + str(item[1][0][-2])
-                    
                 new = str(item[1][0][2])  + '_' + str(item[1][0][ 1]) + '-' + \
                         str(item[1][-1][-1]) + '_' + str(item[1][-1][-2])
                 if bVerbose :
@@ -251,9 +250,7 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
                 pc_df.loc[orig,'Child level cluster index'] = item[1][-1][-2]
                 idx_rename[orig] = new
         pc_df = pc_df.rename(index=idx_rename)
-    print ( pc_df )
-
-
+    return ( pc_df )
 
 if __name__ == '__main__':
 
@@ -283,7 +280,7 @@ if __name__ == '__main__':
         Y.append(len(set(M.loc[item[0]].values)))
     from bokeh.plotting import show
     #
-    # SHOW THE COODINATION AND SEGREGATION FUNCTIONS
+    # SHOW THE COORDINATION AND SEGREGATION FUNCTIONS
     # BOTH ARE WELL KNOWN FROM STATISTICAL PHYSICS
     show ( plotter( [X,W] , [Y,Z] ,
                    [nice_colors[0],nice_colors[2]] ,
