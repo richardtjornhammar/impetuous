@@ -1,5 +1,5 @@
 """
-Copyright 2020 RICHARD TJÖRNHAMMAR
+Copyright 2021 RICHARD TJÖRNHAMMAR
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -217,12 +217,12 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
                             lookup[pcs] = [(parents_level_name,pidx,I,children_level_name,cidx,J)]
                         else :
                             lookup[pcs] .append((parents_level_name,pidx,I,children_level_name,cidx,J))
-                            continue                    
+                            continue
                     pcser = pd.Series( [ parents_level_name , pidx ,
                             children_level_name , cidx ] ,
                             index = ['Parent level label','Parent level cluster index',
                                      'Child level label','Child level cluster index'] ,
-                            name = str(I)+'_'+str(pidx)+'-'+str(J)+'_'+str(cidx)  ) 
+                            name = str(I)+'_'+str(pidx)+'-'+str(J)+'_'+str(cidx)  )
                     pcrel .append ( pd.DataFrame(pcser) )
                     if len ( pcrel ) > 0 :
                         if pc_df is None :
@@ -231,7 +231,7 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
                             pc_df = pd.concat([pc_df.T,pd.DataFrame(pcser).T]).T
                         ancestor_offspring_relationships.append( pcrel )
     pc_df = pc_df.T
-    if bRemoveRedundant:    
+    if bRemoveRedundant:
         idx_rename = {}
         for item in lookup.items():
             if len(item[1])>1 :
