@@ -158,7 +158,7 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         if 'pandas' in str(type(data_frame)):
             names = data_frame.index.values
     else:
-        names = range(len(distance_matrix))
+        names = [ str(i) for i in range(len(distance_matrix)) ]
     res_df = pd.DataFrame ( hsers )
     res_df .columns = names
 
@@ -195,7 +195,7 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
     for i in range(n)[::-1][:-1]:
         I = i
         J = i-1
-        parents = M.T.groupby(M.iloc[I,:].values).apply(lambda x:x.index)
+        parents  = M.T.groupby(M.iloc[I,:].values).apply(lambda x:x.index)
         children = M.T.groupby(M.iloc[J,:].values).apply(lambda x:x.index)
         parents_level_name = levels[I]
         children_level_name = levels[J]
