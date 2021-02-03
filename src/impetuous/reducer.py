@@ -31,8 +31,20 @@ e_contrast = lambda x   : 1 - e_flatness(x)
 
 pi0 = lambda pvs : 1.
 
+def padded_rolling_window ( tv, tau ) :
+        # SIMPLY RETURN THE PADDED INDICES
+	if tau==1 :
+		return ( tv )
+	if len(tv)<tau :
+		return ( [ np.mean(v_) for v_ in tv ] )
+	centered = lambda x:(x[0],x[1]) ; N=len(tv);
+	w = int( np.floor(np.abs(tau)*0.5) ) ;
+	jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
+	idx = [ centered( jid(i,w,N) ) for i in range(N) ]
+	return ( idx )
+        
 def padded_rolling_average( tv , tau ) :
-	# AS OF THIS PANDAS VERSION ( 1.1.0 )
+	# AS OF THE PANDAS VERSION ( 1.1.0 )
 	# WINDOW CALCULATION WAS NOT PADDED SO
 	# THIS IS A NUMPY ONLY IMPLEMENTATION
 	if tau==1 :
