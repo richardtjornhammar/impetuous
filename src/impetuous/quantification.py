@@ -1068,8 +1068,15 @@ def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = 
 
 def calculate_rates( journal_df , inferred_df ,
                      formula , inference_label = 'owner',
-                     bVerbose=False ) :
+                     bVerbose = False ,
+                     strictness = 'intersect' ) :
 
+    strictness_function = { 'any':any,'intersect':lambda x:x }
+    
+    if strictness not in set(strictness_function.keys()):
+        print ( 'ERROR: COULD NOT ASSIGN A STRICTNESS FUNCTION' )
+        print ( 'VIABLE STRICTNESS OPTIONS ARE: ' , set( strictness_function.keys()) )
+        exit(1)
     check = []
     for idx in journal_df.index.values:
         if idx in formula :
@@ -1099,20 +1106,20 @@ def calculate_rates( journal_df , inferred_df ,
         print(not_known_OH.iloc[:6,:6])
         print(inferred_OH.iloc[:6,:6])
         print(np.sum(np.sum(inferred_OH.iloc[:6,:6] * known_OH.iloc[:6,:6] )) )
+    
+    TP = np.sum( np.sum( ( inferred_OH     * known_OH     ).apply(strictness_function[strictness]) ) )
+    FP = np.sum( np.sum( ( inferred_OH     * not_known_OH ).apply(strictness_function[strictness]) ) )
+    TN = np.sum( np.sum( ( not_inferred_OH * not_known_OH ).apply(strictness_function[strictness]) ) )
+    FN = np.sum( np.sum( ( not_inferred_OH * known_OH     ).apply(strictness_function[strictness]) ) )
 
-    TP = np.sum( np.sum( inferred_OH     * known_OH     ) )
-    FP = np.sum( np.sum( inferred_OH     * not_known_OH ) )
-    TN = np.sum( np.sum( not_inferred_OH * not_known_OH ) )
-    FN = np.sum( np.sum( not_inferred_OH * known_OH     ) )
-
-    results_lookup = {  'TP':TP , 'TN':TN ,
-                'FN':FN , 'FP':FP ,
+    results_lookup = { 'TP':TP , 'TN':TN ,
+                'FN':FN ,'FP':FP ,
                 'sensitivity' : TP / ( TP+FN ) ,
                 'specificity' : TN / ( TN+FP ) ,
                 'precision'   : TP / ( TP+FP ) ,
                 'accuracy'    : ( TP+TN ) / ( TP+TN+FP+FN ) ,
                 'negation'    : TN / ( TN+FN ) , # FNR
-                'FPR'         : FP / ( FP+TN ) , # False positive rate
+                'FPR:'        : FP / ( FP+TN ) , # False positive rate
                 'FDR'         : FP / ( FP+TP )   # False discovery rate
     }
     return ( results_lookup )
