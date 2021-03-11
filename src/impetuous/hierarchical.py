@@ -13,13 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+contact__ = "richard.tjornhammar@gmail.com"
+
 import pandas as pd
 import numpy as np
 
 from impetuous.quantification import group_significance
 from impetuous.convert import *
 
-def pathway_frame_from_file ( filename , 
+def pathway_frame_from_file ( filename ,
         delimiter = '\t' , item_sep = ',' ) :
     pdf = None
     with open( filename,'r' ) as input :
@@ -28,13 +30,13 @@ def pathway_frame_from_file ( filename ,
             analytes_ = lspl[2:]
             desc = lspl[1]
             iden = lspl[0]
-            ps = pd.Series( [desc , item_sep.join(analytes_) ] , 
+            ps = pd.Series( [desc , item_sep.join(analytes_) ] ,
                         name = iden , index = ['description','analytes'] )
             pdf = pd.concat([pdf,pd.DataFrame(ps).T])
     return ( pdf )
 
-def create_dag_representation_df ( pathway_file = '../data/GROUPDEFINITIONS.gmt' , 
-                                   pcfile = '../data/PCLIST.txt' 
+def create_dag_representation_df ( pathway_file = '../data/GROUPDEFINITIONS.gmt' ,
+                                   pcfile = '../data/PCLIST.txt'
                                  ) :
     pc_list_file = pcfile
     tree , ance , desc = parent_child_to_dag ( pc_list_file )
@@ -79,7 +81,7 @@ def HierarchicalEnrichment (
         print ( 'THIS STATISTICAL TEST WILL BE NONSENSE' )
         print ( 'TRY A DIFFERENT THRESHOLD' )
     marked_analytes = {} ; used_analytes = {} ; node_sig = {}
-    for d in range( dag_depth, 0, -1 ) : 
+    for d in range( dag_depth, 0, -1 ) :
         # ROOT IS NOT INCLUDED
         filter_ = df [ dag_level_label ] == d
         nodes = df.iloc[ [i for i in np.where(filter_)[ 0 ]] ,:].index.values
@@ -283,15 +285,17 @@ def write_cpgmt ( lookup ,
                   bVerbose = False ) :
     if bVerbose :
         print ( """
-                   If you want to check specific level clusters 
-                   using traditional methods such as GSEA
-                   then you'll need to create a gmt file """ )
+                   If you want to check specific level clusters
+                   using traditional methods such as GSEA or
+                   perhaps try my hierarchical enrichment or
+                   awesome righteuous-fa method ...
+                   irregardless you'll need to create a gmt file """ )
     if 'content' in lookup :
         with open( filename , 'w' ) as of :
             print ( '\n'.join( [ '\t'.join([c,d,'\t'.join(p)]) for \
                                  (c,d,p) in zip( *[ lookup[ c ] for c in lookup['content'] ]) ]) ,
                     file=of )
-        
+
 if __name__ == '__main__' :
 
     if True :
@@ -302,13 +306,12 @@ if __name__ == '__main__' :
             print ( "note that the description includes the parent as a reference" )
             print ( "to create a pc file you should reorder i.e. using" )
             print ( "$ cat childparentparts.gmt | awk '{print $2,$1}'" )
-            print ( "make sure to use the correct delimiter",'-- the rich saiga' )
         #
         pdf   = pd.read_csv( '../data/genes.tsv' , '\t' , index_col=0 )
         M , L = calculate_hierarchy_matrix ( pdf )
         cpgl  = create_cpgmt_lookup( parent_child_matrix_relationships ( M ) , separators = ['_','-'] )
         write_cpgmt ( cpgl )
-    
+
     if True :
         print ( "hierarchy matrix test"  )
         R = np.random.rand(90).reshape(30,3)
@@ -326,7 +329,7 @@ if __name__ == '__main__' :
         M,L = calculate_hierarchy_matrix ( pdf )
         print ( M )
         parent_child_matrix_relationships ( M )
-    
+
         from impetuous.visualisation import *
         X,Y,W,Z = [],[],[],[]
         for item in L.items():
