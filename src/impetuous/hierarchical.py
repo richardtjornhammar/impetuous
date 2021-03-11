@@ -177,7 +177,12 @@ def calculate_hierarchy_matrix ( data_frame = None ,
 
 def parent_child_matrix_relationships ( hierarchy_matrix ,
                                         bVerbose = False ,
-                                        bRemoveRedundant = True ) :
+                                        bRemoveRedundant = True ,
+                                        separators = ['_','-'] ) :
+
+    print('WARNING: DEVELOPMENTAL VERSION')
+    
+    s_ = separators
     M = hierarchy_matrix
     ns,ms = np.shape(M)
     if not 'pandas' in str(type(M)):
@@ -222,7 +227,7 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
                             children_level_name , cidx ] ,
                             index = ['Parent level label','Parent level cluster index',
                                      'Child level label','Child level cluster index'] ,
-                            name = str(I)+'_'+str(pidx)+'-'+str(J)+'_'+str(cidx)  )
+                            name = str(I)+s_[0]+str(pidx)+s_[1]+str(J)+s_[0]+str(cidx)  )
                     pcrel .append ( pd.DataFrame(pcser) )
                     if len ( pcrel ) > 0 :
                         if pc_df is None :
@@ -235,15 +240,15 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
         idx_rename = {}
         for item in lookup.items():
             if len(item[1])>1 :
-                orig = str(item[1][0][2])  + '_' + str(item[1][0][ 1]) + '-' + \
-                        str(item[1][0][-1])  + '_' + str(item[1][0][-2])
-                new = str(item[1][0][2])  + '_' + str(item[1][0][ 1]) + '-' + \
-                        str(item[1][-1][-1]) + '_' + str(item[1][-1][-2])
+                orig = str(item[1][0][2])  + s_[0] + str(item[1][0][ 1]) + s_[1] + \
+                        str(item[1][0][-1])  + s_[0] + str(item[1][0][-2])
+                new = str(item[1][0][2])  + s_[0] + str(item[1][0][ 1]) + s_[1] + \
+                        str(item[1][-1][-1]) + s_[0] + str(item[1][-1][-2])
                 if bVerbose :
                     print ( item )
-                    print ( str(item[1][0][2])  + '_' + str(item[1][0][ 1]) )
-                    print ( str(item[1][0][-1])  + '_' + str(item[1][0][-2]) )
-                    print ( str(item[1][-1][-1]) + '_' + str(item[1][-1][-2]) )
+                    print ( str(item[1][0][2])  + s_[0] + str(item[1][0][ 1]) )
+                    print ( str(item[1][0][-1])  + s_[0] + str(item[1][0][-2]) )
+                    print ( str(item[1][-1][-1]) + s_[0] + str(item[1][-1][-2]) )
                     print ( orig , new )
                     print ( pc_df.loc[orig,:])
                 pc_df.loc[orig,'Child level label'] = item[1][-1][-3]
@@ -252,37 +257,89 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
         pc_df = pc_df.rename(index=idx_rename)
     return ( pc_df )
 
-if __name__ == '__main__':
+def create_cpgmt_lookup( pcdf , separators = ['_','-'] ):
+        s_ = separators
+        all_parents = list(set([v.split(s_[1])[0] for v in pcdf.index.values]))
+        lookup      = {'content':['children','descriptions','parts']}
+        children , descriptions , parts = [] , [] , []
+        for parent in all_parents:
+            selected    = pcdf.loc[ [idx for idx in pcdf.index.values if parent == idx.split(s_[1])[0]],:]
+            for i_ in selected.index :
+                a_level   = pcdf.loc[ i_ , [ c for c in pcdf.columns if 'label' in c ] ] .values[1]
+                a_cluster = pcdf.loc[ i_ , [ c for c in pcdf.columns if 'index' in c ] ] .values[1]
+                collected_parts = M.columns .values[ M.loc[a_level].values == a_cluster ]
+                p_ = pcdf.loc[ i_ , [ c for c in pcdf.columns if 'label' in c ] ] .values[0] + s_[0]  + \
+                     str(pcdf.loc[ i_ , [ c for c in pcdf.columns if 'index' in c ] ] .values[0])
+                children    .append ( 'level'+i_.split(s_[1])[-1] )
+                descriptions.append ( p_ )
+                parts       .append ( collected_parts )
+        lookup['children']     = children
+        lookup['parts']        = parts
+        lookup['descriptions'] = descriptions
+        return ( lookup )
 
-    print ( "hierarchy matrix test"  )
-    R = np.random.rand(90).reshape(30,3)
-    P = np.zeros(90).reshape(30,3)
-    P [ 1:10 ,: ] += 1
-    P [ 0:5  ,: ] += 2
-    P [ 20:  ,: ] += 3
-    P [ 15:20,: ] += 2
-    P [ 25:  ,: ] += 2
+def write_cpgmt ( lookup ,
+                  filename = 'childparentparts.gmt',
+                  bVerbose = False ) :
+    if bVerbose :
+        print ( """
+                   If you want to check specific level clusters 
+                   using traditional methods such as GSEA
+                   then you'll need to create a gmt file """ )
+    if 'content' in lookup :
+        with open( filename , 'w' ) as of :
+            print ( '\n'.join( [ '\t'.join([c,d,'\t'.join(p)]) for \
+                                 (c,d,p) in zip( *[ lookup[ c ] for c in lookup['content'] ]) ]) ,
+                    file=of )
+        
+if __name__ == '__main__' :
 
-    pdf = pd.DataFrame( P + R   ,
+    if True :
+        #
+        bVerbose = False
+        if bVerbose:
+            print ( "For creating pc and gmt files" )
+            print ( "note that the description includes the parent as a reference" )
+            print ( "to create a pc file you should reorder i.e. using" )
+            print ( "$ cat childparentparts.gmt | awk '{print $2,$1}'" )
+            print ( "make sure to use the correct delimiter",'-- the rich saiga' )
+        #
+        pdf   = pd.read_csv( '../data/genes.tsv' , '\t' , index_col=0 )
+        M , L = calculate_hierarchy_matrix ( pdf )
+        cpgl  = create_cpgmt_lookup( parent_child_matrix_relationships ( M ) , separators = ['_','-'] )
+        write_cpgmt ( cpgl )
+    
+    if True :
+        print ( "hierarchy matrix test"  )
+        R = np.random.rand(90).reshape(30,3)
+        P = np.zeros(90).reshape(30,3)
+        P [ 1:10 ,: ] += 1
+        P [ 0:5  ,: ] += 2
+        P [ 20:  ,: ] += 3
+        P [ 15:20,: ] += 2
+        P [ 25:  ,: ] += 2
+
+        pdf = pd.DataFrame( P + R ,
                        index    = ['pid'+str(i) for i in range(30)] ,
                        columns  = ['x','y','z'] )
 
-    M,L = calculate_hierarchy_matrix ( pdf )
-    print ( M )
-    parent_child_matrix_relationships ( M )
+        M,L = calculate_hierarchy_matrix ( pdf )
+        print ( M )
+        parent_child_matrix_relationships ( M )
     
-    from impetuous.visualisation import *
-    X,Y,W,Z = [],[],[],[]
-    for item in L.items():
-        X.append(item[1][1])
-        W.append(item[1][1])
-        Z.append(item[1][2])
-        Y.append(len(set(M.loc[item[0]].values)))
-    from bokeh.plotting import show
-    #
-    # SHOW THE COORDINATION AND SEGREGATION FUNCTIONS
-    # BOTH ARE WELL KNOWN FROM STATISTICAL PHYSICS
-    show ( plotter( [X,W] , [Y,Z] ,
-                   [nice_colors[0],nice_colors[2]] ,
-                   legends = ['segregation','coordination'],
-                   axis_labels = ['distance','Number']) )
+        from impetuous.visualisation import *
+        X,Y,W,Z = [],[],[],[]
+        for item in L.items():
+            X.append(item[1][1])
+            W.append(item[1][1])
+            Z.append(item[1][2])
+            Y.append(len(set(M.loc[item[0]].values)))
+        from bokeh.plotting import show
+        #
+        # SHOW THE COORDINATION AND SEGREGATION FUNCTIONS
+        # BOTH ARE WELL KNOWN FROM STATISTICAL PHYSICS
+        #
+        show ( plotter( [X,W] , [Y,Z] ,
+               [nice_colors[0],nice_colors[2]] ,
+               legends = ['segregation','coordination'],
+               axis_labels = ['distance','Number']) )
