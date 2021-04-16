@@ -31,6 +31,29 @@ e_contrast = lambda x   : 1 - e_flatness(x)
 #
 # SPURIOUS LOW VALUE REMOVAL
 confred = lambda x,eta,varpi : 0.5*x*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*eta)/(0.5*(eta+x)))
+
+def frac_procentile ( vals=[12.123, 1.2, 1000, 4] ):
+    vals = np.array(vals).copy()
+    N = len( vals );
+    for i,j in zip( np.argsort(vals),range(N)):
+        vals[i]=(j+0.5)/N
+    return ( vals )
+
+def get_procentile ( vals, procentile = 50 ):
+    fp_   = procentile/100.0
+    proc  = frac_procentile(vals)
+    ma,mi = np.max(proc),np.min(proc)
+    if fp_ > ma:
+        fp_ = ma
+    if fp_ < mi:
+        fp_ = mi
+    idx = np.argwhere(proc==fp_)
+    if len ( idx ) == 1 :
+        return ( vals[idx[0][0]] )
+    else :
+        i1 = np.argsort( np.abs(proc-fp_) )[:2]
+        return ( sum([vals[i] for i in i1]) * 0.5 )
+
 # EX.:
 # eta    = get_procentile( values,50 )
 # varpi  = get_procentile( values,66 ) - get_procentile( values,33 )
@@ -49,7 +72,7 @@ def padded_rolling_window ( tv, tau ) :
 	jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
 	idx = [ centered( jid(i,w,N) ) for i in range(N) ]
 	return ( idx )
-        
+
 def padded_rolling_average( tv , tau ) :
 	# AS OF THE PANDAS VERSION ( 1.1.0 )
 	# WINDOW CALCULATION WAS NOT PADDED SO
@@ -211,7 +234,7 @@ if __name__ == '__main__' :
     v0 = [1.9,1.8,2.1,1.1,8.,1.2,2.2,3.5,2.0,2.0,3.1,2.1,2.9]
     a2 = np.array([[2,2,2,1,1,1,2,3,2,2,3,2,3],v0])
     NW = 100
-    if False:  
+    if False:
         for i in range(NW):
             for w in range(1,i-1):
                 dat = np.random.rand(i)
@@ -222,7 +245,7 @@ if __name__ == '__main__' :
                 else:
                     if not len(pra)==len(dat):
                         print ( len(pra)==len(dat),'[',i,w ,']',len(pra),len(dat) )
-                        
+
     print ( padded_rolling_average( np.array( svd_reduced_mean( Xdf ).values ).reshape(-1,1) ,tau=4 ) )
     print ( padded_rolling_average( np.array( svd_reduced_mean( Xdf ).values ).reshape(1,-1) ,tau=4 ) )
     print ( padded_rolling_average( np.array( svd_reduced_mean( Xdf ).values ) ,tau=4 ) )
