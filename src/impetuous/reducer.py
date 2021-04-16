@@ -28,6 +28,13 @@ contrast   = lambda A,B : ( A-B )/( A+B )
 # OTHER
 e_flatness = lambda x   : np.exp(np.mean(np.log(x),0))/np.mean(x,0)
 e_contrast = lambda x   : 1 - e_flatness(x)
+#
+# SPURIOUS LOW VALUE REMOVAL
+confred = lambda x,eta,varpi : 0.5*x*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*eta)/(0.5*(eta+x)))
+# EX.:
+# eta    = get_procentile( values,50 )
+# varpi  = get_procentile( values,66 ) - get_procentile( values,33 )
+# confred(values,eta,varpi)
 
 pi0 = lambda pvs : 1.
 

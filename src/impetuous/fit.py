@@ -16,6 +16,83 @@ limitations under the License.
 
 import numpy as np
 import pandas as pd
+import operator
+
+def F ( i , j , d = 2 ,
+        s = lambda x,y : 2 * (x==y) ,
+        sx = None , sy = None ) :
+
+    if operator.xor( sx is None , sy is None ):
+        return ( -1 )
+    if i == 0 and j == 0 :
+        return ( s(sx[0],sy[0]) )
+    if operator.xor( i==0 , j==0 ) :
+        return ( -d*(i+j) )
+    return ( np.max( [ F( i-1 , j-1 , sx=sx , sy=sy ) + s( sx[i-1],sy[j-1] ) ,
+                       F( i-1 , j   , sx=sx , sy=sy ) - d ,
+                       F( i   , j-1 , sx=sx , sy=sy ) - d ] ) )
+
+def scoring_function ( l1,l2 ) :
+    s_ = np.log2(  2*( l1==l2 ) + 1 )
+    return ( s_ )
+
+def check_input ( strp ):
+    err_msg = "must be called with two strings placed in a list"
+    bad = False
+    if not 'list' in str( type(strp) ) :
+        bad = True
+    else:
+        for str_ in strp :
+            if not 'str' in str(type(str_)):
+                bad=True
+    if bad :
+        print ( err_msg )
+        exit ( 1 )
+
+def sdist ( strp , scoring_function = scoring_function ) :
+    check_input( strp )
+    s1 , s2 = strp[0] , strp[1]
+    N  , M  = len(s1) , len(s2)
+    mg = np.meshgrid( range(N),range(M) )
+    W  = np.zeros(N*M).reshape(N,M)
+    for pos in zip( mg[0].reshape(-1),mg[1].reshape(-1) ):
+        pos_ = np.array( [(pos[0]+0.5)/N , (pos[1]+0.5)/M] )
+        dij = np.log2( np.sum( np.diff(pos_)**2 ) + 1 ) + 1
+        sij = scoring_function( s1[pos[0]],s2[pos[1]] )
+        W [ pos[0],pos[1] ] = sij/dij
+    return ( W )
+
+def score_alignment ( string_list ,
+                      scoring_function = scoring_function ,
+                      shift_allowance = 1 ,
+                      main_diagonal_power = 2 ) :
+    check_input(string_list)
+    strp  = string_list.copy()
+    n,m   = len(strp[0]) , len(strp[1])
+    shnm  = [n,m]
+    nm,mn = np.max( shnm ) , np.min( shnm )
+    axis  = int( n>m )
+    paddington = np.repeat([s for s in strp[axis]],shnm[axis]).reshape(shnm[axis],shnm[axis]).T.reshape(-1)[:nm]
+    strp[axis] = ''.join(paddington)
+    W          = sdist( strp , scoring_function=scoring_function)
+    if axis==1 :
+        W = W.T
+    Smax , SL = 0,[0]
+
+    mdp = main_diagonal_power
+    sha = shift_allowance
+    for i in range(nm) :
+        Sma_ = np.sum( np.diag( W,i ))**mdp
+        for d in range( sha ) :
+            if i+d<nm :
+                Sma_ += np.sum( np.diag( W , i+d ))
+            if i-d>=0:
+                Sma_ += np.sum( np.diag( W , i-d ))
+        if Sma_ > Smax:
+            Smax = Sma_
+            SL.append(Sma_)
+    return ( Smax/(2*sha+1)/(n+m)*mn )
+
 
 def read_xyz(name='data/naj.xyz',header=2,sep=' '):
     mol_str = pd.read_csv(name,header=header)
@@ -142,33 +219,44 @@ def low_missing_value_imputation ( fdf , fraction = 0.9 , absolute = 'True' ) :
 
 
 if __name__ == '__main__' :
-	#
-	# IF YOU REQUIRE THE DATA THEN LOOK IN :
-	# https://github.com/richardtjornhammar/RichTools
-	# WHERE YOU CAN FIND THE FILES USED HERE
-	#
-	if True :
-		colors = {'H':'#777777','C':'#00FF00','N':'#FF00FF','O':'#FF0000','P':'#FAFAFA'}
-		Q = read_xyz( name='data/naj.xyz'   , header=2 , sep=' ' )
+    #
+    # IF YOU REQUIRE THE DATA THEN LOOK IN :
+    # https://github.com/richardtjornhammar/RichTools
+    # WHERE YOU CAN FIND THE FILES USED HERE
+    #
+    if False :
+        colors = {'H':'#777777','C':'#00FF00','N':'#FF00FF','O':'#FF0000','P':'#FAFAFA'}
+        Q = read_xyz( name='data/naj.xyz'   , header=2 , sep=' ' )
         
-	if False : # TEST KABSCH ALGORITHM
-		P = Q .copy()
-		Q = Q * -1
-		Q = Q + np.random.rand(Q.size).reshape(np.shape(Q.values))
-	   
-		P_ , Q_ = P.copy() , Q.copy()
-		P = P_.values
-		Q = Q_.values
-		B = KabschAlignment( P,Q )
-		B = pd.DataFrame( B , index = P_.index.values ); print( pd.concat([Q,B],1))
-   
-	if True : # TEST MY SHAPE ALGORITHM
-            P = read_xyz ( name='data/cluster0.xyz' , header=2 , sep='\t' )
-            P_ , Q_= P.values,Q.values
-            B_ = ShapeAlignment( P_,Q_ )
-            B = pd.DataFrame(B_, index=Q.index,columns=Q.columns)
-            pd.concat([B,P],0).to_csv('data/shifted.xyz','\t')
+    if False : # TEST KABSCH ALGORITHM
+        P = Q .copy()
+        Q = Q * -1
+        Q = Q + np.random.rand(Q.size).reshape(np.shape(Q.values))
 
+        P_ , Q_ = P.copy() , Q.copy()
+        P = P_.values
+        Q = Q_.values
+        B = KabschAlignment( P,Q )
+        B = pd.DataFrame( B , index = P_.index.values ); print( pd.concat([Q,B],1))
 
+    if False : # TEST MY SHAPE ALGORITHM
+        P = read_xyz ( name='data/cluster0.xyz' , header=2 , sep='\t' )
+        P_ , Q_= P.values,Q.values
+        B_ = ShapeAlignment( P_,Q_ )
+        B = pd.DataFrame(B_, index=Q.index,columns=Q.columns)
+        pd.concat([B,P],0).to_csv('data/shifted.xyz','\t')
 
-            
+    if True :
+        strpl = [ [ 'ROICAND'    , 'RICHARD' ] ,
+                  [ 'RICHARD'    , 'RICHARD' ] ,
+                  [ 'ARDARDA'    , 'RICHARD' ] ,
+                  [ 'ARD'        , 'RICHARD' ] ,
+                  [ 'DRA'        , 'RICHARD' ] ,
+                  [ 'RICHARD'    , 'ARD'     ] ,
+                  [ 'RICHARD'    , 'DRA'     ] ,
+                  [ 'ÖoBasdasda' , 'RICHARD' ] ,
+                  [ 'Richard'    , 'Ingen äter lika mycket ris som Risard när han är arg och trött']]
+        strp = strpl[0]
+        W = sdist ( strp )
+        for strp in strpl :
+            print ( strp , score_alignment( strp ) )

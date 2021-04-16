@@ -365,6 +365,32 @@ def flatten_generator(pathway_generator_object):
                        ','.join(list(set( pathway_generator_object.pathway_compartments[pathway] )) ) + \
                        '] ' + pathway_generator_object.pathway_names[pathway]
 
+
+def description():
+    desc__ = """
+import impetuous.pathways as impw
+import impetuous.convert  as impc
+
+# DOWNLOADED : DOI 10.5281/zenodo.3608711
+def reactome ( pathway_directory = '../../reactome/',
+        pathway_file = 'Ensembl2Reactome_All_Levels_v71.txt',
+        synonyms = 'biomart_hta20.txt' ) :
+    paths = impw.Reactome( pathway_directory + pathway_file )
+    syn_d = impw.create_listdictionary_from_file( pathway_directory + synonyms )
+    paths .add_pathway_synonyms(syn_d)
+    paths .make_gmt_pathway_file( '../data/reactome_v71.gmt' )
+    return ( paths )
+
+if __name__ == '__main__' :
+    paths = reactome()
+    #
+    # TOP METABOLISM PATHWAY NAME R-HSA-1430728
+    print ( paths.pathways['R-HSA-1430728'] )
+    """
+    print ( desc__ )
+
+
 if __name__ == '__main__' :
     print('ADD BACK REACTOME TEST')
 
+    description()
