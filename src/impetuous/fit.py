@@ -64,7 +64,7 @@ def sdist ( strp , scoring_function = scoring_function ) :
 
 def score_alignment ( string_list ,
                       scoring_function = scoring_function ,
-                      shift_allowance = 1 ,
+                      shift_allowance = 1 , off_diagonal_power=None,
                       main_diagonal_power = 2 ) :
     check_input(string_list)
     strp  = string_list.copy()
@@ -84,10 +84,14 @@ def score_alignment ( string_list ,
     for i in range(nm) :
         Sma_ = np.sum( np.diag( W,i ))**mdp
         for d in range( sha ) :
+            p_ = 1.
+            if 'list' in str(type(off_diagonal_power)):
+                if len(off_diagonal_power) == d:
+                    p_ = off_diagonal_power[d]
             if i+d<nm :
-                Sma_ += np.sum( np.diag( W , i+d ))
+                Sma_ += np.sum( np.diag( W , i+(d+1) ))**p_
             if i-d>=0:
-                Sma_ += np.sum( np.diag( W , i-d ))
+                Sma_ += np.sum( np.diag( W , i-(d+1) ))**p_
         if Sma_ > Smax:
             Smax = Sma_
             SL.append(Sma_)
@@ -137,7 +141,7 @@ def WeightsAndScoresOf( P , bFA=False ) :
 	weights = U
 	if bFA :
 		scores = np.dot(S,VT).T
-		return ( weights , scores )	
+		return ( weights , scores )
 	scores = VT.T
 	return ( weights , scores )
 
@@ -152,11 +156,11 @@ def ShapeAlignment( P, Q ,
     description = """
      A NAIVE SHAPE FIT PROCEDURE TO WHICH MORE SOPHISTICATED
      VERSIONS WRITTEN IN C++ CAN BE FOUND IN MY C++[*] REPO
-     
+
      HERE WE WORK UNDER THE ASSUMPTION THAT Q IS THE MODEL
-     SO THAT WE SHOULD HAVE SIZE Q < SIZE P WITH UNKNOWN 
+     SO THAT WE SHOULD HAVE SIZE Q < SIZE P WITH UNKNOWN
      ORDERING AND THAT THEY SHARE A COMMON SECOND DIMENSION
-     
+
      IN THIS ROUTINE THE COARSE GRAINED DATA ( THE MODEL ) IS
      MOVED TO FIT THE FINE GRAINED DATA ( THE DATA )
     """
@@ -175,7 +179,7 @@ def ShapeAlignment( P, Q ,
     sQ = np.dot( cQ.T,cQ )
     sP = np.dot( cP.T,cP )
 
-    H = np.dot(sP.T,sQ) 
+    H = np.dot(sP.T,sQ)
     I = np.eye( DIM )
 
     U, S, VT = np.linalg.svd( H, full_matrices=False )
@@ -227,7 +231,7 @@ if __name__ == '__main__' :
     if False :
         colors = {'H':'#777777','C':'#00FF00','N':'#FF00FF','O':'#FF0000','P':'#FAFAFA'}
         Q = read_xyz( name='data/naj.xyz'   , header=2 , sep=' ' )
-        
+
     if False : # TEST KABSCH ALGORITHM
         P = Q .copy()
         Q = Q * -1
@@ -259,4 +263,5 @@ if __name__ == '__main__' :
         strp = strpl[0]
         W = sdist ( strp )
         for strp in strpl :
+            print ( strp , score_alignment( strp , main_diagonal_power=3.5 , off_diagonal_power=[1.5]) )
             print ( strp , score_alignment( strp ) )
