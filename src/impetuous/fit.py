@@ -85,18 +85,18 @@ def score_alignment ( string_list ,
         Sma_ = np.sum( np.diag( W,i ))**mdp
         for d in range( sha ) :
             p_ = 1.
+            d_ = d + 1
             if 'list' in str(type(off_diagonal_power)):
-                if len(off_diagonal_power) == d:
+                if len ( off_diagonal_power ) == d:
                     p_ = off_diagonal_power[d]
-            if i+d<nm :
-                Sma_ += np.sum( np.diag( W , i+(d+1) ))**p_
-            if i-d>=0:
-                Sma_ += np.sum( np.diag( W , i-(d+1) ))**p_
+            if i+d_ < nm :
+                Sma_ += np.sum( np.diag( W , i+d_ ))**p_
+            if i-d_ >= 0 :
+                Sma_ += np.sum( np.diag( W , i-d_ ))**p_
         if Sma_ > Smax:
             Smax = Sma_
             SL.append(Sma_)
     return ( Smax/(2*sha+1)/(n+m)*mn )
-
 
 def read_xyz(name='data/naj.xyz',header=2,sep=' '):
     mol_str = pd.read_csv(name,header=header)
@@ -123,7 +123,7 @@ def KabschAlignment( P,Q ):
     q0 , p0 = np.mean(Q,0) , np.mean(P,0)
     cQ , cP = Q - q0 , P - p0
 
-    H = np.dot(cP.T,cQ) 
+    H = np.dot(cP.T,cQ)
     I  = np.eye( DIM )
 
     U, S, VT = np.linalg.svd( H, full_matrices=False )
@@ -191,7 +191,7 @@ def ShapeAlignment( P, Q ,
 
     if bShiftModel :# SHIFT THE COARSE GRAINED DATA
         B = np.dot(ROT,Q.T).T +p0 - np.dot(ROT,q0)
-    else : # SHIFT THE FINE GRAINED DATA    
+    else : # SHIFT THE FINE GRAINED DATA
         B = np.dot(ROT,P.T).T +q0 - np.dot(ROT,p0)
 
     return ( B )
@@ -220,7 +220,6 @@ def low_missing_value_imputation ( fdf , fraction = 0.9 , absolute = 'True' ) :
             if 'nan' in str(fdf.iloc[i,j]).lower():
                 fdf.iloc[i,j] = nan_values[i,j]
     return ( fdf )
-
 
 if __name__ == '__main__' :
     #
