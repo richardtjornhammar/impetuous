@@ -87,7 +87,7 @@ def score_alignment ( string_list ,
             p_ = 1.
             d_ = d + 1
             if 'list' in str(type(off_diagonal_power)):
-                if len ( off_diagonal_power ) == d:
+                if len ( off_diagonal_power ) == sha :
                     p_ = off_diagonal_power[d]
             if i+d_ < nm :
                 Sma_ += np.sum( np.diag( W , i+d_ ))**p_
@@ -262,5 +262,6 @@ if __name__ == '__main__' :
         strp = strpl[0]
         W = sdist ( strp )
         for strp in strpl :
-            print ( strp , score_alignment( strp , main_diagonal_power=3.5 , off_diagonal_power=[1.5]) )
-            print ( strp , score_alignment( strp ) )
+            print ( strp , score_alignment( strp , main_diagonal_power=3.5 , shift_allowance=2, off_diagonal_power=[1.5,0.5]) )
+            #print ( strp , score_alignment( strp , main_diagonal_power=3.5 , off_diagonal_power=[1.5]) )
+            #print ( strp , score_alignment( strp ) )
