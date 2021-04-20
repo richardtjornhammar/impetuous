@@ -53,12 +53,12 @@ $ jupyter-notebook impetuous_finance.ipynb
 
 and that's it.
 
-# Usage example 1 : elaborate informatics example
+# Usage example 1 : elaborate informatics
 
 code: https://gitlab.com/stochasticdynamics/eplsmta-experiments
 docs: https://arxiv.org/pdf/2001.06544.pdf
 
-# Usage example 2 : simple code example
+# Usage example 2 : simple regression code
 
 Now while in a good environment: In your Jupyter notebook or just in a dedicated file.py you can write the following:
 
@@ -78,6 +78,60 @@ results_lookup	= impq.assign_quality_measures( journal_df , res_dfs , formula )
 
 print ( results_lookup )
 print ( res_dfs )
+```
+
+# Usage example 3 : Novel NLP sequence alignment
+
+Finding a word in a text is a simple and trivial problem in computer science. However matching a sequence of characters to a larger text segment is not. In this example you will be shown how to employ the impetuous text fitting procedure. The strength of the fit is conveyed via the returned score, higher being a stronger match between the two texts. This becomes costly for large texts and we thus break the text into segments and words. If there is a strong word to word match then the entire segment score is calculated. The off and main diagonal power terms refer to how to evaluate an string shift. Fortinbras and Faortinbraaks are probably the same word eventhough the latter has two character shifts in it. In this example both "requests" and "BeautifulSoup" are employed to parse internet text.
+
+```
+import numpy as np
+import pandas as pd
+
+import impetuous.fit as impf    # THE IMPETUOUS FIT MODULE
+                                # CONTAINS SCORE ALIGNMENT ROUTINE
+
+import requests                 # FOR MAKING URL REQUESTS
+from bs4 import BeautifulSoup   # FOR PARSING URL REQUEST CONTENT
+
+if __name__ == '__main__' :
+
+    print ( 'DOING TEXT SCORING VIA MY SEQUENCE ALIGNMENT ALGORITHM' )
+    url_       = 'http://shakespeare.mit.edu/hamlet/full.html'
+
+    response   = requests.get( url_ )
+    bs_content = BeautifulSoup ( response.content , features="html.parser")
+
+    name = 'fortinbras'
+    score_co = 500
+    S , S2 , N = 0 , 0 , 0
+    for btext in bs_content.find_all('blockquote'):
+
+        theTextSection = btext.get_text()
+        theText        = theTextSection.split('\n')
+
+        for segment in theText:
+            pieces = segment.split(' ')
+            if len(pieces)>1 :
+                for piece in pieces :
+                    if len(piece)>1 :
+                        score = impf.score_alignment( [ name , piece ],
+                                    main_diagonal_power = 3.5, shift_allowance=2,
+                                    off_diagonal_power = [1.5,0.5] )
+                        S    += score
+                        S2   += score*score
+                        N    += 1
+                        if score > score_co :
+                            print ( "" )
+                            print ( score,name,piece )
+                            print ( theTextSection )
+                            print ( impf.score_alignment( [ name , theTextSection ],
+                                        main_diagonal_power = 3.5, shift_allowance=2,
+                                        off_diagonal_power = [1.5,0.5] ) )
+                            print ( "" )
+
+    print ( S/N )
+    print ( S2/N-S*S/N/N )
 ```
 
 # Manually updated code backups for this library :
