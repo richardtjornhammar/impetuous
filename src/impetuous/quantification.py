@@ -1012,7 +1012,7 @@ def retrieve_genes_of ( group_name, grouping_file, delimiter='\t', identifier='E
             if group_name is None :
                 line  = line_.replace( '\n','' )
                 dline = line.split( delimiter )
-                if identifier is None : 
+                if identifier is None :
                     [ all_analytes.append(d) for d in dline ]
                 else :
                     [ all_analytes.append(d) for d in dline if identifier in d ]
@@ -1020,7 +1020,7 @@ def retrieve_genes_of ( group_name, grouping_file, delimiter='\t', identifier='E
                 if group_name in line_:
                     line=line_.replace('\n','')
                     dline = line.split(delimiter)
-                    if identifier is None : 
+                    if identifier is None :
                         return ( [ d for d in dline ] )
                     else:
                         return ( [ d for d in dline if identifier in d ] )
@@ -1072,7 +1072,7 @@ def calculate_rates( journal_df , inferred_df ,
                      strictness = 'intersect' ) :
 
     strictness_function = { 'any':any,'intersect':lambda x:x }
-    
+
     if strictness not in set(strictness_function.keys()):
         print ( 'ERROR: COULD NOT ASSIGN A STRICTNESS FUNCTION' )
         print ( 'VIABLE STRICTNESS OPTIONS ARE: ' , set( strictness_function.keys()) )
@@ -1144,7 +1144,7 @@ def isItPrime( N , M=None,p=None,lM05=None ) :
         M = N
     if lM05 is None:
         lM05 = math.log(M)*0.5
-    if (M%(N-1))==0 or ((M%p)==0 and p>=2) :
+    if ((M%p)==0 and p>=2) :
         return ( N==2 )
     else :
        if math.log(p) > lM05:
