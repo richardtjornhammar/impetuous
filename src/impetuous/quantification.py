@@ -95,7 +95,7 @@ def quantify_density_probability ( rpoints , cutoff = None ) :
     if not cutoff is None :
         resolution = 10. ; nbins = 100.
         #
-        # ONLY FOR ASSESING 
+        # ONLY FOR ASSESING
         h1,h2      = np.histogram(rpoints,bins=int(np.ceil(len(rpoints)/resolution)))
         bin_radius = 0.5 * ( h2[1:] + h2[:-1] )
         radial_density = np.cumsum( h1 )/np.sum( h1 ) # lt
@@ -117,7 +117,7 @@ def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
     # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)
     # THE ANALYTE_DF IS THE   FINE GRAINED DATA  (THE DATA)
     # THE FORMULA IS THE SEMANTIC DESCRIPTION OF THE PROBLEM
-    # 
+    #
     interaction_pairs = find_category_interactions ( formula.split('~')[1] )
     add_pairs = []
     if len( interaction_pairs )>0 :
@@ -143,7 +143,7 @@ def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
         if encoding_df is None :
             encoding_df = add_df.T
         else :
-            encoding_df = pd.concat([ encoding_df.T , 
+            encoding_df = pd.concat([ encoding_df.T ,
                             journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
     return ( encoding_df )
 
@@ -167,12 +167,12 @@ def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
         exit(1)
     #
     # THESE ARE THE CATEGORICAL DESCRIPTORS
-    use_centroid_indices = [ i for i in range(len(encoding_df.columns.values)) if ( 
-                             encoding_df.columns.values[i] not in set( exclude_labels_from_centroids ) 
+    use_centroid_indices = [ i for i in range(len(encoding_df.columns.values)) if (
+                             encoding_df.columns.values[i] not in set( exclude_labels_from_centroids )
                            ) ]
     #
     use_centroids = list(  quanty[use_centroid_indices]  )
-    use_labels    = list( encoding_df.columns.values[use_centroid_indices] )  
+    use_labels    = list( encoding_df.columns.values[use_centroid_indices] )
     #
     if owner_by == 'tesselation' :
         transcript_owner = [ use_labels[ np.argmin([ np.sum((xw-cent)**2) for cent in use_centroids ])] for xw in quantx ]
@@ -219,7 +219,7 @@ def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
     # print ( 'THE EQUIDISTANT 1D STATS' )
     corresponding_pvalue , corresponding_density , corresponding_radius = quantify_density_probability ( rpoints , cutoff = blur_cutoff )
     #
-    # print ( 'THE TWO XY 1D STATS' ) 
+    # print ( 'THE TWO XY 1D STATS' )
     corr_pvalue_0 , corr_density_0 = quantify_density_probability ( xpoints )
     corr_pvalue_1 , corr_density_1 = quantify_density_probability ( ypoints )
     #
@@ -275,7 +275,7 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
                         ) :
     inventors__ = "Richard Tjörnhammar (RT) and Edward Tjörnhammar"
     NOTE__ = "Edward Tjörnhammar (ET) early major contributor to this method. Inventors: "+inventors__+". RT is the main developer."
-    
+
     encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
     from sklearn.cross_decomposition import PLSRegression as PLS
 
@@ -292,7 +292,7 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     			journal_df = journal_df, analyte_df = analyte_df , blur_cutoff = blur_cutoff ,
     			bVerbose = bVerbose, exclude_labels_from_centroids = exclude_labels_from_centroids ,
 			study_axii = study_axii , owner_by = owner_by )
-    
+
     return ( res_df )
 
 
@@ -329,7 +329,7 @@ def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose
 	return ( res_df , clusters_df )
 
 def knn_clustering_alignment( P , Q ) :
-    
+
     NOTE_ = "This is just a standard kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
     ispanda = lambda P: 'pandas' in str(type(P)).lower()
     BustedPanda = lambda R : R.values if ispanda(R) else R
@@ -340,7 +340,7 @@ def knn_clustering_alignment( P , Q ) :
                     bReturnTransform = False ,
                     bShiftModel      = True  ,
                     bUnrestricted    = True  )
-    
+
     if ispanda ( Q ) :
         #
         # FOR DIAGNOSTIC PURPOSES
@@ -388,7 +388,7 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
 	centroids_df = pd.DataFrame ( centroids ,
 			index = encoding_df.columns ,
 			columns = encoding_df.index )
-			
+
 	xws = ifit.WeightsAndScoresOf( P )
 	yws = ifit.WeightsAndScoresOf( centroids )
 
@@ -402,7 +402,7 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
 			analyte_df = analyte_df.copy() , journal_df = journal_df.copy() ,
 			blur_cutoff = blur_cutoff , bVerbose = bVerbose,
 			exclude_labels_from_centroids = exclude_labels_from_centroids ,
-			study_axii = study_axii , owner_by = owner_by, synonyms=synonyms )		
+			study_axii = study_axii , owner_by = owner_by, synonyms=synonyms )
 	return ( res_df )
 
 
@@ -1131,10 +1131,23 @@ def assign_quality_measures( journal_df , result_dfs ,
 
     for label in [ col for col in result_dfs[0].columns if plabel in col[-2:] ] :
         result_dfs[0].loc[:, label[:-2]+',q'] = [ qvs[0] for qvs in qvalues( result_dfs[0].loc[:,label].values ) ]
-   
+
     results_lookup = calculate_rates ( journal_df , result_dfs[1] ,
                           formula , inference_label = inference_label )
     return( results_lookup )
+
+import math
+def isItPrime( N , M=None,p=None ) :
+    if p is None :
+        p = 1
+    if M is None :
+        M = N
+    if (M%(N-1))==0 or ((M%p)==0 and p>=2) :
+        return ( N==2 )
+    else :
+       if math.log(p) > math.log(M)*0.5:
+           return ( True )
+       return ( P1(N-1,M=M,p=p+1) )
 
 
 if __name__ == '__main__' :
