@@ -1086,16 +1086,16 @@ def calculate_rates( journal_df , inferred_df ,
         print( 'Cannot assert quality' )
         results_lookup = dict( )
         return ( results_lookup )
-   
+
     known_df = journal_df.loc[check,:]
-    
+
     known_OH = create_encoding_journal( known_df.index.values, known_df )
     known_instances = known_OH.index
     inferred_OH = known_OH*0
     for o in inferred_df.iterrows():
         for known_instance in known_instances:
             inferred_OH.loc[known_instance,o[0]] = int( known_instance in o[1][inference_label] )
-            
+
     OH_not = lambda df:df.apply( lambda x:1-x )
 
     not_known_OH    = OH_not( known_OH )
@@ -1106,7 +1106,7 @@ def calculate_rates( journal_df , inferred_df ,
         print(not_known_OH.iloc[:6,:6])
         print(inferred_OH.iloc[:6,:6])
         print(np.sum(np.sum(inferred_OH.iloc[:6,:6] * known_OH.iloc[:6,:6] )) )
-    
+
     TP = np.sum( np.sum( ( inferred_OH     * known_OH     ).apply(strictness_function[strictness]) ) )
     FP = np.sum( np.sum( ( inferred_OH     * not_known_OH ).apply(strictness_function[strictness]) ) )
     TN = np.sum( np.sum( ( not_inferred_OH * not_known_OH ).apply(strictness_function[strictness]) ) )
@@ -1137,17 +1137,19 @@ def assign_quality_measures( journal_df , result_dfs ,
     return( results_lookup )
 
 import math
-def isItPrime( N , M=None,p=None ) :
+def isItPrime( N , M=None,p=None,lM05=None ) :
     if p is None :
         p = 1
     if M is None :
         M = N
+    if lM05 is None:
+        lM05 = math.log(M)*0.5
     if (M%(N-1))==0 or ((M%p)==0 and p>=2) :
         return ( N==2 )
     else :
-       if math.log(p) > math.log(M)*0.5:
+       if math.log(p) > lM05:
            return ( True )
-       return ( P1(N-1,M=M,p=p+1) )
+       return ( isItPrime(N-1,M=M,p=p+1,lM05=lM05) )
 
 
 if __name__ == '__main__' :
