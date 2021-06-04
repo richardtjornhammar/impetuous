@@ -208,7 +208,7 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
                                         bVerbose = False ,
                                         bRemoveRedundant = True ,
                                         separators = ['_','-'],
-                                        iLegacy = 0 ) :
+                                        iLegacy = 1 ) :
     s_ = separators
     M = hierarchy_matrix
     ns,ms = np.shape(M)
