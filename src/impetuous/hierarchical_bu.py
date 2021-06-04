@@ -117,10 +117,8 @@ def HierarchicalEnrichment (
 
 def calculate_hierarchy_matrix ( data_frame = None ,
                                  distance_matrix = None ,
-                                 bVerbose = False,
-                                 coarse_grain_structure = 0 ) :
+                                 bVerbose = False ) :
     info__ = """ This is the saiga/pelican/panda you are looking for RICEARD"""
-    print (info__ )
     from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
     import operator
     if not operator.xor( data_frame is None , distance_matrix is None ) :
@@ -151,27 +149,18 @@ def calculate_hierarchy_matrix ( data_frame = None ,
     if bVerbose :
         print ( "EMPLOYING SORTING HAT" )
     uco_v = sorted(list(set(distance_matrix.reshape(-1))))
-    if coarse_grain_structure>0 :
-        if bVerbose :
-            nuco  = len(uco_v)
-            print ( "WILL COARSE GRAIN THE HIERARCHY STRUCTE INTO" )
-            print ( "AT MAX:", np.ceil(nuco/coarse_grain_structure), " LEVELS" )
-            print ( "TECH: NTOT >", nuco,",\t dN >", coarse_grain_structure )
-            uco_v = uco_v[::coarse_grain_structure]
-
+    hsers = []
     level_distance_lookup = {}
 
     if bVerbose :
         print ( "DOING CONNECTIVITY CLUSTERING" )
-
-    hsers = []
     for icut in range(len(uco_v)) :
         cutoff = uco_v[icut]
         # clustercontacts : clusterid , particleid relation
         # clustercontent : clusterid to number of particles in range
         #from clustering import connectivity # LOCAL TESTING
         clustercontent , clustercontacts = connectivity ( distance_matrix , cutoff ,
-                                                          bVerbose = bVerbose )
+                                                        bVerbose=bVerbose )
         #
         # internal ordering is a range so this does not need to be a dict
         pid2clusterid = clustercontacts[:,0]
@@ -179,9 +168,9 @@ def calculate_hierarchy_matrix ( data_frame = None ,
         hser = pd.Series(pid2clusterid,name='level'+str(icut),index=range(len(distance_matrix)))
         hsers.append(hser)
         if bVerbose :
-            print ( 100.0*icut/len(uco_v) ," % DONE ")
+            print ( 100.0*icut/len(uco_v) )
 
-        if len(set(hser.values)) == 1 :
+        if len(set(hser.values)) == 1:
             break
     if not data_frame is None :
         if 'pandas' in str(type(data_frame)):
