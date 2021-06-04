@@ -19,10 +19,14 @@ import sys
 import sklearn.cluster as sc
 
 try :
-	from numba import jit
-	bUseNumba = True
+        from numba import jit
+        bUseNumba = True
 except ImportError :
-	bUseNumba = False
+        print ( "ImportError:"," NUMBA. WILL NOT USE IT")
+        bUseNumba = False
+except OSError:
+        print ( "OSError:"," NUMBA. WILL NOT USE IT")
+        bUseNumba = False
 
 # THE FOLLOWING KMEANS ALGORITHM IS THE AUTHOR OWN LOCAL VERSION
 if bUseNumba :
@@ -54,7 +58,7 @@ if bUseNumba :
 			for h in range ( NN ) :
 				min_distance = 1.0E30
 				for i in range ( KK ) :
-					distance = np.sum( ( dat[h]-cent[i] )**2 ) 
+					distance = np.sum( ( dat[h]-cent[i] )**2 )
 					if distance < min_distance :
 						labels[h] = i
 						min_distance = distance
@@ -91,7 +95,7 @@ else :
 			for h in range ( NN ) :
 				min_distance = 1.0E30
 				for i in range ( KK ) :
-					distance = np.sum( ( dat[h]-cent[i] )**2 ) 
+					distance = np.sum( ( dat[h]-cent[i] )**2 )
 					if distance < min_distance :
 						labels[h] = i
 						min_distance = distance
@@ -151,10 +155,130 @@ else :
                 return ( xr )
 
 
-def connectivity ( B , val, bVerbose=False ) :
-	description="""
-This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive definite).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems.
+#bUseNumba=False
+
+if bUseNumba :
+	@jit(nopython=True)
+	def connectivity ( B , val, bVerbose=False ) :
+		description = """ This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems."""
+		if bVerbose :
+			print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
+		# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+		# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+		# AROUND LINE 2277
+		# CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
+		# A LOT FASTER
+		# FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
+		# https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+		#
+		nr_sq,mr_sq = np.shape(B)
+		if nr_sq != mr_sq :
+			print ( 'ERROR:: FAILED' )
+		N = mr_sq
+		res, nvisi, s, NN, ndx, C = [0], [0], [0], [0], [0], 0
+		res .append(0)
+		for i in range(N) :
+			nvisi.append(i+1)
+			res.append(0); res.append(0)
+			ndx.append(i)
+
+		res   = res[1:]
+		nvisi = nvisi[1:]
+		ndx   = ndx[1:]
+		while ( len(ndx)>0 ) :
+			i = ndx[-1] ; ndx = ndx[:-1]
+			NN = []
+			if ( nvisi[i]>0 ) :
+				C-=1
+				for j in range(N) :
+					if ( B[i,j]<=val ) :
+						NN.append(j)
+				while ( len(NN)>0 ) :
+					# back pop_back
+					k = NN[-1]; NN = NN[:-1]
+					nvisi[k] = C
+					for j in range(N):
+						if ( B[j,k]<=val ) :
+							for q in range(N) :
+								if ( nvisi[q] == j+1 ) :
+									NN.append(q)
+		if bVerbose : # VERBOSE
+			print ( "INFO "+str(-1*C) +" clusters" )
+		Nc = [ 0 for i in range(-1*C) ]
+		for q in range(N) :
+			res[  q*2+1 ] = q;
+			res[  q*2   ] = nvisi[q]-C;
+			Nc [res[q*2]]+= 1;
+			if bVerbose :
+				print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
+		if bVerbose:
+			for i in range(-1*C) :
+				print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
+		return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+else :
+        def connectivity ( B , val, bVerbose=False ) :
+                description="""
+This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distanc>
         """
+                if bVerbose :
+                        print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
+                # PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # AROUND LINE 2277
+                # CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
+                # A LOT FASTER
+                # FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
+                # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+                #
+                nr_sq,mr_sq = np.shape(B)
+                if nr_sq != mr_sq :
+                        print ( 'ERROR' )
+                        return ( -1 )
+                N = mr_sq
+                res , nvisi, s, NN, ndx, C = [], [], [], [], [], 0
+                res .append(0)
+                for i in range(N) :
+                        nvisi.append(i+1)
+                        res.append(0); res.append(0)
+                        ndx.append(i)
+                while ( len(ndx)>0 ) :
+                        i = ndx[-1] ; ndx = ndx[:-1]
+                        NN = []
+                        if ( nvisi[i]>0 ) :
+                                C-=1
+                                for j in range(N) :
+                                        if ( B[i,j]<=val ) :
+                                                NN.append(j)
+                                while ( len(NN)>0 ) :
+                                        # back pop_back
+                                        k = NN[-1]; NN = NN[:-1]
+                                        nvisi[k] = C
+                                        for j in range(N):
+                                                if ( B[j,k]<=val ) :
+                                                        for q in range(N) :
+                                                                if ( nvisi[q] == j+1 ) :
+                                                                        NN.append(q)
+                if bVerbose : # VERBOSE
+                        print ( "INFO "+str(-1*C) +" clusters" )
+                Nc = [ 0 for i in range(-1*C) ]
+                for q in range(N) :
+                        res[  q*2+1 ] = q;
+                        res[  q*2   ] = nvisi[q]-C;
+                        Nc [res[q*2]]+= 1;
+                        if bVerbose :
+                                print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
+                if bVerbose:
+                        for i in range(-1*C) :
+                                print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
+                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+
+
+def connectivity_legacy001 ( B , val, bVerbose=False ) :
+	description="""
+This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems.
+        """
+	if bVerbose :
+            print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
 	# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
 	# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
 	# AROUND LINE 2277
@@ -173,7 +297,7 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
 	for i in range(N) :
 		nvisi.append(i+1)
 		res.append(0); res.append(0)
-		ndx.append(i)		
+		ndx.append(i)
 	while ( len(ndx)>0 ) :
 		i = ndx[-1] ; ndx = ndx[:-1]
 		NN = []
@@ -192,7 +316,7 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
 							if ( nvisi[q] == j+1 ) :
 								NN.append(q)
 	if bVerbose : # VERBOSE
-		print("INFO "+str(-1*C) +" clusters" )
+		print ( "INFO "+str(-1*C) +" clusters" )
 	Nc = [ 0 for i in range(-1*C) ]
 	for q in range(N) :
 		res[  q*2+1 ] = q;

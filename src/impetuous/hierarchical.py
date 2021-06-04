@@ -124,42 +124,59 @@ def calculate_hierarchy_matrix ( data_frame = None ,
     if not operator.xor( data_frame is None , distance_matrix is None ) :
         print ( "ONLY SUPPLY A SINGE DATA FRAME OR A DISTANCE MATRIX" )
         print ( "calculate_hierarchy_matrix FAILED" )
+        print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
         exit(1)
     if not data_frame is None :
         if not 'pandas' in str(type(data_frame)) :
             print ( "ONLY SUPPLY A SINGE DATA FRAME WITH ABSOLUTE COORDINATES" )
             print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
             print ( "calculate_hierarchy_matrix FAILED" )
-            exit(1)
+            exit ( 1 )
         if bVerbose :
             print ( data_frame )
-        distance_matrix = absolute_coordinates_to_distance_matrix(data_frame)
+        distance_matrix = absolute_coordinates_to_distance_matrix(data_frame.values)
+
+    nmt_ = np.shape(distance_matrix)
+    if nmt_[0] != nmt_[1] : # SANITY CHECK
+        print ( "PLEASE SUPPLY A PROPER SQUARE DISTANCE MATRIX" )
+        print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
+        print ( "from scipy.spatial.distance import squareform , pdist\nabsolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))" )
 
     if not distance_matrix is None :
         if bVerbose :
             print ( distance_matrix )
 
+    if bVerbose :
+        print ( "EMPLOYING SORTING HAT" )
     uco_v = sorted(list(set(distance_matrix.reshape(-1))))
     hsers = []
     level_distance_lookup = {}
+
+    if bVerbose :
+        print ( "DOING CONNECTIVITY CLUSTERING" )
     for icut in range(len(uco_v)) :
         cutoff = uco_v[icut]
         # clustercontacts : clusterid , particleid relation
         # clustercontent : clusterid to number of particles in range
+        #from clustering import connectivity # LOCAL TESTING
         clustercontent , clustercontacts = connectivity ( distance_matrix , cutoff ,
                                                         bVerbose=bVerbose )
+
         #
         # internal ordering is a range so this does not need to be a dict
         pid2clusterid = clustercontacts[:,0]
         level_distance_lookup['level'+str(icut)] = [ icut , cutoff , np.mean(clustercontent) ]
         hser = pd.Series(pid2clusterid,name='level'+str(icut),index=range(len(distance_matrix)))
         hsers.append(hser)
-        if len(set(hser.values))==1:
+        if True :
+            print ( 100.0*icut/len(uco_v) )
+
+        if len(set(hser.values)) == 1:
             break
-    if not data_frame is None:
+    if not data_frame is None :
         if 'pandas' in str(type(data_frame)):
             names = data_frame.index.values
-    else:
+    else :
         names = [ str(i) for i in range(len(distance_matrix)) ]
     res_df = pd.DataFrame ( hsers )
     res_df .columns = names
@@ -180,10 +197,8 @@ def calculate_hierarchy_matrix ( data_frame = None ,
 def parent_child_matrix_relationships ( hierarchy_matrix ,
                                         bVerbose = False ,
                                         bRemoveRedundant = True ,
-                                        separators = ['_','-'] ) :
-
-    print('WARNING: DEVELOPMENTAL VERSION')
-    
+                                        separators = ['_','-'],
+                                        iLegacy = 0 ) :
     s_ = separators
     M = hierarchy_matrix
     ns,ms = np.shape(M)
@@ -257,10 +272,15 @@ def parent_child_matrix_relationships ( hierarchy_matrix ,
                 pc_df.loc[orig,'Child level cluster index'] = item[1][-1][-2]
                 idx_rename[orig] = new
         pc_df = pc_df.rename(index=idx_rename)
-    return ( pc_df )
+    if iLegacy == 1 :
+        return ( pc_df )
+    else :
+        return ( pc_df , hierarchy_matrix )
 
-def create_cpgmt_lookup( pcdf , separators = ['_','-'] ):
+
+def create_cpgmt_lookup ( pcdf , hierarchy_matrix , separators = ['_','-'] ):
         s_ = separators
+        M  = hierarchy_matrix
         all_parents = list(set([v.split(s_[1])[0] for v in pcdf.index.values]))
         lookup      = {'content':['children','descriptions','parts']}
         children , descriptions , parts = [] , [] , []
