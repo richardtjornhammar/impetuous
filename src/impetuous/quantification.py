@@ -47,6 +47,28 @@ def whiten_data ( Xdf ) :
     X_white = np.dot(X,np.dot( np.diag(s**-1),np.abs(v) )) # we don't know the sign
     return ( pd.DataFrame( X_white,index=Xdf.index.values,columns=Xdf.columns ) )
 
+def threshold ( E , A ) :
+    if not 'pandas' in str(type(A)) or not 'pandas' in str(type(E)):
+        print ( "ERROR MUST SUPPLY TWO PANDAS DATAFRAMES" )
+        return ( -1 )
+    thresholds_df = pd .DataFrame ( np.dot( E,A.T ) ,
+                          columns = A .index ,
+                          index   = E .index ) .apply ( lambda x:x/np.sum(E,1) )
+    return ( thresholds_df )
+
+def solve ( C = pd.DataFrame([ [10,1],[3,5] ]) ,
+            E = pd.DataFrame([ [25],[31] ]) ):
+    if not 'pandas' in str(type(C)) or not 'pandas' in str(type(E)):
+        print ( "ERROR MUST SUPPLY TWO PANDAS DATAFRAMES" )
+        return ( -1 )
+    recover = lambda U,S,Vt : np.dot(U*S,Vt)
+    cU, cS, cVt = np.linalg.svd(C, full_matrices=False )
+    cST   = 1/cS
+    psuedo_inverse = pd.DataFrame( recover(cVt.T,cST,cU.T) , index=C.columns ,columns=C.index )
+    identity  = np.dot(C,psuedo_inverse)
+    TOLERANCE = np.max( np.sqrt( ( identity * ( ( 1-np.eye(len(np.diag(identity)))) ) )**2 ))
+    return ( np.dot( psuedo_inverse,E),TOLERANCE )
+
 import re
 def find_category_variables( istr ) :
     return ( re.findall( r'C\((.*?)\)', istr ) )
