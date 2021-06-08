@@ -120,7 +120,7 @@ def calculate_hierarchy_matrix ( data_frame = None ,
                                  bVerbose = False,
                                  coarse_grain_structure = 0 ) :
     info__ = """ This is the saiga/pelican/panda you are looking for RICEARD"""
-    print (info__ )
+    # print (info__ )
     from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
     import operator
     if not operator.xor( data_frame is None , distance_matrix is None ) :
