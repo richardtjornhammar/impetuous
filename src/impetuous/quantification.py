@@ -383,6 +383,47 @@ def knn_clustering_alignment( P , Q ) :
     return ( np.array(labels), np.array(centroids) )
 
 
+def rictjo_multifactor_solution ( analyte_df , journal_df , formula ) :
+    inventing_saiga__ = 'Richard Tjörnhammar' # WHY USE PLS ANYWWAY ?
+    A , J , f = analyte_df , journal_df , formula
+    encoding_df = interpret_problem ( analyte_df = A , journal_df = J , formula = f ).T
+    solution_ =  solve ( A.T, encoding_df.T )
+    if solution_[1] > 1E-10 :
+        print ( "WARNING: YOUR DATA IS SHIT ", solution_[1] )
+    beta_df  = pd.DataFrame ( solution_[0] , index=A.index , columns=encoding_df.index )
+    U ,S, VT = np.linalg.svd ( beta_df.values,full_matrices=False )
+
+    P = pd.DataFrame( U.T , index = [ 'Comp'+str(r) for r in range(len(U.T))] , columns = A.index )
+    W = pd.DataFrame(  VT , index = [ 'Comp'+str(r) for r in range(len(U.T))] , columns = encoding_df.index )
+    S = pd.DataFrame( np.dot( W, np.linalg.svd ( encoding_df , full_matrices=False )[-1] ) ,
+                      columns=encoding_df.columns, index= [ 'Comp'+str(r) for r in range(len(U.T))]  )
+
+    return ( P.T , W.T , S.T , encoding_df.T )
+
+
+def multivariate_factorisation ( analyte_df , journal_df , formula ,
+                          bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
+                          exclude_labels_from_centroids = [''] ,
+                          bDeveloperTesting = False , bReturnAll=False ,
+                          study_axii = None , owner_by = 'angle' ) :
+
+    P, W, S, encoding_df = rictjo_multifactor_solution ( analyte_df , journal_df , formula )
+
+    res_df = calculate_alignment_properties ( encoding_df ,
+                        P.values , W.values , S.values ,
+                        journal_df = journal_df , analyte_df = analyte_df ,
+                        blur_cutoff = blur_cutoff , bVerbose = bVerbose ,
+                        exclude_labels_from_centroids = exclude_labels_from_centroids ,
+                        study_axii = study_axii , owner_by = owner_by )
+    if bReturnAll :
+        return ( { 'Mutlivariate Solutions':res_df ,
+                   'Feature Scores':P , 'Encoding Weights':W ,
+                   'Sample Scores':S  , 'Encoding DataFrame':encoding_df })
+    else :
+        return ( res_df )
+
+
+
 
 
 crop = lambda x,W:x[:,:W]
