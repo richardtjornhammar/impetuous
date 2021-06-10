@@ -383,8 +383,8 @@ def knn_clustering_alignment( P , Q ) :
     return ( np.array(labels), np.array(centroids) )
 
 
-def rictjo_multifactor_solution ( analyte_df , journal_df , formula ) :
-    inventing_saiga__ = 'Richard Tjörnhammar' # WHY USE PLS ANYWWAY ?
+def multifactor_solution ( analyte_df , journal_df , formula ) :
+    inventing_saiga__ = 'Richard Tjörnhammar'
     A , J , f = analyte_df , journal_df , formula
     encoding_df = interpret_problem ( analyte_df = A , journal_df = J , formula = f ).T
     solution_ =  solve ( A.T, encoding_df.T )
@@ -407,7 +407,7 @@ def multivariate_factorisation ( analyte_df , journal_df , formula ,
                           bDeveloperTesting = False , bReturnAll=False ,
                           study_axii = None , owner_by = 'angle' ) :
 
-    P, W, S, encoding_df = rictjo_multifactor_solution ( analyte_df , journal_df , formula )
+    P, W, S, encoding_df = multifactor_solution ( analyte_df , journal_df , formula )
 
     res_df = calculate_alignment_properties ( encoding_df ,
                         P.values , W.values , S.values ,
