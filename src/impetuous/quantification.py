@@ -317,7 +317,6 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
 
     return ( res_df )
 
-
 import impetuous.fit as ifit
 import impetuous.clustering as icluster
 def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose = False ) :
@@ -382,24 +381,21 @@ def knn_clustering_alignment( P , Q ) :
 
     return ( np.array(labels), np.array(centroids) )
 
+def tol_check( val, TOL=1E-10 ):
+    if val > TOL :
+        print ( "WARNING: DATA ENTROPY HIGH (SNR LOW)", val )
 
 def multifactor_solution ( analyte_df , journal_df , formula ) :
-    inventing_saiga__ = 'Richard Tjörnhammar'
     A , J , f = analyte_df , journal_df , formula
     encoding_df = interpret_problem ( analyte_df = A , journal_df = J , formula = f ).T
     solution_ =  solve ( A.T, encoding_df.T )
-    if solution_[1] > 1E-10 :
-        print ( "WARNING: YOUR DATA IS SHIT ", solution_[1] )
+    tol_check ( solution_[1] )
     beta_df  = pd.DataFrame ( solution_[0] , index=A.index , columns=encoding_df.index )
-    U ,S, VT = np.linalg.svd ( beta_df.values,full_matrices=False )
-
+    U, S, VT = np.linalg.svd ( beta_df.values,full_matrices=False )
     P = pd.DataFrame( U.T , index = [ 'Comp'+str(r) for r in range(len(U.T))] , columns = A.index )
     W = pd.DataFrame(  VT , index = [ 'Comp'+str(r) for r in range(len(U.T))] , columns = encoding_df.index )
-    S = pd.DataFrame( np.dot( W, np.linalg.svd ( encoding_df , full_matrices=False )[-1] ) ,
-                      columns=encoding_df.columns, index= [ 'Comp'+str(r) for r in range(len(U.T))]  )
-
-    return ( P.T , W.T , S.T , encoding_df.T )
-
+    Z = threshold ( encoding_df.T , S*W ) .T
+    return ( P.T , W.T , Z.T , encoding_df.T )
 
 def multivariate_factorisation ( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
@@ -416,15 +412,11 @@ def multivariate_factorisation ( analyte_df , journal_df , formula ,
                         exclude_labels_from_centroids = exclude_labels_from_centroids ,
                         study_axii = study_axii , owner_by = owner_by )
     if bReturnAll :
-        return ( { 'Mutlivariate Solutions':res_df ,
+        return ( { 'Multivariate Solutions':res_df ,
                    'Feature Scores':P , 'Encoding Weights':W ,
-                   'Sample Scores':S  , 'Encoding DataFrame':encoding_df })
+                   'Sample Scores' :S , 'Encoding DataFrame':encoding_df })
     else :
         return ( res_df )
-
-
-
-
 
 crop = lambda x,W:x[:,:W]
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
