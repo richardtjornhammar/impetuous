@@ -192,37 +192,6 @@ def convert_rdata_to_dataframe ( filename ) :
     pandas2ri.deactivate()
     return ( full_df_dict )
 
-
-def recast2D ( M , N_oPara=None ) :
-    ispanda = lambda P : 'pandas' in str(type(P)).lower()
-    if not ispanda( M ) :
-        print ( "FUNCTION ",'2Drecast'," REQUIRES ", 'M'," TO BE A PANDAS DATAFRAME" )
-
-    N_opara = N_oPara
-    if N_oPara is None:
-        N_opara = len ( M.columns.values )
-
-    N_parts = len(M)
-    m2D = []
-    rho = M.T.apply( lambda x:np.sqrt( np.dot( x,x ) ) )
-    rv  = pd.DataFrame( np.array([ np.array([ r ]) for r in rho.values] ) * np.array( [ rho.values ] ) )
-    PQ  = pd.DataFrame( np.dot( M,M.T ) )
-    PHI = PQ/rv
-    PSI = PHI.apply( lambda x:N_opara*np.arccos(x) )
-    cPSI = PSI.apply(np.cos)
-    sPSI = PSI.apply(np.sin)
-    for i in range( N_parts ) :
-        cPSI .iloc[i,i] = 0
-        sPSI .iloc[i,i] = 0
-    iN = 1.0/( N_parts-1.0 )
-    C = cPSI.apply(np.sum,1)*iN; C.index=rho.index
-    S = sPSI.apply(np.sum,1)*iN; S.index=rho.index
-    res = pd.concat( [ rho , C, S, rho*C, rho*S ], 1 )
-    res .columns = [ 'rho','cos NPhi','sin NPhi','X','Y' ]
-
-    return ( res )
-
-
 import os
 if __name__ == '__main__' :
     #

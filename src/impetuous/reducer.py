@@ -107,7 +107,9 @@ def svd_reduced_mean ( x,axis=0,keep=[0] ) :
 
 from sklearn.decomposition import PCA
 dimred = PCA ( n_components = 1 )
+
 def pca_reduced_mean( x ) :
+    dimred = PCA ( n_components = 1 )
     if True :
         if len ( np.shape(x) ) > 1 :
             Xnew = dimred.fit_transform( x.T )

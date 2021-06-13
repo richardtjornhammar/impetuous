@@ -385,6 +385,8 @@ def tol_check( val, TOL=1E-10 ):
     if val > TOL :
         print ( "WARNING: DATA ENTROPY HIGH (SNR LOW)", val )
 
+ispanda = lambda P : 'pandas' in str(type(P)).lower()
+
 def multifactor_solution ( analyte_df , journal_df , formula ) :
     A , J , f = analyte_df , journal_df , formula
     encoding_df = interpret_problem ( analyte_df = A , journal_df = J , formula = f ).T
@@ -395,28 +397,76 @@ def multifactor_solution ( analyte_df , journal_df , formula ) :
     P = pd.DataFrame( U.T , index = [ 'Comp'+str(r) for r in range(len(U.T))] , columns = A.index )
     W = pd.DataFrame(  VT , index = [ 'Comp'+str(r) for r in range(len(U.T))] , columns = encoding_df.index )
     Z = threshold ( encoding_df.T , S*W ) .T
-    return ( P.T , W.T , Z.T , encoding_df.T )
+    return ( P.T , W.T , Z.T , encoding_df.T , beta_df )
+
+
+def multifactor_evaluation (  analyte_df , journal_df , formula ) :
+    #
+    # ALTOUGH A GOOD METHOD IT IS STILL NOT SUFFICIENT ENOUGH
+    #
+    P, W, Z, encoding_df , beta_df = multifactor_solution ( analyte_df , journal_df , formula )
+    eval_df = beta_df.apply(lambda x:x**2)
+    all = []
+    for c in eval_df.columns :
+        all.append ( pd.DataFrame ( quantify_density_probability ( eval_df.loc[:,c].values ),
+                index = [c+',p',c+',r'], columns=eval_df.index ).T)
+    res_df = pd.concat( all,1 )
+    for c in res_df.columns:
+        if ',p' in c:
+            q = [ qv[0] for qv in qvalues(res_df.loc[:,c].values) ]
+            res_df.loc[:,c.split(',p')[0]+',q'] = q
+    return ( res_df )
+
+
+def proj_c ( P ) :
+    # P CONTAINS MUTUTALLY ORTHOGONAL COMPONENTS ALONG THE COLUMNS
+    # THE CS CALCULATION MIGHT SEEM STRANGE BUT FULLFILS THE PURPOSE
+    if not ispanda(P) : # ispandor är coola
+        print ( "FUNCTION REQUIRES A SAIGA OR PANDA DATA FRAME" )
+    CS  = P.T.apply( lambda x: pd.Series( [x[0],x[1]]/np.sqrt(np.sum(x**2)),index=['cos','sin']) ).T
+    RHO = P.T.apply( lambda x: np.sqrt(np.sum(x**2)) )
+    CYL = pd.concat( [RHO*CS['cos'],RHO*CS['sin']],1 )
+    CYL.columns = ['X','Y']
+    return ( CYL )
+
 
 def multivariate_factorisation ( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
                           exclude_labels_from_centroids = [''] ,
-                          bDeveloperTesting = False , bReturnAll=False ,
-                          study_axii = None , owner_by = 'angle' ) :
+                          bDeveloperTesting = False , bReturnAll = False ,
+                          study_axii = None , owner_by = 'angle' ,
+                          bDoRecast = False , bUseThresholds = False ) :
 
-    P, W, S, encoding_df = multifactor_solution ( analyte_df , journal_df , formula )
+    P, W, Z, encoding_df , beta_df = multifactor_solution ( analyte_df , journal_df , formula )
+    #
+    # USE THE INFLATION PROJECTION AS DEFAULT
+    if not bUseThresholds :
+        aA = np.linalg.svd ( analyte_df - np.mean(np.mean(analyte_df))   , full_matrices=False )
+        aE = np.linalg.svd ( encoding_df.T , full_matrices=False )
+        Z  = pd.DataFrame ( np.dot( np.dot( W.T , aE[-1] ), aA[-1]) ,
+                        columns = encoding_df.T.columns ,
+                        index= [ 'mComp' + str(r) for r in range(len(aE[-1]))]
+                      ).T
+    if bDoRecast :
+        print ( "WARNING: THROWING AWAY INFORMATION IN ORDER TO DELIVER A" )
+        print ( "         VISUALLY MORE PLEASING POINT CLOUD ... ")
+        P = proj_c( P )
+        W = proj_c( W )
+        Z = proj_c( Z )
 
     res_df = calculate_alignment_properties ( encoding_df ,
-                        P.values , W.values , S.values ,
+                        quantx = P.values , quanty = W.values , scorex = Z.values ,
                         journal_df = journal_df , analyte_df = analyte_df ,
                         blur_cutoff = blur_cutoff , bVerbose = bVerbose ,
                         exclude_labels_from_centroids = exclude_labels_from_centroids ,
                         study_axii = study_axii , owner_by = owner_by )
     if bReturnAll :
-        return ( { 'Multivariate Solutions':res_df ,
-                   'Feature Scores':P , 'Encoding Weights':W ,
-                   'Sample Scores' :S , 'Encoding DataFrame':encoding_df })
+        return ( { 'Mutlivariate Solutions' : res_df ,
+                   'Feature Scores' : P , 'Encoding Weights'   : W ,
+                   'Sample Scores'  : Z , 'Encoding DataFrame' : encoding_df })
     else :
         return ( res_df )
+
 
 crop = lambda x,W:x[:,:W]
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
