@@ -402,11 +402,11 @@ def multifactor_solution ( analyte_df , journal_df , formula ) :
 
 def multifactor_evaluation (  analyte_df , journal_df , formula ) :
     #
-    # ALTOUGH A GOOD METHOD IT IS STILL NOT SUFFICIENT ENOUGH
+    # ALTOUGH A GOOD METHOD IT IS STILL NOT SUFFICIENT
     #
     P, W, Z, encoding_df , beta_df = multifactor_solution ( analyte_df , journal_df , formula )
     eval_df = beta_df.apply(lambda x:x**2)
-    all = []
+    all = [beta_df]
     for c in eval_df.columns :
         all.append ( pd.DataFrame ( quantify_density_probability ( eval_df.loc[:,c].values ),
                 index = [c+',p',c+',r'], columns=eval_df.index ).T)
