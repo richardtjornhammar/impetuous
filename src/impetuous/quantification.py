@@ -468,6 +468,33 @@ def multivariate_factorisation ( analyte_df , journal_df , formula ,
         return ( res_df )
 
 
+def associations ( M , W = None , bRanked = True ) :
+    ispanda = lambda P : 'pandas' in str(type(P)).lower()
+    if not ispanda( M ) :
+        print ( "FUNCTION ",'recast_alignments'," REQUIRES ", 'M'," TO BE A PANDAS DATAFRAME" )
+    bValid = False
+    if not W is None :
+        if not len(W.columns.values) == len(M.columns.values):
+            W = M
+        else:
+            bValid = True
+    else :
+        W = M
+    if bRanked :
+        from scipy.stats import rankdata
+        M = ( M.T.apply(lambda x:rankdata(x,'average')).T-0.5 )/len(M.columns)
+        W = ( W.T.apply(lambda x:rankdata(x,'average')).T-0.5 )/len(W.columns)
+    rho1 = M.T.apply( lambda x:np.sqrt( np.dot( x,x ) ) )
+    rho2 = rho1
+    if bValid :
+        rho2 = W.T.apply( lambda x:np.sqrt( np.dot( x,x ) ) )
+    R2  = pd.DataFrame( np.array([np.array([r]) for r in rho1.values])*[rho2.values] ,
+                        index = rho1.index, columns = rho2.index )
+    PQ  = pd.DataFrame( np.dot( M,W.T ), index = rho1.index, columns = rho2.index )
+    res = PQ/R2
+    return ( res )
+
+
 crop = lambda x,W:x[:,:W]
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
