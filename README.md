@@ -134,9 +134,120 @@ if __name__ == '__main__' :
     print ( S2/N-S*S/N/N )
 ```
 
+# Usage example 4 : Diabetes analysis
+
+Here we show how to use a novel multifactor method on a diabetes data set to deduce important transcripts with respect to being diabetic. The data was obtained from the Broad Institute [Broad Insitute](http://www.gsea-msigdb.org/gsea/datasets.jsp) and contains gene expressions from a microarray hgu133a platform. We choose to employ the `Diabetes_collapsed_symbols.gct` file since it has already been collapsed down to useful transcripts. We have entered an `impetuous-gfa 0.50.0` environment and set up the a `diabetes.py` file with the follwing code content:
+
+```
+import pandas as pd
+import numpy as np
+
+if __name__ == '__main__' :
+    analyte_df = pd.read_csv('../data/Diabetes_collapsed_symbols.gct','\t', index_col=0, header=2).iloc[:,1:]
+```
+
+In order to illustrate the use of low value supression we use the reducer module.  A `tanh` based soft max function is employed by the confred function to supress values lower than the mean of the entire sample series for each sample.
+```
+    from impetuous.reducer import get_procentile,confred
+    for i_ in range(len(analyte_df.columns.values)):
+        vals   = analyte_df.iloc[:,i_].values
+        eta    = get_procentile( vals,50 )
+        varpi  = get_procentile( vals,66 ) - get_procentile( vals,33 )
+        analyte_df.iloc[:,i_] = confred(vals,eta,varpi)
+
+    print ( analyte_df )
+```
+
+The data now contain samples along the columns and gene transcript symbols along the rows where the original values have been quenched with low value supression. The table have the following appearance
+
+|NAME       |NGT_mm12_10591 | ... | DM2_mm81_10199 |
+|:---       |           ---:|:---:|            ---:|
+|215538_at  |    16.826041 | ... | 31.764484       |
+|...        |              |     |                 |
+|LDLR       |   19.261185  | ... | 30.004612       |
+
+We proceed to write a journal data frame by adding the following lines to our code
+```
+    journal_df = pd.DataFrame([ v.split('_')[0] for v in analyte_df.columns] , columns=['Status'] , index = analyte_df.columns.values ).T
+    print ( journal_df )
+```
+which will produce the following journal table :
+
+|      |NGT_mm12_10591 | ... | DM2_mm81_10199 |
+|:---    |         ---:|:---:|            ---:|
+|Status  |         NGT | ... | DM2            |
+
+Now we check if there are aggregation tendencies among these two groups prior to the multifactor analysis. We could use the hierarchical clustering algorithm, but refrain from it and instead use the `associations` method together with the `connectivity` clustering algorithm. The `associations` can be thought of as a type of ranked correlations similar to spearman correlations. If two samples are strongly associated with each other they will be close to `1` (or `-1` if they are anti associated). Since they are all humans, with many transcript features, the values will be close to `1`. After recasting the `associations` into distances we can determine if two samples are connected at a given distance by using the `connectivity` routine. All connected points are then grouped into technical clusters, or batches, and added to the journal.
+```
+    from impetuous.quantification import associations
+    ranked_similarity_df = associations ( analyte_df .T )
+    sample_distances = ( 1 - ranked_similarity_df ) * 2.
+
+    from impetuous.clustering import connectivity
+    cluster_ids = [ 'B'+str(c[0]) for c in connectivity( sample_distances.values , 5.0E-2 )[1] ]
+    print ( cluster_ids )
+
+    journal_df .loc['Batches'] = cluster_ids
+```
+which will produce a cluster list containing `13` batches with members whom are `Normal Glucose Tolerant` or have `Diabetes Mellitus 2`. We write down the formula for deducing which genes are best at recreating the diabetic state and batch identities by writing:
+```
+    formula = 'f~C(Status)+C(Batches)'
+```
+The multifactor method calculates how to produce an encoded version of the journal data frame given an analyte data set. It does this by forming the psuedo inverse matrix that best describes the inverse of the analyte frame and then calculates the dot product with of the inverse with the encoded journal data frame. This yields the coefficient frame needed to solve for the numerical encoding frame. The method has many nice statistical properties that we will not discuss further here. The first thing that the multifactor method does is to create the encoded data frame. The encoded data frame for this problem can be obtained with the following code snippet
+```
+    encoded_df = interpret_problem ( analyte_df , journal_df , formula )
+    print ( encoded_df )
+```
+and it will look something like this
+
+|      |NGT_mm12_10591 | ... | DM2_mm81_10199 |
+|:---  |           ---:|:---:|            ---:|
+|B10   |         0.0   | ... | 0.0            |
+|B5    |         0.0   | ... | 0.0            |
+|B12   |         0.0   | ... | 1.0            |
+|B2    |         0.0   | ... | 0.0            |
+|B11   |         1.0   | ... | 0.0            |
+|B8    |         0.0   | ... | 0.0            |
+|B1    |         0.0   | ... | 0.0            |
+|B7    |         0.0   | ... | 0.0            |
+|B4    |         0.0   | ... | 0.0            |
+|B0    |         0.0   | ... | 0.0            |
+|B6    |         0.0   | ... | 0.0            |
+|B9    |         0.0   | ... | 0.0            |
+|B3    |         0.0   | ... | 0.0            |
+|NGT   |         1.0   | ... | 0.0            |
+|DM2   |         0.0   | ... | 1.0            |
+This encoded dataframe can be used to calculate statistical parameters or solve other linear equations. Take the fast calculation of the mean gene expressions across all groups as an example
+```
+    print ( pd .DataFrame ( np.dot( encoded_df,analyte_df.T ) ,
+                          columns = analyte_df .index ,
+                          index   = encoded_df .index ) .apply ( lambda x:x/np.sum(encoded_df,1) ) )
+```
+which will immediately calculates the mean values of all transcripts across all different groups.
+
+The `multifactor_evaluation` calculates the coefficients that best recreates the encoded journal by employing the psudo inverse of the analyte frame utlizing Singular Value Decomposition. The beta coefficients are then evaluated using a normal distribution assumption to obtain `p values` and rank corrected `q values` are also returned. The full function can be called with the follwing code
+```
+    from impetuous.quantification import multifactor_evaluation
+    multifactor_results = multifactor_evaluation ( analyte_df , journal_df , formula )
+
+    print ( multifactor_results.sort_values('DM2,q').iloc[:25,:].index.values  )
+```
+which tells us that the genes
+```
+['MYH2' 'RPL39' 'HBG1 /// HBG2' 'DDN' 'UBC' 'RPS18' 'ACTC' 'HBA2' 'GAPD'
+ 'ANKRD2' 'NEB' 'MYL2' 'MT1H' 'KPNA4' 'CA3' 'RPLP2' 'MRLC2 /// MRCL3'
+ '211074_at' 'SLC25A16' 'KBTBD10' 'HSPA2' 'LDHB' 'COX7B' 'COX7A1' 'APOD']
+```
+have something to do with altered metabolism in Type 2 Diabetics. We could now proceed to use the hierarchical enrichment routine to understand what that something is.
+
+This example was meant as an illustration of some of the codes implemented in the impetuous-gfa package.
+
+
 # Manually updated code backups for this library :
 
 GitLab:	https://gitlab.com/richardtjornhammar/impetuous
 
 CSDN:	https://codechina.csdn.net/m0_52121311/impetuous
+
+
 
