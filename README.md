@@ -193,7 +193,7 @@ which will produce a cluster list containing `13` batches with members whom are 
 ```
     formula = 'f~C(Status)+C(Batches)'
 ```
-The multifactor method calculates how to produce an encoded version of the journal data frame given an analyte data set. It does this by forming the psuedo inverse matrix that best describes the inverse of the analyte frame and then calculates the dot product with of the inverse with the encoded journal data frame. This yields the coefficient frame needed to solve for the numerical encoding frame. The method has many nice statistical properties that we will not discuss further here. The first thing that the multifactor method does is to create the encoded data frame. The encoded data frame for this problem can be obtained with the following code snippet
+The multifactor method calculates how to produce an encoded version of the journal data frame given an analyte data set. It does this by forming the psuedo inverse matrix that best describes the inverse of the analyte frame and then calculates the dot product of the inverse with the encoded journal data frame. This yields the coefficient frame needed to solve for the numerical encoding frame. The method has many nice statistical properties that we will not discuss further here. The first thing that the multifactor method does is to create the encoded data frame. The encoded data frame for this problem can be obtained with the following code snippet
 ```
     encoded_df = interpret_problem ( analyte_df , journal_df , formula )
     print ( encoded_df )
@@ -217,6 +217,7 @@ and it will look something like this
 |B3    |         0.0   | ... | 0.0            |
 |NGT   |         1.0   | ... | 0.0            |
 |DM2   |         0.0   | ... | 1.0            |
+
 This encoded dataframe can be used to calculate statistical parameters or solve other linear equations. Take the fast calculation of the mean gene expressions across all groups as an example
 ```
     print ( pd .DataFrame ( np.dot( encoded_df,analyte_df.T ) ,
