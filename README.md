@@ -224,7 +224,7 @@ This encoded dataframe can be used to calculate statistical parameters or solve 
                           columns = analyte_df .index ,
                           index   = encoded_df .index ) .apply ( lambda x:x/np.sum(encoded_df,1) ) )
 ```
-which will immediately calculates the mean values of all transcripts across all different groups.
+which will immediately calculate the mean values of all transcripts across all different groups.
 
 The `multifactor_evaluation` calculates the coefficients that best recreates the encoded journal by employing the psudo inverse of the analyte frame utlizing Singular Value Decomposition. The beta coefficients are then evaluated using a normal distribution assumption to obtain `p values` and rank corrected `q values` are also returned. The full function can be called with the follwing code
 ```
