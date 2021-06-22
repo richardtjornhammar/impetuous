@@ -136,7 +136,7 @@ if __name__ == '__main__' :
 
 # Usage example 4 : Diabetes analysis
 
-Here we show how to use a novel multifactor method on a diabetes data set to deduce important transcripts with respect to being diabetic. The data was obtained from the Broad Institute [Broad Insitute](http://www.gsea-msigdb.org/gsea/datasets.jsp) and contains gene expressions from a microarray hgu133a platform. We choose to employ the `Diabetes_collapsed_symbols.gct` file since it has already been collapsed down to useful transcripts. We have entered an `impetuous-gfa 0.50.0` environment and set up the a `diabetes.py` file with the follwing code content:
+Here we show how to use a novel multifactor method on a diabetes data set to deduce important transcripts with respect to being diabetic. The data was obtained from the [Broad Insitute](http://www.gsea-msigdb.org/gsea/datasets.jsp) and contains gene expressions from a microarray hgu133a platform. We choose to employ the `Diabetes_collapsed_symbols.gct` file since it has already been collapsed down to useful transcripts. We have entered an `impetuous-gfa` ( version >= `0.50.0` ) environment and set up the a `diabetes.py` file with the follwing code content:
 
 ```
 import pandas as pd
@@ -146,7 +146,7 @@ if __name__ == '__main__' :
     analyte_df = pd.read_csv('../data/Diabetes_collapsed_symbols.gct','\t', index_col=0, header=2).iloc[:,1:]
 ```
 
-In order to illustrate the use of low value supression we use the reducer module.  A `tanh` based soft max function is employed by the confred function to supress values lower than the mean of the entire sample series for each sample.
+In order to illustrate the use of low value supression we use the reducer module.  A `tanh` based soft max function is employed by the confred function to supress values lower than the median of the entire sample series for each sample.
 ```
     from impetuous.reducer import get_procentile,confred
     for i_ in range(len(analyte_df.columns.values)):
@@ -226,7 +226,7 @@ This encoded dataframe can be used to calculate statistical parameters or solve 
 ```
 which will immediately calculate the mean values of all transcripts across all different groups.
 
-The `multifactor_evaluation` calculates the coefficients that best recreates the encoded journal by employing the psudo inverse of the analyte frame utlizing Singular Value Decomposition. The beta coefficients are then evaluated using a normal distribution assumption to obtain `p values` and rank corrected `q values` are also returned. The full function can be called with the follwing code
+The `multifactor_evaluation` calculates the coefficients that best recreates the encoded journal by employing the psudo inverse of the analyte frame utlizing Singular Value Decomposition. The beta coefficients are then evaluated using a normal distribution assumption to obtain `p values` and rank corrected `q values` are also returned. The full function can be called with the following code
 ```
     from impetuous.quantification import multifactor_evaluation
     multifactor_results = multifactor_evaluation ( analyte_df , journal_df , formula )
@@ -239,9 +239,68 @@ which tells us that the genes
  'ANKRD2' 'NEB' 'MYL2' 'MT1H' 'KPNA4' 'CA3' 'RPLP2' 'MRLC2 /// MRCL3'
  '211074_at' 'SLC25A16' 'KBTBD10' 'HSPA2' 'LDHB' 'COX7B' 'COX7A1' 'APOD']
 ```
-have something to do with altered metabolism in Type 2 Diabetics. We could now proceed to use the hierarchical enrichment routine to understand what that something is.
+have something to do with the altered metabolism in Type 2 Diabetics. We could now proceed to use the hierarchical enrichment routine to understand what that something is, but first we save the data
+```
+    multifactor_results.to_csv('multifactor_dm2.csv','\t')
+```
 
-This example was meant as an illustration of some of the codes implemented in the impetuous-gfa package.
+# Example 5 : Understanding what it means
+
+If you have a well curated `.gmt` file that contains analyte ids as unique sets that belong to different groups then you can check whether or not a specific group seems significant with respect to all of the significant and insignificant analytes that you just calculated. One can derive such a hierarchy or rely on already curated information. Since we are dealing with genes and biologist generally have strong opinions about these things we go to a directed acyclic knowledge graph called [Reactome](https://reactome.org/PathwayBrowser/) and translate that information into a set of [files](https://zenodo.org/record/3608712) that we can use to build our own knowledge hierarchy. After downloading that `.zip` file (and unzipping) you will be able to execute the following code
+```
+import pandas as pd
+import numpy as np
+
+if __name__=='__main__':
+    import impetuous.pathways as impw
+    impw.description()
+```
+which will blurt out code you can use as inspiration to generate the Reactome knowledge hierarchy. So now we do that
+```
+    paths = impw.Reactome( './Ensembl2Reactome_All_Levels_v71.txt' )
+```
+but we also need to translate the gene ids into the correct format so we employ [BioMart](http://www.ensembl.org/biomart/martview). To obtain the conversion text file we select `Human genes GRCh38.p13` and choose attributes `Gene stable ID`, `Gene name` and `Gene Synonym` and save the file as `biomart.txt`.
+
+```
+    biomart_dictionary = {}
+    with open('biomart.txt','r') as input:
+        for line in input :
+            lsp = line.split('\n')[0].split('\t')
+            biomart_dictionary[lsp[0]] = [ n for n in lsp[1:] if len(n)>0 ]
+    paths.add_pathway_synonyms( synonym_dict=biomart_dictionary )
+
+    paths .make_gmt_pathway_file( './reactome_v71.gmt' )
+```
+Now we are almost ready to conduct the hierarchical pathway enrichment, to see what cellular processes are significant with respect to our gene discoveries, but we still need to build the Directed Acyclic Graph (DAG) from the parent child file and the pathway definitions.
+```
+    import impetuous.hierarchical as imph
+    dag_df , tree = imph.create_dag_representation_df ( pathway_file = './reactome_v71.gmt',
+                                                        pcfile = './NewestReactomeNodeRelations.txt' )
+```
+We will use it in the `HierarchicalEnrichment` routine later in order not to double count genes that have already contributed at lower levels of the hierarchy. Now where did we store those gene results...
+```
+    quantified_analyte_df = pd.read_csv('multifactor_dm2.csv','\t',index_col=0)
+    a_very_significant_cutoff = 1E-10
+
+    enrichment_results = imph.HierarchicalEnrichment ( quantified_analyte_df , dag_df , 
+                                  ancestors_id_label = 'DAG,ancestors' , dag_level_label = 'DAG,level' ,
+                                  threshold = a_very_significant_cutoff ,
+                                  p_label = 'DM2,q' )
+```
+lets see what came out on top!
+```
+    print( enrichment_results.sort_values('Hierarchical,p').loc[:,['description','Hierarchical,p']].iloc[0,:] )
+```
+which will report that
+
+|description | Striated Muscle Contraction  |
+|:---       |           ---:|
+|Hierarchical,p  |   6.55459e-05 |
+|Name: |  R-HSA-390522 |
+
+is affected or perhaps needs to be compensated for... now perhaps you thought this excerice was a tad tedious? Well you are correct. It is and you could just as well have copied the gene transcripts into [String-db](https://string-db.org/cgi/input?sessionId=beIptQQxF85j&input_page_active_form=multiple_identifiers) and gotten similar results out. But, then you wouldn't have gotten to use the hierarchical enrichment method I invented!
+
+These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package.
 
 
 # Manually updated code backups for this library :
