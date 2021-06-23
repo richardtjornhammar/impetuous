@@ -134,6 +134,46 @@ def find_category_interactions ( istr ) :
     interacting_categories = [ [all_cats[i-1],all_cats[i]] for i in range(1,len(interacting)) if interacting[i] ]
     return ( interacting_categories )
 
+
+def create_encoding_data_frame ( journal_df , formula , bVerbose=False ) :
+    #
+    # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)
+    # THE FORMULA IS THE SEMANTIC DESCRIPTION OF THE PROBLEM
+    #
+    interaction_pairs = find_category_interactions ( formula.split('~')[1] )
+    add_pairs = []
+    sjdf = set(journal_df.index)
+    if len( interaction_pairs ) > 0 :
+        for pair in interaction_pairs :
+            cpair = [ 'C('+p+')' for p in pair ]
+            upair = [ pp*(pp in sjdf)+cp*(cp in sjdf and not pp in sjdf) for (pp,cp) in zip( pair,cpair) ]
+            journal_df.loc[ ':'.join(upair) ] = [ p[0]+'-'+p[1] for p in journal_df.loc[ upair,: ].T.values ]
+            add_pairs.append(':'.join(upair))
+    use_categories = list(set(find_category_variables(formula.split('~')[1])))
+    cusecats = [ 'C('+p+')' for p in use_categories ]
+    use_categories = [ u*( u in sjdf) + cu *( cu in sjdf ) for (u,cu) in zip(use_categories,cusecats) ]
+    use_categories = [ *use_categories,*add_pairs ]
+    #
+    if len( use_categories )>0 :
+        encoding_df = create_encoding_journal ( use_categories , journal_df ).T
+    else :
+        encoding_df = None
+    #
+    if bVerbose :
+        print ( [ v for v in encoding_df.columns.values ] )
+        print ( 'ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS' )
+    #
+    # THIS TURNS THE MODEL INTO A MIXED LINEAR MODEL
+    add_df = journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]
+    if len(add_df)>0 :
+        if encoding_df is None :
+            encoding_df = add_df.T
+        else :
+            encoding_df = pd.concat([ encoding_df.T ,
+                            journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
+    return ( encoding_df )
+
+
 def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
     #
     # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)

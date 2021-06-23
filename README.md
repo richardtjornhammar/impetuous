@@ -298,7 +298,7 @@ which will report that
 |Hierarchical,p  |   6.55459e-05 |
 |Name: |  R-HSA-390522 |
 
-is affected or perhaps needs to be compensated for... now perhaps you thought this excerice was a tad tedious? Well you are correct. It is and you could just as well have copied the gene transcripts into [String-db](https://string-db.org/cgi/input?sessionId=beIptQQxF85j&input_page_active_form=multiple_identifiers) and gotten similar results out. But, then you wouldn't have gotten to use the hierarchical enrichment method I invented!
+is affected or perhaps needs to be compensated for... now perhaps you thought this exercise was a tad tedious? Well you are correct. It is and you could just as well have copied the gene transcripts into [String-db](https://string-db.org/cgi/input?sessionId=beIptQQxF85j&input_page_active_form=multiple_identifiers) and gotten similar results out. But, then you wouldn't have gotten to use the hierarchical enrichment method I invented!
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package.
 
