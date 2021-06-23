@@ -1,7 +1,7 @@
 # A Statistical Learning library for Humans
-Decomposes a set of expressions into a group expression. The toolkit currently offers enrichment analysis, hierarchical enrichment analysis, PLS regression, Shape alignment or clustering as well as  rudimentary factor analysis.
+This toolkit currently offers enrichment analysis, hierarchical enrichment analysis, novel PLS regression, shape alignment, connectivity clustering, clustering and hierarchical clustering as well as factor analysis methods.
 
-The expression regulation can be studied via a statistical test that relates it to the observables in the journal file. The final p values are then FDR corrected and the resulting adjusted p values are produced.
+The fine grained data can be studied via a statistical tests that relates it to observables in a coarse grained journal file. The final p values can then FDR corrected by employing a novel q-value method.
 
 Visit the active code via :
 https://github.com/richardtjornhammar/impetuous
