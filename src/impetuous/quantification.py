@@ -135,7 +135,7 @@ def find_category_interactions ( istr ) :
     return ( interacting_categories )
 
 
-def create_encoding_data_frame ( journal_df , formula , bVerbose=False ) :
+def create_encoding_data_frame ( journal_df , formula , bVerbose = False ) :
     #
     # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)
     # THE FORMULA IS THE SEMANTIC DESCRIPTION OF THE PROBLEM
@@ -171,7 +171,7 @@ def create_encoding_data_frame ( journal_df , formula , bVerbose=False ) :
         else :
             encoding_df = pd.concat([ encoding_df.T ,
                             journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
-    return ( encoding_df )
+    return ( encoding_dfencoding_df.apply(pd.to_numeric) )
 
 
 def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
@@ -427,9 +427,14 @@ def tol_check( val, TOL=1E-10 ):
 
 ispanda = lambda P : 'pandas' in str(type(P)).lower()
 
-def multifactor_solution ( analyte_df , journal_df , formula ) :
+def multifactor_solution ( analyte_df , journal_df , formula ,
+                           bLegacy = False ) :
     A , J , f = analyte_df , journal_df , formula
-    encoding_df = interpret_problem ( analyte_df = A , journal_df = J , formula = f ).T
+    if bLegacy :
+        encoding_df = interpret_problem ( analyte_df = A , journal_df = J , formula = f ).T
+    else :
+        encoding_df = create_encoding_data_frame ( journal_df = J , formula = f ).T
+
     solution_ =  solve ( A.T, encoding_df.T )
     tol_check ( solution_[1] )
     beta_df  = pd.DataFrame ( solution_[0] , index=A.index , columns=encoding_df.index )
