@@ -171,7 +171,7 @@ def create_encoding_data_frame ( journal_df , formula , bVerbose = False ) :
         else :
             encoding_df = pd.concat([ encoding_df.T ,
                             journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
-    return ( encoding_dfencoding_df.apply(pd.to_numeric) )
+    return ( encoding_df.apply(pd.to_numeric) )
 
 
 def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
