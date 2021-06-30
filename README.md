@@ -53,12 +53,12 @@ $ jupyter-notebook impetuous_finance.ipynb
 
 and that's it.
 
-# Usage example 1 : elaborate informatics
+# Usage example 1: Elaborate informatics
 
 code: https://gitlab.com/stochasticdynamics/eplsmta-experiments
 docs: https://arxiv.org/pdf/2001.06544.pdf
 
-# Usage example 2 : simple regression code
+# Usage example 2: Simple regression code
 
 Now while in a good environment: In your Jupyter notebook or just in a dedicated file.py you can write the following:
 
@@ -80,7 +80,7 @@ print ( results_lookup )
 print ( res_dfs )
 ```
 
-# Usage example 3 : Novel NLP sequence alignment
+# Usage example 3: Novel NLP sequence alignment
 
 Finding a word in a text is a simple and trivial problem in computer science. However matching a sequence of characters to a larger text segment is not. In this example you will be shown how to employ the impetuous text fitting procedure. The strength of the fit is conveyed via the returned score, higher being a stronger match between the two texts. This becomes costly for large texts and we thus break the text into segments and words. If there is a strong word to word match then the entire segment score is calculated. The off and main diagonal power terms refer to how to evaluate a string shift. Fortinbras and Faortinbraaks are probably the same word eventhough the latter has two character shifts in it. In this example both "requests" and "BeautifulSoup" are employed to parse internet text.
 
@@ -244,7 +244,7 @@ have something to do with the altered metabolism in Type 2 Diabetics. We could n
     multifactor_results.to_csv('multifactor_dm2.csv','\t')
 ```
 
-# Example 5 : Understanding what it means
+# Example 5: Understanding what it means
 
 If you have a well curated `.gmt` file that contains analyte ids as unique sets that belong to different groups then you can check whether or not a specific group seems significant with respect to all of the significant and insignificant analytes that you just calculated. One can derive such a hierarchy or rely on already curated information. Since we are dealing with genes and biologist generally have strong opinions about these things we go to a directed acyclic knowledge graph called [Reactome](https://reactome.org/PathwayBrowser/) and translate that information into a set of [files](https://zenodo.org/record/3608712) that we can use to build our own knowledge hierarchy. After downloading that `.zip` file (and unzipping) you will be able to execute the following code
 ```
@@ -300,9 +300,9 @@ which will report that
 
 is affected or perhaps needs to be compensated for... now perhaps you thought this exercise was a tad tedious? Well you are correct. It is and you could just as well have copied the gene transcripts into [String-db](https://string-db.org/cgi/input?sessionId=beIptQQxF85j&input_page_active_form=multiple_identifiers) and gotten similar results out. But, then you wouldn't have gotten to use the hierarchical enrichment method I invented!
 
-# Example 6 : Absolute and relative coordinates
+# Example 6: Absolute and relative coordinates
 
-In this example we will use the SVD based distance geometry method to go between absolute coordinates, relative coordinate distances and back to ordered absolute coordinates. Absolute coordinates are float values describing the position of something in space. If you have several of these then the same information can be conveyed via the pairwise distance graph. Going from absolute coordinates to pairwise distances is simple and only requires you to calculate all the pairwise distances between your absolute coordinates. Going back to mutually orthogonal ordered coordinates from the pariwise distances is trickier, but a solved problem. The [distance geometry](https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.37.8051) can be obtained with SVD and it is implemented in the `impetuous.clustering` module under the name `distance_matrix_to_absolute_coordinates`. We start by defining coordinates afterwhich we can calculate the pair distance matrix and transforming it back by using the code below
+In this example, we will use the SVD based distance geometry method to go between absolute coordinates, relative coordinate distances and back to ordered absolute coordinates. Absolute coordinates are float values describing the position of something in space. If you have several of these then the same information can be conveyed via the pairwise distance graph. Going from absolute coordinates to pairwise distances is simple and only requires you to calculate all the pairwise distances between your absolute coordinates. Going back to mutually orthogonal ordered coordinates from the pariwise distances is trickier, but a solved problem. The [distance geometry](https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.37.8051) can be obtained with SVD and it is implemented in the `impetuous.clustering` module under the name `distance_matrix_to_absolute_coordinates`. We start by defining coordinates afterwhich we can calculate the pair distance matrix and transforming it back by using the code below
 
 ```
 import pandas as pd
@@ -363,11 +363,11 @@ if __name__=='__main__':
 
 You will notice that the largest variation is now aligned with the `X axis`, the second most variation aligned with the `Y axis` and the third most, aligned with the `Z axis` while the graph topology remained unchanged.
 
-# Example 7 : Retrieval and analysis of obesity data
+# Example 7: Retrieval and analysis of obesity data
 
-In this example we will show an analysis similar to the one conducted in Example 5. The only difference here is that we will model all of the data present in the journal. This includes the simultaneous analysis of categoricals and number range descriptors present in the journal. We use an [impetuous shell](https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix) and download the required [python file](https://gist.github.com/richardtjornhammar/1b9f5742391b1bcf30f4821a00f30b6a) and execute it in the shell. Now you are done! Was that too fast? ok so what is this about?
+In this example, we will show an analysis similar to the one conducted in Example 5. The only difference here is that we will model all of the data present in the journal. This includes the simultaneous analysis of categorical and number range descriptors present in the journal. We use an [impetuous shell](https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix) and download the required [python file](https://gist.github.com/richardtjornhammar/1b9f5742391b1bcf30f4821a00f30b6a) and execute it in the shell. Now you are done! Was that too fast? ok, so what is this about?
 
-You will see that the python code downloads a data directory (if you're using GNU/Linux), extracts it, curates it and performs the analysis. The directory contains sample data with information about both the platform and the sample properties. In our case a sample can come from any of `6` different platforms and belong to either `lean` or `obese` `females` or `males`. We collect the information and skip all but the `GPL8300` platform data. Now we have a journal that describes how well the sample was collected (with integer value ranges) and the sample categoryíes as well as gene transcripts belonging to the samples. We can see that the common property for all samples are that they all are dealing with `obesity`, `adipocyte`, `inflammation` and `gene expression`. The journal now has the form
+You will see that the python code downloads a data directory (if you're using GNU/Linux), extracts it, curates it and performs the analysis. The directory contains sample data with information about both the platform and the sample properties. In our case a sample can come from any of `6` different platforms and belong to either `lean` or `obese` `females` or `males`. We collect the information and skip all but the `GPL8300` platform data. Now we have a journal that describes how well the sample was collected (with integer value ranges) and the sample categories as well as gene transcripts belonging to the samples. We can see that the common property for all samples are that they all are dealing with `obesity`, `adipocyte`, `inflammation` and `gene expression`. The journal now has the form
 
 
 |      | GSM47229 | GSM47230 | GSM47231 | GSM47232 | ... | GSM47334 | GSM47335 | GSM47336 | GSM47337 |
