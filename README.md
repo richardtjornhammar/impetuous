@@ -363,6 +363,55 @@ if __name__=='__main__':
 
 You will notice that the largest variation is now aligned with the `X axis`, the second most variation aligned with the `Y axis` and the third most, aligned with the `Z axis` while the graph topology remained unchanged.
 
+# Example 7 : Retrieval and analysis of obesity data
+
+In this example we will show an analysis similar to the one conducted in Example 5. The only difference here is that we will model all of the data present in the journal. This includes the simultaneous analysis of categoricals and number range descriptors present in the journal. We use an [impetuous shell](https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix) and download the required [python file](https://gist.github.com/richardtjornhammar/1b9f5742391b1bcf30f4821a00f30b6a) and execute it in the shell. Now you are done! Was that too fast? ok so what is this about?
+
+You will see that the python code downloads a data directory (if you're using GNU/Linux), extracts it, curates it and performs the analysis. The directory contains sample data with information about both the platform and the sample properties. In our case a sample can come from any of `6` different platforms and belong to either `lean` or `obese` `females` or `males`. We collect the information and skip all but the `GPL8300` platform data. Now we have a journal that describes how well the sample was collected (with integer value ranges) and the sample categoryíes as well as gene transcripts belonging to the samples. We can see that the common property for all samples are that they all are dealing with `obesity`, `adipocyte`, `inflammation` and `gene expression`. The journal now has the form
+
+
+|      | GSM47229 | GSM47230 | GSM47231 | GSM47232 | ... | GSM47334 | GSM47335 | GSM47336 | GSM47337 |
+|:---  |      ---:|      ---:|      ---:|      ---:|:---:|      ---:|      ---:|      ---:|      ---:|
+|C(Array)|       HG_U95Av2 |   HG_U95Av2 |   HG_U95Av2 |   HG_U95Av2 | ... |  HG_U95Av2 |  HG_U95Av2 |  HG_U95Av2 |  HG_U95Av2|
+|C(Types)|     lean-female | lean-female | lean-female | lean-female | ... | obese-male | obese-male | obese-male | obese-male|
+|C(Type0)|            lean |        lean |        lean |        lean | ... |      obese |      obese |      obese |      obese|
+|C(Type1)|          female |      female |      female |      female | ... |       male |       male |       male |       male|
+|C(Platform)|      GPL8300 |     GPL8300 |     GPL8300 |     GPL8300 | ... |    GPL8300 |    GPL8300 |    GPL8300 |    GPL8300|
+|Marginal   |          355 |         340 |         330 |         362 | ... |        357 |        345 |        377 |        343|
+|Present    |         5045 |        5165 |        5581 |        4881 | ... |       4355 |       4911 |       5140 |       5672|
+|Absent     |         7225 |        7120 |        6714 |        7382 | ... |       7913 |       7369 |       7108 |       6610|
+|NoCall     |            0 |           0 |           0 |           0 | ... |          0 |          0 |          0 |          0|
+
+Since we put extra effort into denoting all categoricals with `C( )` we can solve the problem for the entire journal in one go with
+
+```
+formula = 'f~'+'+'.join(journal_df.index.values)
+```
+which becomes
+```
+f~C(Array)+C(Types)+C(Type0)+C(Type1)+C(Platform)+Marginal+Present+Absent+NoCall
+```
+and the final analysis of the data becomes exceptionally simple, again by writing
+```
+    from impetuous.quantification import multifactor_evaluation
+    multifactor_results = multifactor_evaluation ( analyte_df , journal_df , formula )
+    multifactor_results.to_excel('obesity_transcripts.xlsx')
+```
+Now we can see which transcripts are sensitive to the numerical quality measures as well as the categorical instances that we might be interested in. Take for example the genes that seem to regulate obesity
+```
+np.array([['HSPA1A','HSPA1B', 'HSPA1L', 'IGFBP7', 'TMSB10', 'TMSB4X', 'RPLP2',
+        'SNORA52', 'COL3A1', 'CXCL12', 'FLNA', 'AGPAT2', 'GPD1', 'ACTB',
+        'ACTG1', 'RARRES2', 'COL6A2', 'HSPB6', 'CLU', 'TAGLN', 'HLA-DRA',
+        'PFKFB3', 'MAOB', 'DPT', 'NQO1', 'S100A4', 'LIPE', 'CCND1',
+        'FASN', 'COL6A1', 'NOTCH3', 'PFKFB3'],
+       ['ECM2', 'C1S', 'GLUL', 'ENPP2', 'PALLD', 'MAOA', 'B2M', 'SPARC',
+        'HTRA1', 'CCL2', 'ACTB', 'AKR1C1', 'AKR1C2', 'LOC101930400',
+        'EIF4A2', 'MIR1248', 'SNORA4', 'SNORA63', 'SNORA81', 'SNORD2',
+        'PTPLB', 'GAPDH', 'CCL2', 'SAT1', 'IGFBP5', 'AES', 'PEA15',
+        'ADH1B', 'PRKAR2B', 'PGM1', 'GAPDH','S100A10']], dtype=object)
+```
+which account for the top `64` obesity transcripts. We note that some of these are shared with diabetics. If we study which ones describes the `Marginal` or `Absent` genes we can see that there are some that we might want to exclude for technical reasons. We will leave that excercise for the curious reader.
+
 # Notes
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package.
