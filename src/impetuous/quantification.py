@@ -1342,3 +1342,11 @@ if __name__ == '__main__' :
     journal_df = prune_journal( pd.read_csv(journal_file,'\t', index_col=0 ) )
 
     print ( quantify_groups( analyte_df, journal_df, 'Group ~ Var + C(Cat) ', grouping_file ) )
+
+
+    import impetuous.quantification as impq
+    import sys
+    sys.setrecursionlimit(20000)
+    for i in range(6):
+        Fi = 2**(2**i)+1
+        print ("Fermats ",i,"th number = ", Fi, " and is it Prime?", impq.isItPrime(Fi) )
