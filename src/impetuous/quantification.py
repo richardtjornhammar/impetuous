@@ -335,8 +335,6 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
                           bDeveloperTesting = False ,
                           study_axii = None , owner_by = 'tesselation'
                         ) :
-    inventors__ = "Richard Tjörnhammar (RT) and Edward Tjörnhammar"
-    NOTE__ = "Edward Tjörnhammar (ET) early major contributor to this method. Inventors: "+inventors__+". RT is the main developer."
 
     encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
     from sklearn.cross_decomposition import PLSRegression as PLS
@@ -547,7 +545,6 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           study_axii = None , owner_by = 'tesselation' ,
                           transform = crop ) :
 
-	NOTE__ = "Richard Tjörnhammars method that evolved as a synthesis of the work done together with Edward Tjörnhammar on the rpls method"
 	print ( 'WARNING: STILL UNDER DEVELOPMENT' )
 	print ( 'WARNING: DEFAULT IS TO CROP ALIGNED FACTORS!!')
 
@@ -715,7 +712,7 @@ def t_test ( df , endogen = 'expression' , group = 'disease' ,
              bDeprecated = False ) :
 
     if bDeprecated :
-        print ( 'WILL BE REMOVED IN FUTURE VERSIONS' ) 
+        print ( 'WILL BE REMOVED IN FUTURE VERSIONS' )
         group1 = df[df[group] == pair_values[0]][endogen].astype(float)
         group2 = df[df[group] == pair_values[1]][endogen].astype(float)
     else :
@@ -986,7 +983,7 @@ dimred = PCA()
 
 def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
                       delimiter = '\t' , test_type = 'random' ,
-                      split_id = None , skip_line_char = '#' 
+                      split_id = None , skip_line_char = '#'
                     ) :
     statistical_formula = formula
     if not split_id is None :
@@ -1218,7 +1215,6 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     ddf = ddf.sort_values('Dist', ascending = False )
     return ( ddf )
 
-
 def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = None, ForceSpearman=False ) :
     # ADD IN CONCORDANCE WITH KENDALL TAU
     if what in set(journal_df.index.values) :
@@ -1232,7 +1228,7 @@ def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = 
         else :
             patients = [ c for c in analyte_results_df.columns if '_' in c ]
         patients = [ p for p in sample_names if p in set(patients) &
-                     set( analyte_results_df.columns.values) & 
+                     set( analyte_results_df.columns.values) &
                      set( journal_df.loc[[what],:].T.dropna().T.columns.values ) ]
         for idx in analyte_results_df.index :
             y = journal_df.loc[ what,patients ].values
@@ -1291,9 +1287,11 @@ def calculate_rates( journal_df , inferred_df ,
 
     results_lookup = { 'TP':TP , 'TN':TN ,
                 'FN':FN ,'FP':FP ,
+                'causality'   : ( TP+TN ) / ( FP+FN ) ,
                 'sensitivity' : TP / ( TP+FN ) ,
                 'specificity' : TN / ( TN+FP ) ,
                 'precision'   : TP / ( TP+FP ) ,
+                'recall'      : TP / ( TP+FN ) ,
                 'accuracy'    : ( TP+TN ) / ( TP+TN+FP+FN ) ,
                 'negation'    : TN / ( TN+FN ) , # FNR
                 'FPR:'        : FP / ( FP+TN ) , # False positive rate
@@ -1328,6 +1326,18 @@ def isItPrime( N , M=None,p=None,lM05=None ) :
            return ( True )
        return ( isItPrime(N-1,M=M,p=p+1,lM05=lM05) )
 
+# FIRST APPEARENCE:
+# https://gist.github.com/richardtjornhammar/ef1719ab0dc683c69d5a864cb05c5a90
+def Fibonacci(n):
+    if n-2>0:
+        return ( Fibonacci(n-1)+Fibonacci(n-2) )
+    if n-1>0:
+        return ( Fibonacci(n-1) )
+    if n>0:
+       return ( n )
+
+def F_truth(i):
+    return ( Fibonacci(i)**2+Fibonacci(i+1)**2 == Fibonacci(2*i+1))
 
 if __name__ == '__main__' :
 
