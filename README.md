@@ -418,7 +418,7 @@ which account for the top `64` obesity transcripts. We note that some of these a
 
 # Notes
 
-These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package.
+These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions.
 
 # Manually updated code backups for this library :
 
