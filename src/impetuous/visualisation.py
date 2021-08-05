@@ -23,11 +23,15 @@ from scipy.stats import rankdata
 #
 import matplotlib._color_data as mcd
 
-from bokeh.layouts import row, layout, column #, widgetbox
-from bokeh.models import Column, CustomJS, Div, ColumnDataSource, HoverTool, Circle, Range1d, DataRange1d
+from bokeh.layouts import row, layout, column
+from bokeh.models import Column, CustomJS, Div, ColumnDataSource, HoverTool, Circle, Range1d, DataRange1d, Row
 from bokeh.models import MultiSelect
+from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead, Line
 from bokeh.models.widgets import TextInput, Toggle
 from bokeh.plotting import figure, output_file, show, save
+#from bokeh.plotting import figure, output_file, show, ColumnDataSource
+#from bokeh.models   import HoverTool, Range1d, Text, Row
+#
 import warnings
 
 run_in_notebook="""
@@ -57,19 +61,19 @@ def bscatter ( X , Y , additional_dictionary=None , title='' , color='#ff0000' ,
         alphas_ = alpha
     else :
         alphas_ = [ alpha for v in X ]
-        
+
     data = { **{'x' : X , 'y' : Y ,
                 'color': colors_ ,
                 'alpha': alphas_ } }
     ttips = [   ("index "  , "$index"   ) ,
                 ("(x,y) "  , "(@x, @y)" ) ]
-    
+
     if not additional_dictionary is None :
         if 'dict' in str(type(additional_dictionary)):
             data = {**data , **additional_dictionary }
             for key in additional_dictionary.keys() :
                 ttips.append( ( str(key) , '@'+str(key) ))
-    
+
     source = ColumnDataSource ( data = data )
     hover = HoverTool ( tooltips = ttips )
     #
@@ -77,7 +81,7 @@ def bscatter ( X , Y , additional_dictionary=None , title='' , color='#ff0000' ,
         p = figure ( plot_width=600 , plot_height=600 , 
            tools = [hover,'box_zoom','wheel_zoom','pan','reset','save'],
            title = title )
-        
+
     if legend_label is None :
         p.circle( 'x' , 'y' , size=12, source=source , color='color', alpha='alpha' )
     else :
@@ -86,7 +90,7 @@ def bscatter ( X , Y , additional_dictionary=None , title='' , color='#ff0000' ,
     p.xaxis.axis_label = axis_labels[ 0] if not axis_labels is None else 'x'
     p.yaxis.axis_label = axis_labels[-1] if not axis_labels is None else 'y'
     p.output_backend = 'webgl'
-    
+
     return( p )
 
 
@@ -94,7 +98,7 @@ def plotter ( x = np.random.rand(10) , y = np.random.rand(10) , colors = '#ff000
              legends=None, axis_labels = None, bSave = False, name='scatter.html' ):
 
     from bokeh.plotting import output_file, show, save
-    
+
     output_file( name )
     outp = lambda x: save if bSave else show
 
@@ -104,7 +108,7 @@ def plotter ( x = np.random.rand(10) , y = np.random.rand(10) , colors = '#ff000
             x_ , y_ , color = x[i] , y[i] , colors[i]
             if list_typecheck([legends,axis_labels],'list',all):
                 label = legends[i]
-                p = bscatter(  x_ , y_ , color = color , p = p , legend_label = label , axis_labels=axis_labels )        
+                p = bscatter(  x_ , y_ , color = color , p = p , legend_label = label , axis_labels=axis_labels )
             else :
                 p = bscatter(  x_ , y_ , color = color , p = p )
         outp ( p )
@@ -140,10 +144,10 @@ def make_n_colors( num_cases ):
     l_xkcd_colors = [name for name in mcd.CSS4_COLORS if "xkcd:" + name in mcd.XKCD_COLORS ]
     num_colors = len(l_xkcd_colors) ;
     colors = []
-    for ic in range(num_cases):
+    for ic in range(num_cases) :
         if ic==0 :
             colors.append( 'red' )
-        else:
+        else :
             colors.append( l_xkcd_colors[int(np.floor(ic/(num_cases-1)*(num_colors-1)))] )
     return(colors)
 
@@ -465,7 +469,7 @@ def scatter2boxplot(    pathways, x1, y1, variables, patients, pathway2patient_x
     left_pane_data_source = ColumnDataSource(data=src_dict)
     tw = 0
     if not 'None' in str(type(title_l)):
-        tw = len(title_l)-40 # "tap" ['tap','box_zoom','wheel_zoom','pan','reset','save']
+        tw = len(title_l)-40
     left_figure = a_plot( left_pane_data_source,'x','y',['tap','box_zoom','wheel_zoom','pan','reset','save'], axis_labels['x1'], axis_labels['y1'],
                           hover_txt, False, title=title_l, alpha=[0.75,1.0,0.25], color=['red','blue'] ,
                           plot_pane_width=tw*(tw>0)*3+400, plot_pane_height= spacer+400,
@@ -676,7 +680,6 @@ function quartileBounds(values,groups) {
         arguments.update(vd_add_dict)
     print([item for item in arguments.keys()],bokeh_script)
     left_pane_data_source.selected.js_on_change('indices',  CustomJS( args=arguments, code=bokeh_script) )
-    #left_pane_data_source.callback = CustomJS( args=arguments, code=bokeh_script)
 
     if not vb_charts is None :
         all_plots = [ left_figure, right_figure ]
@@ -747,7 +750,7 @@ def generate_dict( df , dict_type='D', exclude_str=None, super_safe=False,
             rv_dict[ color_label]=coldat
         if legend_label:
             rv_dict[legend_label]=coldat
-    else : # dict_type=='D' :
+    else :
         bCols = np.ones(len(df.columns))>0
         rv_dict[graph_labels[0]]=df.loc[want_x, bCols ]
         rv_dict[graph_labels[1]]=df.loc[want_y, bCols ]
@@ -1038,7 +1041,194 @@ def merge_list_to_rows(pt1,pt2):
     [ [ merged[ivec].append( val ) for val in pt2[ivec] ] for ivec in range(len(merged)) ]
     return merged
 
-def example( bCLI=True ):
+
+
+
+
+    
+def invert_dictlist(effects):
+    #
+    # CREATE A SAMPLE EFFECT LOOKUP
+    s_effects = {}
+    lkdc = [e for e in effects.values()][0]
+    for k in lkdc.keys() :
+        for v in list(lkdc[k]) :
+            s_effects[v] = k
+    return(s_effects)
+
+def parse_label_order_entry ( data_df ,
+                              label = None ,
+                              order = None ):
+    #
+    if not label is None :
+        sv = set(data_df.loc[label].values)
+        order_ = list( sv )
+        if not order is None :
+            if len(set(order)-sv)==0 :
+                print (order)
+                order_ = order
+        order = order_
+    else :
+        if order is None :
+            return ( None,None )
+        else :
+            look_for_set = set(order)
+            label = data_df.index.values[[ len( set('.'.join([str(v) for v in vs]).split('.')) - look_for_set ) == 0 for vs in data_df.values ]][0]
+    return( label , order )
+
+
+def create_paired_figure_p ( data_df , feature_name = None ,
+        sample_name_label = None , pairing_label = None, title_prefix = '',
+        case_label = None , hue_label = None , effect_label = None,
+        pairing_order = None , effect_order = None , yaxis_label = '' ,
+        case_order = None , case_mapping = None , hue_order = None ,
+        hue_colors = None , plot_height = 600 , bVerbose = False , pReturn=False ) :
+    #
+    if feature_name is None:
+        feature_name = data_df.index.values[0]
+
+    colors_ = [ '#543005','#8c510a','#bf812d','#dfc27d',
+                '#f6e8c3','#f5f5f5','#c7eae5','#80cdc1',
+                '#35978f','#01665e','#003c30'] # COLORBLIND SAFE DIVERGENT
+    #
+    # FIGURE STYLES
+    plot_dimensions = [ None , plot_height ]
+    icon_size , icon_alpha = 10 , 0.6
+    dp_ = 100
+    global_spot_size  = 14
+    global_spot_alpha = 0.33
+    major_label_text_font_size  = [ '20pt' , '20pt' ]
+    minor_label_text_font_size  = [ '18pt' , '18pt' ]
+    major_box_label_orientation = [   0.0  ,  0.0   ]
+    textfont, textsize, textstyle, textangle= 'Arial','18pt','bold',0.0
+    #
+    verbose = False
+    if verbose :
+        print ( 'TESTING THE NEW VISUALISATION' )
+    if sample_name_label is None:
+        print ( 'ERROR' )
+        return(0)
+    #
+    # EXCHANGE FOR CHECKS
+    case_label , case_order = parse_label_order_entry ( data_df ,
+        label = case_label , order = case_order )
+    effect_label , effect_order = parse_label_order_entry ( data_df ,
+        label = effect_label , order = effect_order )
+    pairing_label , pairing_order = parse_label_order_entry ( data_df ,
+        label = pairing_label , order = pairing_order )
+    hue_label , hue_order = parse_label_order_entry ( data_df ,
+        label = hue_label , order = hue_order )
+    #
+    if verbose :
+        print ( hue_label     , hue_order     ) # DIFFERENT COLORS FOR DIFFERENT HUES
+        print ( effect_label  , effect_order  ) # THE CATEGORIES THAT ARE INTERESTING
+        print ( pairing_label , pairing_order ) # NUMBER OF STEPS IN EACH CASE
+        print ( case_label    , case_order    ) # DIFFERENT SYMBOLS FOR DIFFERENT CASES
+    #
+    all_labels = [ hue_label , effect_label ,
+                   pairing_label , case_label ,
+                   sample_name_label ]
+    label_set  = set ( all_labels )
+    #
+    # LEXICAL SORT THEN SORTS SUBLEVES ACCORDING TO THE PAIRING ORDER
+    # SO WE CREATE A NUMERICAL MAPPING SO THAT THE SUBENTRIES GET SORTED
+    # CORRECTLY
+    #
+    pairing_order_dict = { pairing_order[i]:i for i in range(len(pairing_order)) }
+    tuple_names = [ (s,t) for s,t in zip(*data_df.loc[ [sample_name_label,pairing_label] , : ].values)]
+    tuples      = [ ( tup[0],pairing_order_dict[tup[1]] ) for tup in tuple_names ]
+    multiindex  = pd.MultiIndex.from_tuples(tuples, names = [ sample_name_label, pairing_label ] )
+    data_df  .columns = pd.MultiIndex.from_tuples(tuple_names, names = [ sample_name_label, pairing_label ] )
+    data_df  = data_df.iloc[ :,multiindex.sortlevel(sample_name_label)[-1] ]
+    #
+    # NOW DATA IS SORTED. COLLECT DATA AND STYLE DATA FRAMES
+    style_df = data_df.loc[[idx for idx in data_df.index if idx in label_set],: ].copy()
+    data_df  = data_df.loc[[idx for idx in data_df.index if not idx in label_set],: ].copy()
+    #
+    names = sorted ( list( set( style_df.loc[ sample_name_label,:].values )) )
+    #
+    # CREATE THE FACTORS FOR THE X AXIS
+    factors = np.array([ [ (ef,time) for time in pairing_order] for ef in effect_order ]).reshape(-1,2)
+    factors = [ tuple(f) for f in factors ]
+    #
+    # CREATE A LOOKUP FOR THE SAMPLES
+    se_lookup = { s:e for (s,e) in zip(*(style_df.loc[[sample_name_label,effect_label],:].values)) }
+    from bokeh.io import show, output_file
+    from bokeh.models import FactorRange
+    from bokeh.plotting import figure
+    #
+    ymax = np.max( data_df.loc[feature_name].values )
+    ymin = np.min( data_df.loc[feature_name].values )
+    #
+    ttips = [   ("index "  , "$index"   ) ,
+                ("(x,y) "  , "(@x, @y)" ) ,
+                ("name "   , "@name"    ) ]
+    #
+    hover = HoverTool ( tooltips = ttips )
+    #
+    p = figure( x_range = FactorRange(*factors) ,
+                #y_range = [ymin,ymax],#Range1d( *[ymin-np.sign(ymin)*0.1*ymin , ymax+np.sign(ymax)*0.1*ymax] ),
+                plot_height = plot_height , toolbar_location = 'right' ,
+                tools = [ hover,'box_zoom','wheel_zoom','pan','reset','save' ],
+                title = title_prefix + str(feature_name) )
+
+    if hue_colors is None :
+        hue_colors = { h:c for h,c in zip(hue_order,colors_[:len(hue_order)]) }
+
+    if not case_label is None :
+        # AVAILABLE BOKEH PLOTTING TOOLS
+        mappings_ = [  p.circle , p.circle_cross , p.circle_x ,
+              p.diamond , p.diamond_cross , p.square , p.square_cross , p.square_x ,
+              p.triangle , p.inverted_triangle , p.asterisk , p.cross , p.x , p.dash  ]
+        case_mapping = { h:c for h,c in zip(case_order,mappings_[:len(case_order)]) }
+        print( [ co +' <=> '+ str(cm).split('method ')[1].split(' of')[0] for cm,co in zip( case_mapping.values() , case_order ) ] )
+
+    if True :
+        for name in names :
+            X = [ (se_lookup[idx[0]],idx[1]) for idx in data_df.loc[ feature_name,[name] ].index ]
+            Y = data_df.loc[ feature_name,[name] ].values
+            if bVerbose :
+                print(name,X,2**Y-1)
+            if not hue_label is None :
+                hue_val = list(set(style_df.loc[hue_label,name].values))[0]
+                color,clabel = hue_colors[hue_val],hue_val
+            else :
+                color,clabel="red" , None
+            dname = [ name for i in range(len(X)) ] # clabel
+            p .line( x=X , y=Y , color=color , name=name , line_width=2 )
+            if not case_label is None :
+                case_val = list(set(style_df.loc[case_label,name].values))[0]
+                # CALL THE PLOTTING TOOL # case_val
+                case_mapping[case_val]( x=X , y=Y , line_color=color , name=name, fill_color="white", size=icon_size )
+            else :
+                p.circle( x=X , y=Y , line_color=color , fill_color="white", size=icon_size , name=name )
+
+    p .y_range.start = 0
+    p .x_range.range_padding = 0.1
+    p .xaxis.major_label_orientation = 1
+    p .xgrid.grid_line_color = None
+
+    p .grid.grid_line_width = 0
+    p.title.text_font_size  = major_label_text_font_size[0]
+
+    p.xaxis.group_text_font_size       = minor_label_text_font_size[0]
+    p.xaxis.axis_label_text_font_size  = minor_label_text_font_size[0]
+    p.xaxis.major_label_text_font_size = minor_label_text_font_size[1]
+
+    p.yaxis.axis_label  = yaxis_label
+    p.yaxis.axis_label_text_font_size  = minor_label_text_font_size[0]
+    p.yaxis.major_label_text_font_size = minor_label_text_font_size[1]
+
+    p.output_backend = 'webgl'
+
+    p.y_range = Range1d( ymin*0.95, ymax*1.05 )
+
+    if pReturn :
+        return ( p )
+    show( p )
+
+
+def example_dynamic_linking( bCLI=True ):
     
     desc__="""        scatter2boxplot( ["P1","P2","P3"], [10.0,7.0,12.0], [2.0,4.0,16.5], {'funny':["yes","no","maybe"]},
             [('','Kalle','0','0'),('','Kalle','1','1'),('','Stina','0','2'),('','Stina','1','3'),('','Jens','0','2'),('','Jens','1','3'),
@@ -1071,8 +1261,111 @@ def example( bCLI=True ):
     else :
         print ( desc__ )
 
+
+def example_lineplot( bCLI=True ):
+    desc__ = """
+    #
+    # WE DEFINE SOME SAMPLES , AN EXPERIMENT AND AN EFFECT
+    #
+    identities = { 10 : ['a','b','c','d','e','f','g','h','i','j'] }
+    timepoints = {  3 : ['Basal','Intervention','Rest'] }
+    #
+    effects    = {  2 : {'Sick':{'c','d','i','j','f'},'Healthy':{'a','b','e','g','h'} } }
+    s_effects  = invert_dictlist( effects )
+    #
+    cases      = {  2 : {'Treadmill':{'c','d','e','g','h'},'Cycle':{'a','b','i','j','f'} } }
+    s_cases    = invert_dictlist( cases )
+    #
+    genders      = {  2 : {'Male':{'c','d','i','j','h'},'Female':{'a','b','e','g','f'} } }
+    s_genders    = invert_dictlist( genders )
+    #
+    n_samples  = list(identities.keys())[0] * list(timepoints.keys())[0]
+    n_features = 10
+    #
+    print ( n_samples , n_features )
+    print ( list(identities.values()) , list(timepoints.values()) )
+    #
+    # CREATE A NAMED DATAFRAME
+    column_names = [ [ it + '_' + t for it in list(identities.values())[0] ] \
+                       for t in list(timepoints.values())[0] ]
+    column_names = list(np.array(column_names).reshape(1,-1))[0]
+    column_names = [ s_effects[ c.split('_')[0] ] + '_' + c + '_' + s_cases[ c.split('_')[0] ] + '_' + s_genders[ c.split('_')[0] ] for c in column_names ]
+    #
+    rand_df = pd.DataFrame( np.random.rand( n_samples * n_features ) .reshape( n_features , n_samples ) )
+    rand_df .columns = column_names
+    rand_df .loc[ 'Effect_[str]' ] = [c.split('_')[0] for c in rand_df.columns]
+    rand_df .loc[ 'Times_[str]'  ] = [c.split('_')[2] for c in rand_df.columns]
+    rand_df .loc[ 'Sample_[str]' ] = [c.split('_')[1] for c in rand_df.columns]
+    rand_df .loc[ 'Case_[str]'   ] = [c.split('_')[3] for c in rand_df.columns]
+    rand_df .loc[ 'Gender_[str]'   ] = [c.split('_')[4] for c in rand_df.columns]
+    pairing_order = ['Rest','Basal','Intervention']
+
+    print ( rand_df )
+
+    create_paired_figure_p ( rand_df ,
+            sample_name_label = 'Sample_[str]' ,
+            pairing_label     = 'Times_[str]'  ,
+            hue_label         = 'Case_[str]'   ,
+            case_label        = 'Gender_[str]' ,
+            effect_label      = 'Effect_[str]' ,
+            pairing_order     = pairing_order  )
+
+    """
+    print ( desc__ )
+    if not bCLI:
+        return
+    #
+    # WE DEFINE SOME SAMPLES , AN EXPERIMENT AND AN EFFECT
+    #
+    identities = { 10 : ['a','b','c','d','e','f','g','h','i','j'] }
+    timepoints = {  3 : ['Basal','Intervention','Rest'] }
+    #
+    effects    = {  2 : {'Sick':{'c','d','i','j','f'},'Healthy':{'a','b','e','g','h'} } }
+    s_effects  = invert_dictlist( effects )
+    #
+    cases      = {  2 : {'Treadmill':{'c','d','e','g','h'},'Cycle':{'a','b','i','j','f'} } }
+    s_cases    = invert_dictlist( cases )
+    #
+    genders      = {  2 : {'Male':{'c','d','i','j','h'},'Female':{'a','b','e','g','f'} } }
+    s_genders    = invert_dictlist( genders )
+    #
+    n_samples  = list(identities.keys())[0] * list(timepoints.keys())[0]
+    n_features = 10
+    #
+    print ( n_samples , n_features )
+    print ( list(identities.values()) , list(timepoints.values()) )
+    #
+    # CREATE A NAMED DATAFRAME
+    column_names = [ [ it + '_' + t for it in list(identities.values())[0] ] \
+                       for t in list(timepoints.values())[0] ]
+    column_names = list(np.array(column_names).reshape(1,-1))[0]
+    column_names = [ s_effects[ c.split('_')[0] ] + '_' + c + '_' + s_cases[ c.split('_')[0] ] + '_' + s_genders[ c.split('_')[0] ] for c in column_names ]
+    #
+    rand_df = pd.DataFrame( np.random.rand( n_samples * n_features ) .reshape( n_features , n_samples ) )
+    rand_df .columns = column_names
+    rand_df .loc[ 'Effect_[str]' ] = [c.split('_')[0] for c in rand_df.columns]
+    rand_df .loc[ 'Times_[str]'  ] = [c.split('_')[2] for c in rand_df.columns]
+    rand_df .loc[ 'Sample_[str]' ] = [c.split('_')[1] for c in rand_df.columns]
+    rand_df .loc[ 'Case_[str]'   ] = [c.split('_')[3] for c in rand_df.columns]
+    rand_df .loc[ 'Gender_[str]'   ] = [c.split('_')[4] for c in rand_df.columns]
+    pairing_order = ['Rest','Basal','Intervention']
+
+    print ( rand_df )
+
+    create_paired_figure_p ( rand_df ,
+            sample_name_label = 'Sample_[str]' ,
+            pairing_label     = 'Times_[str]'  ,
+            hue_label         = 'Case_[str]'   ,
+            case_label        = 'Gender_[str]' ,
+            effect_label      = 'Effect_[str]' ,
+            pairing_order     = pairing_order  )
+
+    
 if __name__=='__main__':
 
-    example(False)
+    example_dynamic_linking ( False )
+    example_lineplot ( False )
+    #TODO : ADD MORE CUSTOMIZABILITY FOR USERS. MAKE A DYNAMICALLY LINKED LINEPLOT
+
 
 
