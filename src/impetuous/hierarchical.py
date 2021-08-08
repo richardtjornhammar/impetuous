@@ -326,7 +326,6 @@ def write_cpgmt ( lookup ,
                                  (c,d,p) in zip( *[ lookup[ c ] for c in lookup['content'] ]) ]) ,
                     file=of )
 
-
 def ordered_remove ( str,delete ):
     for d in delete :
         str = str.replace(d,'')
@@ -336,21 +335,26 @@ def ordered_remove ( str,delete ):
 def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
     delete   = ['\n'] , group_id_prefix = 'COMP',
     analyte_prefix  = 'ENSG', root_name = 'COMP0000000000',
-    bReturnList = False ):
+    bReturnList = False , bUseGroupPrefix = False, bSingleChild=True ):
 
     if not '.gmt' in filename :
         print ( 'MUST HAVE A VALID GMT FILE' )
         exit ( 1 )
+
     # RETURNS THE PC LIST THAT CREATES THE WORD HIERARCHY
     # LATANTLY PRESENT IN THE GMT ANALYTE DEFINITIONS
 
     S_M = set()
     D_i = dict()
 
+    check_prefix = analyte_prefix
+    if bUseGroupPrefix :
+        check_prefix = group_id_prefix
+    
     with open ( filename,'r' ) as input :
         for line in input :
             lsp = ordered_remove(line,delete).split('\t')
-            if not analyte_prefix in line :
+            if not check_prefix in line :
                 continue
             S_i = set(lsp[2:])
             D_i[ lsp[0] ] = tuple( (lsp[1],S_i,len(S_i)) )
@@ -364,7 +368,8 @@ def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
 
     all_potential_parents = [ [root_name,S_M] , *[ [ d[0],d[1][1]] for d in D_i.items() ] ]
 
-    PClist    = []
+    PClist = []
+    CPlist = {}
     for parent_id,parent_words in all_potential_parents:
         lookup    = {}
         for d in D_i .items() :
@@ -384,7 +389,7 @@ def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
                 if potential_child == parent_id :
                     bIsChild  = False
                     break
-                check         = [ je_ for je_ in range( ie_ + 1 )][::-1]
+                check         = [ je_ for je_ in range( ie_ + 1 )] [::-1]
                 if len(check) > 0 :
                     for je_ in check :
                         l2 = ledger[ je_ ][0]
@@ -396,13 +401,21 @@ def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
                             if not bIsChild :
                                 break
                 if bIsChild :
-                    PClist .append ( [parent_id,potential_child] )
+                    if potential_child in CPlist :
+                        if CPlist[potential_child][-1]>relative_idx(pchild_words,parent_words):
+                            CPlist[potential_child] = [parent_id , potential_child , relative_idx(pchild_words,parent_words) ]
+                    else :
+                        CPlist[potential_child] = [parent_id , potential_child , relative_idx(pchild_words,parent_words) ]
+                    PClist .append ( [parent_id , potential_child ] )
     D_i[root_name] = tuple( ('full cell',S_M,len(S_M)) )
+    pcl_ = []
+
+    if bSingleChild:
+        PClist = [ (v[0],v[1]) for k,v in CPlist.items() ]
     if bReturnList :
         return ( [PClist,D_i] )
     else :
         return ( PClist )
-
 
 if __name__ == '__main__' :
 
