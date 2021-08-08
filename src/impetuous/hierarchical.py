@@ -456,6 +456,7 @@ if __name__ == '__main__' :
 
 
     if True :
+        # https://github.com/richardtjornhammar/impetuous/blob/728bef88f1bba64a051603b807e06231269c7dbb/new_compartment_genes.gmt
         PClist,D_i = build_pclist_word_hierarchy (  filename = 'new_compartment_genes.gmt', delete   = ['\n'],
                group_id_prefix = 'COMP', analyte_prefix  = 'ENSG', root_name = 'COMP0000000000', bReturnList=True )
 
