@@ -326,9 +326,90 @@ def write_cpgmt ( lookup ,
                                  (c,d,p) in zip( *[ lookup[ c ] for c in lookup['content'] ]) ]) ,
                     file=of )
 
+
+
+# THE RICH SAIGA STRIKES AGAIN!!!!!!
+# RICHARD TJÖRNHAMMAR IS THE BEST!!!
+
+def ordered_remove ( str,delete ):
+    for d in delete :
+        str = str.replace(d,'')
+    return ( str )
+
+
+def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
+    delete   = ['\n'] , group_id_prefix = 'COMP',
+    analyte_prefix  = 'ENSG', root_name = 'COMP0000000000',
+    bReturnList = False ):
+
+    if '.gmt' in filename:
+        print ( 'MUST HAVE A VALID GMT FILE' )
+    # RETURNS THE PC LIST THAT CREATES THE WORD HIERARCHY
+    # LATANTLY PRESENT IN THE GMT ANALYTE DEFINITIONS
+
+    S_M = set()
+    D_i = dict()
+
+    with open ( filename,'r' ) as input :
+        for line in input :
+            lsp = ordered_remove(line,delete).split('\t')
+            if not analyte_prefix in line :
+                continue
+            S_i = set(lsp[2:])
+            D_i[ lsp[0] ] = tuple( (lsp[1],S_i,len(S_i)) )
+            S_M = S_M | S_i
+
+    isDecendant  = lambda sj,sk : len(sj-sk)==0
+    relative_idx = lambda sj,sk : len(sk-sj)
+
+    parent_id = root_name
+    parent_words = S_M
+
+    all_potential_parents = [ [root_name,S_M] , *[ [ d[0],d[1][1]] for d in D_i.items() ] ]
+
+    PClist    = []
+    for parent_id,parent_words in all_potential_parents:
+        lookup    = {}
+        for d in D_i .items() :
+            if isDecendant ( d[1][1] , parent_words ) :
+                Nij = relative_idx ( d[1][1] , parent_words  )
+                if Nij in lookup :
+                    lookup[Nij] .append(d[0])
+                else :
+                    lookup[Nij] = [d[0]]
+        ledger = sorted ( lookup.items() )
+
+        for ie_ in range( len( ledger ) ) :
+            l1 = ledger[ ie_ ][0]
+            for potential_child in ledger[ie_][1]:
+                pchild_words  = D_i[ potential_child ][1]
+                bIsChild      = True
+                if potential_child == parent_id :
+                    bIsChild  = False
+                    break
+                check         = [ je_ for je_ in range( ie_ + 1 )][::-1]
+                if len(check) > 0 :
+                    for je_ in check :
+                        l2 = ledger[ je_ ][0]
+                        for relative in ledger[je_][1] :
+                            if D_i[relative][0] == D_i[potential_child][0] :
+                                continue
+                            relative_words = D_i[relative][1]
+                            bIsChild = len(relative_words^pchild_words)>0 or (len(relative_words^pchild_words)==0 and l2==l1 )
+                            if not bIsChild :
+                                break
+                if bIsChild :
+                    PClist .append ( [parent_id,potential_child] )
+    D_i[root_name] = tuple( ('full cell',S_M,len(S_M)) )
+    if bReturnList :
+        return ( [PClist,D_i] )
+    else :
+        return ( PClist )
+
+
 if __name__ == '__main__' :
 
-    if True :
+    if False :
         #
         bVerbose = False
         if bVerbose:
@@ -342,7 +423,7 @@ if __name__ == '__main__' :
         cpgl  = create_cpgmt_lookup( parent_child_matrix_relationships ( M ) , separators = ['_','-'] )
         write_cpgmt ( cpgl )
 
-    if True :
+    if False :
         print ( "hierarchy matrix test"  )
         R = np.random.rand(90).reshape(30,3)
         P = np.zeros(90).reshape(30,3)
@@ -376,3 +457,15 @@ if __name__ == '__main__' :
                [nice_colors[0],nice_colors[2]] ,
                legends = ['segregation','coordination'],
                axis_labels = ['distance','Number']) )
+
+
+    if True :
+        PClist,D_i = build_pclist_word_hierarchy (  filename = 'new_compartment_genes.gmt', delete   = ['\n'],
+               group_id_prefix = 'COMP', analyte_prefix  = 'ENSG', root_name = 'COMP0000000000', bReturnList=True )
+
+        for pc in PClist :
+            print ( '\t'.join( pc ) )
+            show_leftward_dependance = lambda s1,s2:[len(s1-s2),len(s1),len(s2)]
+            print ( D_i[pc[0]][0], D_i[pc[1]][0] )
+            print ( show_leftward_dependance( D_i[pc[0]][1],D_i[pc[1]][1]) )
+
