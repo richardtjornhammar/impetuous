@@ -338,8 +338,9 @@ def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
     analyte_prefix  = 'ENSG', root_name = 'COMP0000000000',
     bReturnList = False ):
 
-    if '.gmt' in filename:
+    if not '.gmt' in filename :
         print ( 'MUST HAVE A VALID GMT FILE' )
+        exit ( 1 )
     # RETURNS THE PC LIST THAT CREATES THE WORD HIERARCHY
     # LATANTLY PRESENT IN THE GMT ANALYTE DEFINITIONS
 
