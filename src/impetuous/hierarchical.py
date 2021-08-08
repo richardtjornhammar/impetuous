@@ -327,10 +327,6 @@ def write_cpgmt ( lookup ,
                     file=of )
 
 
-
-# THE RICH SAIGA STRIKES AGAIN!!!!!!
-# RICHARD TJÖRNHAMMAR IS THE BEST!!!
-
 def ordered_remove ( str,delete ):
     for d in delete :
         str = str.replace(d,'')
