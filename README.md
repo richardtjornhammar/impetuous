@@ -437,13 +437,12 @@ Then you might have noticed that some of the portfolios seem to contain the othe
 ```
 which will return the list you need. You can now save it as a node relationship file and use that in my DAG construction routine.
 
-Lets instead assume that you want to read the analyte groupings from a [file](https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt), then you could issue :
+Lets instead assume that you want to read the analyte groupings from a [file](https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/c37eaeeebc4cecff200bebf3b10dfa57984dbb84/new_compartment_genes.gmt), then you could issue :
 ```
     import os
-    os.system('wget https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt')
-
+    os.system('wget https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/c37eaeeebc4cecff200bebf3b10dfa57984dbb84/new_compartment_genes.gmt')
     filename = 'new_compartment_genes.gmt'
-    pcl , pcd = build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
+    pcl , pcd = imph.build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
 ```
 If there are latent assumptions for some groupings then you can read them out by checking what the definitions refers to (here we already know that there is one for the mitochondrion definition):
 ```
