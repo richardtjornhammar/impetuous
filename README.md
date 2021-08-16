@@ -432,7 +432,7 @@ Have no fear! This can be done with my `build_pclist_word_hierarchy` routine. En
 ```
 Then you might have noticed that some of the portfolios seem to contain the others completely. In order to derive the direct downward relationship you can issue the following commands (after installing `impetuous version>=0.64.1`
 ```
-    import impetuous.hierarchy as imph
+    import impetuous.hierarchical as imph
     pclist = imph.build_pclist_word_hierarchy ( ledger = portfolios , group_id_prefix='PORT' , root_name='PORT000')
 ```
 which will return the list you need.
@@ -445,7 +445,7 @@ Lets instead assume that you want the read what those latent codings from a [fil
     print ( build_pclist_word_hierarchy ( ledger = portfolios , group_id_prefix='PORT' , root_name='PORT000') )
     pcl , pcd = build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
 ```
-If there is a latent assumption for some grouping you can also read it out by checking what the definition referes to
+If there is a latent assumption for some grouping you can also read it out by checking what the definition referes to (here we already know that there is one for the mitochondrion definitions):
 ```
     pcl , pcd = build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
     for item in pcl :
