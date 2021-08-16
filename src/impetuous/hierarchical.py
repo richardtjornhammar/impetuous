@@ -326,38 +326,66 @@ def write_cpgmt ( lookup ,
                                  (c,d,p) in zip( *[ lookup[ c ] for c in lookup['content'] ]) ]) ,
                     file=of )
 
+#
+# TOOLS LOCAL
 def ordered_remove ( str,delete ):
     for d in delete :
         str = str.replace(d,'')
     return ( str )
 
-
-def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
-    delete   = ['\n'] , group_id_prefix = 'COMP',
-    analyte_prefix  = 'ENSG', root_name = 'COMP0000000000',
-    bReturnList = False , bUseGroupPrefix = False, bSingleChild=True ):
-
-    if not '.gmt' in filename :
-        print ( 'MUST HAVE A VALID GMT FILE' )
+def error ( criterion,message ) :
+    if criterion :
+        print ( message )
         exit ( 1 )
 
-    # RETURNS THE PC LIST THAT CREATES THE WORD HIERARCHY
-    # LATANTLY PRESENT IN THE GMT ANALYTE DEFINITIONS
+def build_pclist_word_hierarchy ( filename = None ,  # 'new_compartment_genes.gmt',
+                                  ledger   = None ,
+    delete   = ['\n'] , group_id_prefix = None,
+    analyte_prefix  = 'ENSG', root_name = 'COMP0000000000',
+    bReturnList = False , bUseGroupPrefix = False ,
+    bSingleChild = False , bSingleDescent = True ) :
 
+    bSingleChild = bSingleChild or bSingleDescent # USER SHOULD SET THE bSingleDescent OPTION
+    
+    bUseFile = not filename is None
+    import operator
+    error ( not operator.xor ( filename is None , ledger is None ), "YOU MUST SUPPLY A GMT FILE XOR A DICTIONARY" )
+    if bUseFile :
+        error ( not '.gmt' in filename , 'MUST HAVE A VALID GMT FILE' )
+    #
+    # RETURNS THE PC LIST THAT CREATES THE WORD HIERARCHY
+    # LATANTLY PRESENT IN THE GMT ANALYTE (GROUPING) DEFINITIONS
+    #
     S_M = set()
     D_i = dict()
 
+    bUseGroupPrefix = not group_id_prefix is None
+    if bUseGroupPrefix :
+        bUseGroupPrefix = 'str' in str(type(group_id_prefix)).lower()
     check_prefix = analyte_prefix
     if bUseGroupPrefix :
         check_prefix = group_id_prefix
-    
-    with open ( filename,'r' ) as input :
-        for line in input :
-            lsp = ordered_remove(line,delete).split('\t')
-            if not check_prefix in line :
-                continue
-            S_i = set(lsp[2:])
-            D_i[ lsp[0] ] = tuple( (lsp[1],S_i,len(S_i)) )
+
+    if bUseFile :
+        with open ( filename,'r' ) as input :
+            for line in input :
+                lsp = ordered_remove(line,delete).split('\t')
+                if not check_prefix in line :
+                    continue
+                S_i = set(lsp[2:])
+                D_i [ lsp[0] ] = tuple( (lsp[1] , S_i , len(S_i)) )
+                S_M = S_M | S_i
+    else :
+        for item in ledger.items() :
+            print(item)
+            if bUseGroupPrefix :
+                if not check_prefix in item[0]:
+                    continue
+            else :
+                if not check_prefix in ''.join(item[1][1]):
+                    continue
+            S_i = set( item[1][1] )
+            D_i [ item[0] ] = tuple( (item[1][0] , S_i , len(S_i)) )
             S_M = S_M | S_i
 
     isDecendant  = lambda sj,sk : len(sj-sk)==0
@@ -416,6 +444,7 @@ def build_pclist_word_hierarchy ( filename = 'new_compartment_genes.gmt',
         return ( [PClist,D_i] )
     else :
         return ( PClist )
+
 
 if __name__ == '__main__' :
 
