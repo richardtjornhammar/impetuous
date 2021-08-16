@@ -418,9 +418,9 @@ which account for the top `64` obesity transcripts. We note that some of these a
 
 # Example 8: Latent grouping assumptions. Building a Parent-Child list
 
-So you are sitting on a large amount of groupings that you have a significance test for. Testing what you are interested in per analyte symbol/id. Since you will conduct a large amount of tests there is also a large risk that you will technically test the same thing over and over again. In order to remove this effect from your group testing you could employ my `HierarchicalEnrichment` routine, but then you would also need a relationship file describing how to build the a group DAG Hierarchy. This can be done with a relationship file that contains a `parent id`, a `tab delimiter` and a `child id` on each line. The routine that I demonstrate here uses a divide-and-conquer type approach to construct that information, which means that a subgroup, or child, is only assigned if it is fully contained within the parents definition. You can create redundant assignments by setting `bSingleDescent=False`, but it is not the recommended default setting.
+So you are sitting on a large amount of groupings that you have a significance test for. Testing what you are interested in per analyte symbol/id. Since you will conduct a large amount of tests there is also a large risk that you will technically test the same thing over and over again. In order to remove this effect from your group testing you could employ my `HierarchicalEnrichment` routine, but then you would also need a relationship file describing how to build a group DAG Hierarchy. This can be done with a relationship file that contains a `parent id`, a `tab delimiter` and a `child id` on each line. The routine that I demonstrate here uses a divide-and-conquer type approach to construct that information, which means that a subgroup, or child, is only assigned if it is fully contained within the parents definition. You can create redundant assignments by setting `bSingleDescent=False`, but it is not the recommended default setting.
 
-Construction of the downward node relationships can be done with my `build_pclist_word_hierarchy` routine. Ok. Enough talk. Let us assume that you are sitting on the following data:
+Construction of the downward node relationships can be done with my `build_pclist_word_hierarchy` routine. Let us assume that you are sitting on the following data:
 ```
     portfolios = { 'PORT001' : ['Anders EQT' ,['AAPL','GOOG','IBM','HOUSE001','OTLY','GOLD','BANANAS'] ],
                    'PORT002' : ['Anna EQT'   ,['AAPL','AMZN','HOUSE001','CAR','BOAT','URANIUM','PLUTONIUM','BOOKS'] ],
@@ -459,7 +459,7 @@ melanosome membrane   ->  mitochondrion
 full cell  ->  mitochondrial outer membrane
 full cell  ->  mitochondrial intermembrane space
 ```
-the definition for the mitochondrion is fully contained within the melanosome membrane definition and so testing for that group should be account for the mitochondrion. This can be done with the `HierarchicalEnrichment` routing exemplified above. We know that the melanosome membrane is associated with sight and that being diabetic is associated with mitochondrial dysfunction, but also that diabetic retinopathy affects diabetics, so there might be a knowledge based, or True, genetic connection relating these two spatially distinct regions of the cell.
+the definition for the mitochondrion is fully contained within the melanosome membrane definition and so testing that group should try and account for the mitochondrion. This can be done with the `HierarchicalEnrichment` routine exemplified above. We know that the melanosome membrane is associated with sight and that being diabetic is associated with mitochondrial dysfunction, but also that diabetic retinopathy affects diabetics, so there might be a knowledge based, or True, genetic connection relating these two spatially distinct regions of the cell.
 
 # Notes
 
