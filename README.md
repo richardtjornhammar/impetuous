@@ -418,7 +418,7 @@ which account for the top `64` obesity transcripts. We note that some of these a
 
 # Example 8: Latent data assumptions. Building a Parent-Child list
 
-So you are sitting on a large amount of groupings that you have a significance test for what you are interested in. Since you will conduct a large amount of tests there is also a large risk that you will technically test the same thing over and over again. In order to remove this effect from your group testing you could employ my `HierarchicalEnrichment` routine, but then you will need a relationship file describing how to build the group DAG Hierarchy.
+So you are sitting on a large amount of groupings that you have a significance test for what you are interested in. Since you will conduct a large amount of tests there is also a large risk that you will technically test the same thing over and over again. In order to remove this effect from your group testing you could employ my `HierarchicalEnrichment` routine, but then you will need a relationship file describing how to build the group DAG Hierarchy. The relationship file contains a parent id, a tab delimiter and a child id on each line. The routine that I demonstrate here uses a divide-and-conquer type approach which means that a subgroup, or child, is only assigned if it is fully contained within the parents definition. You can create redundant assignments by setting `bSingleDescent=False` but it is not the recommended default setting.
 
 Have no fear! This can be done with my `build_pclist_word_hierarchy` routine. Enough talk. Let us assume that you are sitting on the following data:
 ```
@@ -435,17 +435,18 @@ Then you might have noticed that some of the portfolios seem to contain the othe
     import impetuous.hierarchical as imph
     pclist = imph.build_pclist_word_hierarchy ( ledger = portfolios , group_id_prefix='PORT' , root_name='PORT000')
 ```
-which will return the list you need.
+which will return the list you need. You can now save it as a node relationship file and use that in my DAG construction routine.
 
-Lets instead assume that you want the read what those latent codings from a [file](https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt) then you could issue :
+Lets instead assume that you want the read latent codings from a [file](https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt), then you could issue :
 ```
     import os
     os.system('wget https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt')
+
     filename = 'new_compartment_genes.gmt'
     print ( build_pclist_word_hierarchy ( ledger = portfolios , group_id_prefix='PORT' , root_name='PORT000') )
     pcl , pcd = build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
 ```
-If there is a latent assumption for some grouping you can also read it out by checking what the definition referes to (here we already know that there is one for the mitochondrion definitions):
+If there are latent assumptions for some groupings then you can also read them out by checking what the definition referes to (here we already know that there is one for the mitochondrion definition):
 ```
     pcl , pcd = build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
     for item in pcl :
@@ -464,8 +465,6 @@ full cell  ->  mitochondrial intermembrane space
 That the definition for the mitochondrion is fully contained within the melanosome membrane definition and so testing for that group should be accounted for when testing the parent.
 
 # Notes
-
-TODO: FIX HIERARCHICAL MODULE IMPORT ERROR
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions.
 
