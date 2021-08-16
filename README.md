@@ -416,7 +416,56 @@ np.array([['HSPA1A','HSPA1B', 'HSPA1L', 'IGFBP7', 'TMSB10', 'TMSB4X', 'RPLP2',
 ```
 which account for the top `64` obesity transcripts. We note that some of these are shared with diabetics. If we study which ones describes the `Marginal` or `Absent` genes we can see that there are some that we might want to exclude for technical reasons. We will leave that excercise for the curious reader.
 
+# Example 8: Latent data assumptions. Building a Parent-Child list
+
+So you are sitting on a large amount of groupings that you have a significance test for what you are interested in. Since you will conduct a large amount of tests there is also a large risk that you will technically test the same thing over and over again. In order to remove this effect from your group testing you could employ my `HierarchicalEnrichment` routine, but then you will need a relationship file describing how to build the group DAG Hierarchy.
+
+Have no fear! This can be done with my `build_pclist_word_hierarchy` routine. Enough talk. Let us assume that you are sitting on the following data:
+```
+    portfolios = { 'PORT001' : ['Anders EQT' ,['AAPL','GOOG','IBM','HOUSE001','OTLY','GOLD','BANANAS'] ],
+                   'PORT002' : ['Anna EQT'   ,['AAPL','AMZN','HOUSE001','CAR','BOAT','URANIUM','PLUTONIUM','BOOKS'] ],
+                   'PORT003' : ['Donald EQT' ,['EGO','GOLF','PIES','HOUSE100','HOUSE101','HOUSE202'] ] ,
+                   'PORT004' : ['BOB EQT'    ,['AAPL','GOOG'] ],
+                   'PORT005' : ['ROB EQT'    ,['AMZN','BOOKS'] ],
+                   'PORT006' : ['KIM EQT'    ,['URANIUM','PLUTONIUM'] ],
+                   'PORT007' : ['LIN EQT'    ,['GOOG'] ] }
+```
+Then you might have noticed that some of the portfolios seem to contain the others completely. In order to derive the direct downward relationship you can issue the following commands (after installing `impetuous version>=0.64.1`
+```
+    import impetuous.hierarchy as imph
+    pclist = imph.build_pclist_word_hierarchy ( ledger = portfolios , group_id_prefix='PORT' , root_name='PORT000')
+```
+which will return the list you need.
+
+Lets instead assume that you want the read what those latent codings from a [file]( https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt') then you could issue :
+```
+    import os
+    os.system('wget https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt')
+    filename = 'new_compartment_genes.gmt'
+    print ( build_pclist_word_hierarchy ( ledger = portfolios , group_id_prefix='PORT' , root_name='PORT000') )
+    pcl , pcd = build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
+```
+If there is a latent assumption for some grouping you can also read it out by checking what the definition referes to
+```
+    pcl , pcd = build_pclist_word_hierarchy ( filename = filename , bReturnList=True )
+    for item in pcl :
+        if  'mito' in pcd[item[1]][0] or 'mela' in pcd[item[1]][0] :
+            print ( pcd[item[0]][0] , ' -> ' , pcd[item[1]][0] )
+```
+which will tell you that
+```
+full cell  ->  melanosome membrane
+full cell  ->  mitochondrial inner membrane
+full cell  ->  mitochondrial matrix
+melanosome membrane   ->  mitochondrion
+full cell  ->  mitochondrial outer membrane
+full cell  ->  mitochondrial intermembrane space
+```
+That the definition for the mitochondrion is fully contained within the melanosome membrane definition and so testing for that group should be accounted for when testing the parent.
+
 # Notes
+
+TODO: FIX HIERARCHICAL MODULE IMPORT ERROR
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions.
 
