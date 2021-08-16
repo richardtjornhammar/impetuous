@@ -437,7 +437,7 @@ Then you might have noticed that some of the portfolios seem to contain the othe
 ```
 which will return the list you need.
 
-Lets instead assume that you want the read what those latent codings from a [file]( https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt') then you could issue :
+Lets instead assume that you want the read what those latent codings from a [file](https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt) then you could issue :
 ```
     import os
     os.system('wget https://gist.githubusercontent.com/richardtjornhammar/6780e6d99e701fcc83994cc7a5f77759/raw/2d9cb00540960491e70883cb851ca16e4f254ee9/new_compartment_genes.gmt')
