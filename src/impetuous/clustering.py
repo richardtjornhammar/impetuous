@@ -526,7 +526,7 @@ def backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
     if bDoFeatures :
         #
         dM1 = absolute_coordinates_to_distance_matrix( rana_df.values   )
-        pd.DataFrame(dM1,index=rana_df.index,columns=rana_df.index).to_csv('../data/dM1.tsv','\t')
+        #pd.DataFrame(dM1,index=rana_df.index,columns=rana_df.index).to_csv('../data/dM1.tsv','\t')
         #
         # Project it back onto first two components
         max_var_projection = distance_matrix_to_absolute_coordinates ( dM1 , n_dimensions=n_dimensions )
@@ -538,14 +538,14 @@ def backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
         #
         # And again for all the samples
         dM2 = absolute_coordinates_to_distance_matrix( rana_df.T.values )
-        pd.DataFrame(dM2,index=rana_df.columns,columns=rana_df.columns).to_csv('../data/dM2.tsv','\t')
+        #pd.DataFrame(dM2,index=rana_df.columns,columns=rana_df.columns).to_csv('../data/dM2.tsv','\t')
         #
         # This algorithm is exact but scales somewhere between n^2 and n log n
         max_var_projection = distance_matrix_to_absolute_coordinates ( dM2 , n_dimensions=n_dimensions )
         cluster_coords_s = pd.DataFrame( max_var_projection ,
                                     columns = rana_df.columns ,
                                     index = dimcrdnames ).T
-        cluster_coords_s.to_csv('../data/conclust_s.tsv','\t')
+        #cluster_coords_s.to_csv('../data/conclust_s.tsv','\t')
 
     return ( cluster_coords_f,cluster_coords_s )
 
