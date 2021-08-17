@@ -550,7 +550,11 @@ def backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
     return ( cluster_coords_f,cluster_coords_s )
 
 def dbscan ( data_frame = None , distance_matrix = None ,
-        eps = None, minPts = None ) :
+        eps = None, minPts = None , bVerbose = False ) :
+    if bVerbose :
+        print ( "THIS IMPLEMENTATION FOR DBSCAN" )
+        print ( "ASSESSMENT OF NOISE DIFFERS FROM" )
+        print ( "THE IMPLEMENTATION FOUND IN SKLEARN")
     #
     # FOR A DESCRIPTION OF THE CONNECTIVITY READ PAGE 30 (16 INTERNAL NUMBERING) of:
     # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
