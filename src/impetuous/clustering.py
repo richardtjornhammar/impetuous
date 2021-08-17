@@ -549,6 +549,31 @@ def backprojection_clustering ( analyte_df , bRanked=False , n_dimensions=2 ,
 
     return ( cluster_coords_f,cluster_coords_s )
 
+def dbscan ( data_frame = None , distance_matrix = None ,
+        eps = 0.11, minPts = 1 ) :
+    #
+    # FOR A DESCRIPTION OF THE CONNECTIVITY READ PAGE 30 (16 INTERNAL NUMBERING) of:
+    # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+    from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
+    import operator
+    if not operator.xor( data_frame is None , distance_matrix is None ) :
+        print ( "ONLY SUPPLY A SINGE DATA FRAME OR A DISTANCE MATRIX" )
+        print ( "dbscan FAILED" )
+        print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
+        exit(1)
+    if not data_frame is None :
+        if not 'pandas' in str(type(data_frame)) :
+            print ( "ONLY SUPPLY A SINGE DATA FRAME WITH ABSOLUTE COORDINATES" )
+            print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
+            print ( "dbscan FAILED" )
+            exit ( 1 )
+        if bVerbose :
+            print ( data_frame )
+        distance_matrix = absolute_coordinates_to_distance_matrix(data_frame.values)
+    clustercontent , clustercontacts  =  connectivity(distance_matrix,eps)
+    isNoise = np.sum(distance_matrix<eps,0)-1 < minPts
+    return ( {'cluster content': clustercontent, 'clusterid-particleid' : clustercontacts, 'is noise':isNoise} )
+
 
 if __name__ == '__main__' :
 
