@@ -574,12 +574,12 @@ def dbscan ( data_frame = None , distance_matrix = None ,
             exit ( 1 )
         if bVerbose :
             print ( data_frame )
+        distance_matrix = absolute_coordinates_to_distance_matrix(data_frame.values)
     if not ( 'float' in str(type(eps)).lower() and 'int' in str(type(minPts)).lower() ) :
         print ( "TO CALL THE dbscan PLEASE SPECIFY AT LEAST A DATA FRAME OR")
         print ( "ITS CORRESPONDING DISTANCE MATRIX AS WELL AS THE DISTANCE CUTOFF PARAMETER" )
         print ( "AND THE MINIMAL AMOUNT OF NEIGHBOUR POINTS TO CONSIDER IT CLUSTERED")
         print ( "dbscan ( data_frame = None , distance_matrix = None , eps = None, minPts = None )" )
-        distance_matrix = absolute_coordinates_to_distance_matrix(data_frame.values)
     if 'panda' in str(type(distance_matrix)).lower() :
         distance_matrix = distance_matrix.values
     distance_matrix_ = distance_matrix.copy()
