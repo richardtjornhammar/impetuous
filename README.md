@@ -459,7 +459,7 @@ melanosome membrane   ->  mitochondrion
 full cell  ->  mitochondrial outer membrane
 full cell  ->  mitochondrial intermembrane space
 ```
-the definition for the mitochondrion is fully contained within the melanosome membrane definition and so testing that group should try and account for the mitochondrion. This can be done with the `HierarchicalEnrichment` routine exemplified above. We know that the melanosome membrane is associated with sight and that being diabetic is associated with mitochondrial dysfunction, but also that diabetic retinopathy affects diabetics, so there might be a knowledge based, or True, genetic connection relating these two spatially distinct regions of the cell.
+the definition for the mitochondrion is fully contained within the melanosome membrane definition and so testing that group should try and account for the mitochondrion. This can be done with the `HierarchicalEnrichment` routine exemplified above. We know that the melanosome membrane is associated with sight and that being diabetic is associated with mitochondrial dysfunction, but also that diabetic retinopathy affects diabetics and we also see that there is a knowledge based genetic connection relating these two spatially distinct regions of the cell.
 
 # Notes
 
