@@ -554,7 +554,8 @@ def dbscan ( data_frame = None , distance_matrix = None ,
     #
     # FOR A DESCRIPTION OF THE CONNECTIVITY READ PAGE 30 (16 INTERNAL NUMBERING) of:
     # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
-    from impetuous.clustering import absolute_coordinates_to_distance_matrix
+    #from impetuous.clustering import absolute_coordinates_to_distance_matrix
+    #from impetuous.clustering import connectivity
     import operator
     if not operator.xor( data_frame is None , distance_matrix is None ) :
         print ( "ONLY SUPPLY A SINGE DATA FRAME OR A DISTANCE MATRIX" )
@@ -572,19 +573,23 @@ def dbscan ( data_frame = None , distance_matrix = None ,
     if not ( 'float' in str(type(eps)).lower() and 'int' in str(type(minPts)).lower() ) :
         print ( "TO CALL THE dbscan PLEASE SPECIFY AT LEAST A DATA FRAME OR")
         print ( "ITS CORRESPONDING DISTANCE MATRIX AS WELL AS THE DISTANCE CUTOFF PARAMETER" )
-        print ( "AND THE MINIMAL AMOUNT OF NEIGHBOUR POINTS TO CONSIDER IT A CLUSTER")
+        print ( "AND THE MINIMAL AMOUNT OF NEIGHBOUR POINTS TO CONSIDER IT CLUSTERED")
         print ( "dbscan ( data_frame = None , distance_matrix = None , eps = None, minPts = None )" )
         distance_matrix = absolute_coordinates_to_distance_matrix(data_frame.values)
-    isNoise = np.sum(distance_matrix<eps,0)-1 < minPts
+    if 'panda' in str(type(distance_matrix)).lower() :
+        distance_matrix = distance_matrix.values
+    distance_matrix_ = distance_matrix.copy()
+    isNoise = np.sum(distance_matrix_<eps,0)-1 < minPts
     i_ = 0
     for ib in isNoise :
         if ib :
-            distance_matrix [ i_] = ( 1+eps )*10.0
-            distance_matrix.T[i_] = ( 1+eps )*10.0
-            distance_matrix[i_][i_] = 0.
+            distance_matrix_ [ i_] = ( 1+eps )*10.0
+            distance_matrix_.T[i_] = ( 1+eps )*10.0
+            distance_matrix_[i_][i_] = 0.
         i_ = i_+1
-    clustercontent , clustercontacts  =  connectivity(distance_matrix,eps)
+    clustercontent , clustercontacts  =  connectivity(distance_matrix_,eps)
     return ( {'cluster content': clustercontent, 'clusterid-particleid' : clustercontacts, 'is noise':isNoise} )
+
 
 if __name__ == '__main__' :
 
@@ -593,7 +598,7 @@ if __name__ == '__main__' :
         # TEST DEPENDS ON THE DIABETES DATA FROM BROAD INSTITUTE
         filename = './Diabetes_collapsed_symbols.gct'
         df_ = pd.read_csv(filename,'\t',index_col=0,header=2)
-        ddf = df_.loc[:,[ col for col in df_.columns if '_' in col ]] 
+        ddf = df_.loc[:,[ col for col in df_.columns if '_' in col ]]
         ddf .index = [idx.split('/')[0] for idx in ddf.index]
         run_clustering_and_write_gmt( ddf , clustering_algorithm )
         #
@@ -601,12 +606,12 @@ if __name__ == '__main__' :
         CLU .approximate_density_clustering(ddf)
         CLU .write_gmt()
 
-    if False :
+    if True :
         A = np.array( [ [0.00, 0.10, 0.10, 9.00, 9.00, 9.00],
         		[0.10, 0.00, 0.15, 9.00, 9.00, 9.00],
         		[0.10, 0.15, 0.00, 9.00, 9.00, 9.00],
         		[9.00, 9.00, 9.00, 0.00, 0.10, 0.10],
         		[9.10, 9.00, 9.00, 0.10, 0.00, 0.15],
         		[9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
-        print( connectivity(A,0.01) )
-
+        print ( connectivity(A,0.11) )
+        print ( dbscan(distance_matrix=pd.DataFrame(A).values,eps=0.11,minPts=2) )
