@@ -78,7 +78,7 @@ def bscatter ( X , Y , additional_dictionary=None , title='' , color='#ff0000' ,
     hover = HoverTool ( tooltips = ttips )
     #
     if p is None :
-        p = figure ( plot_width=600 , plot_height=600 , 
+        p = figure ( plot_width=600 , plot_height=600 ,
            tools = [hover,'box_zoom','wheel_zoom','pan','reset','save'],
            title = title )
 
@@ -238,7 +238,7 @@ def a_plot( ds, xvar, yvar, tools, xlab, ylab,
 def box_plot (  box_source , categories, not_empty=False, with_line=False, tools=['save'],
                 plot_pane_width=400, plot_pane_height=400 , title='',score='', scatter_data_source=None ) :
 
-    p = figure (    tools=tools, background_fill_color="#EFE8E2", title=title, x_range=categories ,
+    p = figure (    tools=tools, background_fill_color="#FFFFFF", title=title, x_range=categories ,
                     plot_width = plot_pane_width, plot_height = plot_pane_height )
 
     if 'dict' in str(type(box_source)) :
@@ -358,10 +358,11 @@ def make_text_search_wb (   name , title='Input name:', variable_name='tval' ,
         """
     text_input = TextInput( value=name, title=title )
     toggle = Toggle( label="Search" , button_type="success" )
-    
+
     from bokeh.events import ButtonClick
     from bokeh.models import Button, CustomJS
     button = Button()
+    button .label = "Search" ;
 
     new_code = []
     div = Div(width=500)
@@ -431,7 +432,8 @@ def scatter2boxplot(    pathways, x1, y1, variables, patients, pathway2patient_x
                         axis_labels = None, out_file_name = "callback.html", category_override = 'Time',
                         dynamic_labelx = None, dynamic_labely = None, pathway2patient_y = None ,title_l=None, title_r=None,
                         patient_pos = None, category_pos = None, categories = None, xLtype='auto', yLtype='auto',
-                        chart_dicts = None, bShow = False, chart_titles = None , with_input_search = True ) :
+                        chart_dicts = None, bShow = False, chart_titles = None , with_input_search = True , bDebug=False ,
+                        bReturnFigureHandle=True ) :
     #
     triggercode=".change.emit();"
     if legacy :
@@ -678,7 +680,8 @@ function quartileBounds(values,groups) {
     arguments = arg_dict
     for vd_add_dict in vb_chart_dicts:
         arguments.update(vd_add_dict)
-    print([item for item in arguments.keys()],bokeh_script)
+    if bDebug:
+        print([item for item in arguments.keys()],bokeh_script)
     left_pane_data_source.selected.js_on_change('indices',  CustomJS( args=arguments, code=bokeh_script) )
 
     if not vb_charts is None :
@@ -691,11 +694,14 @@ function quartileBounds(values,groups) {
     #
     if with_input_search :
         arguments.update(dict(left=left_pane_data_source))
-        text_wb = make_text_search_wb ( 'Name of pathway', variable_name='uinp', args=arguments, dep_code=bokeh_script )
+        text_wb = make_text_search_wb ( 'Name of group', variable_name='uinp', args=arguments, dep_code=bokeh_script )
         clo = row(text_wb,lo)
     else :
         clo = lo
     #
+    if bReturnFigureHandle :
+        return ( clo )
+
     if bShow :
         show ( clo )
     else :
@@ -1042,10 +1048,6 @@ def merge_list_to_rows(pt1,pt2):
     return merged
 
 
-
-
-
-    
 def invert_dictlist(effects):
     #
     # CREATE A SAMPLE EFFECT LOOKUP
@@ -1229,7 +1231,7 @@ def create_paired_figure_p ( data_df , feature_name = None ,
 
 
 def example_dynamic_linking( bCLI=True ):
-    
+
     desc__="""        scatter2boxplot( ["P1","P2","P3"], [10.0,7.0,12.0], [2.0,4.0,16.5], {'funny':["yes","no","maybe"]},
             [('','Kalle','0','0'),('','Kalle','1','1'),('','Stina','0','2'),('','Stina','1','3'),('','Jens','0','2'),('','Jens','1','3'),
              ('','Anna','0','0'),('','Anna','1','1'),('','Adam','0','0'),('','Adam','1','1'),('','Niklas','0','2'),('','Niklas','1','3'),
@@ -1399,9 +1401,26 @@ def set_scatter2boxplot_style ( plots ,
 
 if __name__=='__main__':
 
-    example_dynamic_linking ( False )
-    example_lineplot ( False )
+    if False :
+        example_dynamic_linking ( False )
+        example_lineplot ( False )
     #TODO : ADD MORE CUSTOMIZABILITY FOR USERS. MAKE A DYNAMICALLY LINKED LINEPLOT
 
+    if True :
+        plots = scatter2boxplot( ["P1","P2","P3"], [10.0,7.0,12.0], [2.0,4.0,16.5], {'funny':["yes","no","maybe"]},
+            [('','Kalle','0','0'),('','Kalle','1','1'),('','Stina','0','2'),('','Stina','1','3'),('','Jens','0','2'),('','Jens','1','3'),
+             ('','Anna','0','0'),('','Anna','1','1'),('','Adam','0','0'),('','Adam','1','1'),('','Niklas','0','2'),('','Niklas','1','3'),
+             ('','Lina','0','2'),('','Lina','1','3'),('','Stina','0','0'),('','Stina','1','1')],
+            [[ 3.0,3.1,5.2,10.2,7.0,17.1,2.0,2.5,1.5,1.8,6.1,16.2,7.4,16.3,3.2,2.4 ],
+             [ 4.1,14.0,2.3,2.3,2.0,3.0,2.0,13.1,4.0,12.2,4.2,14.0,2.1,2.2,4.5,15.5],
+             [ 14.1,2.1,2.2,2.1,3.2,3.4,12.5,2.5,15.6,5.6,1.2,2.0,2.2,2.2,11.1,2.1 ] ],
+            [125.2,125.2,75.0,75.0,75.0,75.0,175.0,175.0,135.2,135.2,65.0,65.0,55.0,55.0,195.0,195.0],
+            [0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0] ,
+            {'x1':'x axis','y1':'y axis','x2':'x axis','y2':'y axis', 0: ('healthy',"blue"), 1: ('sick','red')} ,
+            categories={ '0':'Basal-H', '1':'30min-H','2':'Basal-S','3':'30min-S'},
+            patient_pos=1, category_pos=3,
+            bShow=False )
 
+        set_scatter2boxplot_style( plots )
+        show ( plots )
 
