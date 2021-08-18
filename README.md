@@ -74,6 +74,12 @@ if __name__=='__main__':
     import impetuous.spectral as impsp
     import impetuous.reducer as impre
 ```
+You can execute it easily when you are in the [impetuous environment](https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix). Just write
+```
+$ wget https://gist.githubusercontent.com/richardtjornhammar/34e163cba547d6c856d902244edc2039/raw/2a069b062df486b8d081c8cfedbbb30321e44f36/example0.py
+$ python3 example0.py
+```
+And if it doesn't work then contact [Richard](https://richardtjornhammar.github.io/) and I'll try and get back within 24h
 
 # Usage example 1: Elaborate informatics
 
@@ -434,7 +440,7 @@ np.array([['HSPA1A','HSPA1B', 'HSPA1L', 'IGFBP7', 'TMSB10', 'TMSB4X', 'RPLP2',
 ```
 which account for the top `64` obesity transcripts. We note that some of these are shared with diabetics. If we study which ones describes the `Marginal` or `Absent` genes we can see that there are some that we might want to exclude for technical reasons. We will leave that excercise for the curious reader.
 
-# Example 8: Latent grouping assumptions. Building a Parent-Child list
+# [Example 8](https://gist.githubusercontent.com/richardtjornhammar/5bac33de1497bd3a1117d709b672d918/raw/96dbb65876c2f742b1c6a27e502be006416fd99e/example8.py): Latent grouping assumptions. Building a Parent-Child list
 
 So you are sitting on a large amount of groupings that you have a significance test for. Testing what you are interested in per analyte symbol/id. Since you will conduct a large amount of tests there is also a large risk that you will technically test the same thing over and over again. In order to remove this effect from your group testing you could employ my `HierarchicalEnrichment` routine, but then you would also need a relationship file describing how to build a group DAG Hierarchy. This can be done with a relationship file that contains a `parent id`, a `tab delimiter` and a `child id` on each line. The routine that I demonstrate here uses a divide-and-conquer type approach to construct that information, which means that a subgroup, or child, is only assigned if it is fully contained within the parents definition. You can create redundant assignments by setting `bSingleDescent=False`, but it is not the recommended default setting.
 
