@@ -1360,7 +1360,43 @@ def example_lineplot( bCLI=True ):
             effect_label      = 'Effect_[str]' ,
             pairing_order     = pairing_order  )
 
-    
+def set_scatter2boxplot_style ( plots ,
+    width=600 , heigth = 600 ,
+    icon_size = 10, icon_alpha = 0.6 , dp_ = 100 ,
+    global_spot_size  = 14, global_spot_alpha = 0.33,
+    major_label_text_font_size  = [ '20pt' , '20pt' ],
+    minor_label_text_font_size  = [ '18pt' , '18pt' ],
+    major_box_label_orientation = [   0.0  ,  0.0   ],
+    textfont  = 'Arial',
+    textsize  = '18pt' ,
+    textstyle = 'bold' ,
+    textangle = 0.0 ,
+    gridcolor = None ,
+    grid_line_width = 0 ,
+    xlabel_orientation = 1 ) :
+
+    plot_dimensions = [ width, heigth ]
+
+    for p in plots.children[1].children :
+
+        p .width  = plot_dimensions[0]
+        p .height = plot_dimensions[1]
+
+        p .xaxis.major_label_orientation = xlabel_orientation
+        p .xgrid.grid_line_color = gridcolor
+
+        p .grid.grid_line_width = grid_line_width
+        #p .title.text_size  = major_label_text_font_size[0]
+
+        #p.xaxis.group_text_font_size       = minor_label_text_font_size[0]
+        p.xaxis.axis_label_text_font_size  = minor_label_text_font_size[0]
+        p.xaxis.major_label_text_font_size = minor_label_text_font_size[1]
+
+        #p.yaxis.axis_label  = yaxis_label
+        p.yaxis.axis_label_text_font_size  = minor_label_text_font_size[0]
+        p.yaxis.major_label_text_font_size = minor_label_text_font_size[1]
+
+
 if __name__=='__main__':
 
     example_dynamic_linking ( False )
