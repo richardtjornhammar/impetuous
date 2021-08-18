@@ -39,7 +39,7 @@ If you cannot install it using your Wintendo then please consider installing Win
 https://docs.microsoft.com/en-us/windows/wsl/install-win10
 ```
 
-In order to run the code in this notebook you must enter a sensible working environment. Don't worry! We have created one for you. It's version controlled against python3.7 and you can get the file here:
+In order to run the code in this notebook you must enter a sensible working environment. Don't worry! We have created one for you. It's version controlled against python3.7 (and python3.8) and you can get the file here:
 
 https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix
 
@@ -79,7 +79,7 @@ You can execute it easily when you are in the [impetuous environment](https://gi
 $ wget https://gist.githubusercontent.com/richardtjornhammar/34e163cba547d6c856d902244edc2039/raw/2a069b062df486b8d081c8cfedbbb30321e44f36/example0.py
 $ python3 example0.py
 ```
-And if it doesn't work then contact [Richard](https://richardtjornhammar.github.io/) and I'll try and get back within 24h
+And if it doesn't work then contact [me](https://richardtjornhammar.github.io/) and I'll try and get back within 24h
 
 # Usage example 1: Elaborate informatics
 
