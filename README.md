@@ -322,7 +322,7 @@ which will report that
 
 is affected or perhaps needs to be compensated for... now perhaps you thought this exercise was a tad tedious? Well you are correct. It is and you could just as well have copied the gene transcripts into [String-db](https://string-db.org/cgi/input?sessionId=beIptQQxF85j&input_page_active_form=multiple_identifiers) and gotten similar results out. But, then you wouldn't have gotten to use the hierarchical enrichment method I invented!
 
-# Example 6: Absolute and relative coordinates
+# [Example 6](https://gist.githubusercontent.com/richardtjornhammar/b1b71fb5669425a8b52c9bc6b530c418/raw/4f21b22b9b85bed2a387101a7b234320024abee2/example6.py): Absolute and relative coordinates
 
 In this example, we will use the SVD based distance geometry method to go between absolute coordinates, relative coordinate distances and back to ordered absolute coordinates. Absolute coordinates are float values describing the position of something in space. If you have several of these then the same information can be conveyed via the pairwise distance graph. Going from absolute coordinates to pairwise distances is simple and only requires you to calculate all the pairwise distances between your absolute coordinates. Going back to mutually orthogonal ordered coordinates from the pariwise distances is trickier, but a solved problem. The [distance geometry](https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.37.8051) can be obtained with SVD and it is implemented in the `impetuous.clustering` module under the name `distance_matrix_to_absolute_coordinates`. We start by defining coordinates afterwhich we can calculate the pair distance matrix and transforming it back by using the code below
 
