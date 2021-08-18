@@ -57,6 +57,24 @@ $ jupyter-notebook impetuous_finance.ipynb
 
 and that's it.
 
+# [Example 0](https://gist.githubusercontent.com/richardtjornhammar/34e163cba547d6c856d902244edc2039/raw/2a069b062df486b8d081c8cfedbbb30321e44f36/example0.py):
+After installing `impetuous-gfa version >=0.66.5` you should be able to execute the code
+```
+if __name__=='__main__':
+    import impetuous as imp
+    import impetuous.hierarchical as imphi
+    import impetuous.clustering as impcl
+    import impetuous.fit as impfi
+    import impetuous.pathways as imppa
+    import impetuous.visualisation as impvi
+    import impetuous.optimisation as impop
+    import impetuous.convert as impco
+    import impetuous.probabilistic as imppr
+    import impetuous.quantification as impqu
+    import impetuous.spectral as impsp
+    import impetuous.reducer as impre
+```
+
 # Usage example 1: Elaborate informatics
 
 code: https://gitlab.com/stochasticdynamics/eplsmta-experiments
