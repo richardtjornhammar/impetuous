@@ -266,7 +266,7 @@ have something to do with the altered metabolism in Type 2 Diabetics. We could n
     multifactor_results.to_csv('multifactor_dm2.csv','\t')
 ```
 
-# Example 5: Understanding what it means
+# [Example 5](https://gist.githubusercontent.com/richardtjornhammar/ad932891349ee1534050fedb766ac5e3/raw/0cf379b6b94f92ea12acab72f84ba30f7b8860ad/example5.py): Understanding what it means
 
 If you have a well curated `.gmt` file that contains analyte ids as unique sets that belong to different groups then you can check whether or not a specific group seems significant with respect to all of the significant and insignificant analytes that you just calculated. One can derive such a hierarchy or rely on already curated information. Since we are dealing with genes and biologist generally have strong opinions about these things we go to a directed acyclic knowledge graph called [Reactome](https://reactome.org/PathwayBrowser/) and translate that information into a set of [files](https://zenodo.org/record/3608712) that we can use to build our own knowledge hierarchy. After downloading that `.zip` file (and unzipping) you will be able to execute the following code
 ```
