@@ -594,6 +594,20 @@ def dbscan ( data_frame = None , distance_matrix = None ,
     clustercontent , clustercontacts  =  connectivity(distance_matrix_,eps)
     return ( {'cluster content': clustercontent, 'clusterid-particleid' : clustercontacts, 'is noise':isNoise} )
 
+def reformat_dbscan_results ( results ) :
+    if True :
+        clusters = {}
+        for icontent in range(len(results['cluster content'])) :
+            content = results[ 'cluster content' ][ icontent ]
+            for c in results [ 'clusterid-particleid' ] :
+                if c[0] == icontent :
+                    if results[ 'is noise' ][c[1]] :
+                        icontent=-1
+                    if icontent in clusters:
+                        clusters[ icontent ] .append( c[1] )
+                    else :
+                        clusters[ icontent ] = [ c[1] ]
+        return ( clusters )
 
 if __name__ == '__main__' :
 
