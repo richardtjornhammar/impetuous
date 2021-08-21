@@ -491,10 +491,11 @@ the definition for the mitochondrion is fully contained within the melanosome me
 
 In this [example](https://gist.githubusercontent.com/richardtjornhammar/e84056e0b10f8d550258a1e8944ee375/raw/e44e7226b6cb8ca486ff539ccfa775be981a549c/example9.py) we do exactly this for two gaussian point clouds. The dbscan search is just a single line `dbscan ( data_frame = point_cloud_df , eps=0.45 , minPts=4 )`, while the last lines are there to plot the [results](https://bl.ocks.org/richardtjornhammar/raw/0cc0ff037e88c76a9d65387155674fd1/?raw=true) ( has [graph revision dates](https://gist.github.com/richardtjornhammar/0cc0ff037e88c76a9d65387155674fd1/revisions) )
 
-
 # Notes
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions.
+
+If you like these concepts and approaches then might also enjoy reading "Computer Simulations of Liquids" by "Allen and Tildesley" for and undergraduate introduction to some important concepts in Biological Physics.
 
 # Manually updated code backups for this library :
 

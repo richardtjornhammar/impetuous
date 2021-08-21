@@ -635,7 +635,7 @@ def select_from_distance_matrix(boolean_list,distance_matrix):
 
 def calculate_rdf ( particles_i=None , particles_o=None , nbins=100 ,
                     distance_matrix = None , bInGroup = None , bNotInGroup = None ,
-                    n_dimensions = 3 , xformat="%.3f" ) :
+                    n_dimensions = 3 , xformat="%.3f" , bLiquidState=True, constant=4.0/3.0) :
 
     import operator
     crit1 = particles_i is None and particles_o is None
@@ -644,10 +644,10 @@ def calculate_rdf ( particles_i=None , particles_o=None , nbins=100 ,
     if not crit2 :
         particles_i = distance_matrix_to_absolute_coordinates ( \
                          select_from_distance_matrix ( bInGroup    , distance_matrix ) ,
-                         n_dimensions = 2 )
+                         n_dimensions = n_dimensions )
         particles_o = distance_matrix_to_absolute_coordinates ( \
                          select_from_distance_matrix ( bNotInGroup , distance_matrix ) ,
-                         n_dimensions = 2 )
+                         n_dimensions = n_dimensions )
     else :
         particles_i = particles_i.T
         particles_o = particles_o.T
@@ -659,7 +659,10 @@ def calculate_rdf ( particles_i=None , particles_o=None , nbins=100 ,
         X_ = 0.5*(X[1:]+X[:1])
         bUse  = [ x<rmax/2.0 for x in X_ ]
         rd = X_
-        dd = Y_ / len(rdf_p)
+        norm = len(rdf_p)
+        if bLiquidState :
+            norm = constant * np.pi * ( ( X_ + np.diff(X) )**n_dimensions - X_**n_dimensions )*len(rdf_p)
+        dd = Y_ / norm
         rd = [ r for r,b in zip(rd,bUse) if b ]
         dd = [ y for y,b in zip(dd,bUse) if b ]
         bar_source = {'density_values': dd, 'density_ids':[ xformat % (d) for d in rd ] }
@@ -667,7 +670,7 @@ def calculate_rdf ( particles_i=None , particles_o=None , nbins=100 ,
     else :
         print ( """calculate_rdf ( particles_i=None , particles_o=None , Nbins=100 ,
                     distance_martix = None, bInGroup = None, bNotInGroup = None ,
-                    n_dimensions = 3 )""")
+                    n_dimensions = 3 , xformat="%.3f" , bLiquidState=True, constant=4.0/3.0 )""")
         exit ( 1 )
 
 
