@@ -491,11 +491,11 @@ the definition for the mitochondrion is fully contained within the melanosome me
 
 In this [example](https://gist.githubusercontent.com/richardtjornhammar/e84056e0b10f8d550258a1e8944ee375/raw/e44e7226b6cb8ca486ff539ccfa775be981a549c/example9.py) we do exactly this for two gaussian point clouds. The dbscan search is just a single line `dbscan ( data_frame = point_cloud_df , eps=0.45 , minPts=4 )`, while the last lines are there to plot the [results](https://bl.ocks.org/richardtjornhammar/raw/0cc0ff037e88c76a9d65387155674fd1/?raw=true) ( has [graph revision dates](https://gist.github.com/richardtjornhammar/0cc0ff037e88c76a9d65387155674fd1/revisions) )
 
+The radial distribution function is a useful tool for visualizing whether or not there are radial clustering tendencies at any average distance between the group of interest and any other constituents of the system. It is implemented in the `clustering` module and is demonstrated [here](https://gist.githubusercontent.com/richardtjornhammar/f25ec2eef0703f07ebc0d678123f450e/raw/a5b06f1a99a630e756f4d44f7bab6dc60e181655/example10.py). The [resulting plot](https://bl.ocks.org/richardtjornhammar/raw/ff417450790c8c885b077fc7ee20409d/?raw=true) has [revision dates](https://gist.github.com/richardtjornhammar/ff417450790c8c885b077fc7ee20409d/revisions). Since the radial distribution function calculates the spherically symmetric distribution of points surrounding an analyte, or analyte group, of interest it is effectively analogous to segmenting the distance matrix and leaving out any self interaction distances that may or may not be present. The function `select_from_distance_matrix` uses boolean indexing to select rows and columns (it is symmetric) in the distance matrix and the `exclusive_pdist` function calculates all pairs between the points in the two separate groups.
+
 # Notes
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions.
-
-If you like these concepts and approaches then might also enjoy reading "Computer Simulations of Liquids" by "Allen and Tildesley" for and undergraduate introduction to some important concepts in Biological Physics.
 
 # Manually updated code backups for this library :
 
