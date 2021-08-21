@@ -609,6 +609,68 @@ def reformat_dbscan_results ( results ) :
                         clusters[ icontent ] = [ c[1] ]
         return ( clusters )
 
+
+if bUseNumba :
+    @jit(nopython=True)
+    def exclusive_pdist ( P , Q ) :
+        Np , Nq = len(P), len(Q)
+        R2 = np.zeros(Np*Nq).reshape(Np,Nq)
+        for i in range(len(P)):
+            for j in range(len(Q)):
+                R2[i][j] = np.sum((P[i]-Q[j])**2)
+        return ( R2 )
+else :
+    def exclusive_pdist ( P , Q ) :
+        Np , Nq = len(P), len(Q)
+        R2 = np.zeros(Np*Nq).reshape(Np,Nq)
+        for i in range(len(P)):
+            for j in range(len(Q)):
+                R2[i][j] = np.sum((P[i]-Q[j])**2)
+        return ( R2 )
+
+
+def select_from_distance_matrix(boolean_list,distance_matrix):
+    return ( np.array( [ d[boolean_list] for d in distance_matrix[boolean_list]] ) )
+
+
+def calculate_rdf ( particles_i=None , particles_o=None , nbins=100 ,
+                    distance_matrix = None , bInGroup = None , bNotInGroup = None ,
+                    n_dimensions = 3 , xformat="%.3f" ) :
+
+    import operator
+    crit1 = particles_i is None and particles_o is None
+    crit2 = bInGroup is None and distance_matrix is None and bNotInGroup is None
+
+    if not crit2 :
+        particles_i = distance_matrix_to_absolute_coordinates ( \
+                         select_from_distance_matrix ( bInGroup    , distance_matrix ) ,
+                         n_dimensions = 2 )
+        particles_o = distance_matrix_to_absolute_coordinates ( \
+                         select_from_distance_matrix ( bNotInGroup , distance_matrix ) ,
+                         n_dimensions = 2 )
+    else :
+        particles_i = particles_i.T
+        particles_o = particles_o.T
+
+    if operator.xor( not crit1, not crit2 ) :
+        rdf_p = pd.DataFrame ( exclusive_pdist ( particles_i.T , particles_o.T ) ).apply( np.sqrt ).values.reshape(-1)
+        rmax  = np.max ( rdf_p )
+        Y_ , X = np.histogram ( rdf_p , bins=nbins )
+        X_ = 0.5*(X[1:]+X[:1])
+        bUse  = [ x<rmax/2.0 for x in X_ ]
+        rd = X_
+        dd = Y_ / len(rdf_p)
+        rd = [ r for r,b in zip(rd,bUse) if b ]
+        dd = [ y for y,b in zip(dd,bUse) if b ]
+        bar_source = {'density_values': dd, 'density_ids':[ xformat % (d) for d in rd ] }
+        return ( bar_source , rdf_p )
+    else :
+        print ( """calculate_rdf ( particles_i=None , particles_o=None , Nbins=100 ,
+                    distance_martix = None, bInGroup = None, bNotInGroup = None ,
+                    n_dimensions = 3 )""")
+        exit ( 1 )
+
+
 if __name__ == '__main__' :
 
     if False :

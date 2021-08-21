@@ -280,27 +280,38 @@ def box_plot (  box_source , categories, not_empty=False, with_line=False, tools
 
 def show_vbar_plot  (   bar_source, tools = ['save'], addHeigth = 70 , init_range=None ,
                         plot_pane_width = 400, plot_pane_height = 400 , title = '',
-                        score = '', yaxis_label=''
+                        score = '', ymin=0, ymax=1, yaxis_label='',
+                        fill_color = 'firebrick' , line_color = 'black', xaxis_label = '',
+                        bReturnFigure = False
                     ) :
-    p = vbar_plot ( bar_source=bar_source, tools = tools, addHeigth = addHeigth , init_range=init_range ,
+
+    p = vbar_plot ( bar_source = bar_source, tools = tools, addHeigth = addHeigth , init_range=init_range ,
             plot_pane_width = plot_pane_width, plot_pane_height = plot_pane_height ,
-            title = title, score = score, yaxis_label=yaxis_label )
-    output_file("vbarplot.html", title="vbarplot.py example")
-    show ( p )
+            title = title, score = score, r_s=ymin, r_e = ymax,
+            fill_color = fill_color , line_color = line_color ,
+            xaxis_label = xaxis_label , yaxis_label=yaxis_label )
 
+    if bReturnFigure :
+        return ( p )
+    else :
+        output_file("vbarplot.html", title="vbarplot.py example")
+        show ( p )
 
-def vbar_plot   (   bar_source, tools = ['save'], addHeigth = 70 , init_range=None ,
+def vbar_plot (     bar_source, tools = ['save'], addHeigth = 70 , init_range=None ,
                     plot_pane_width = 400, plot_pane_height = 400 ,
-                    title = '', score = '', yaxis_label='', r_s=-10.0, r_e=10.0
-                ) :
+                    title = '', score = '', r_s=-10.0, r_e=10.0,
+                    fill_color = 'firebrick' , line_color = 'black',
+                    xaxis_label='', yaxis_label=''
+              ) :
     single_bar_source = bar_source
     if 'dict' in str(type(bar_source)) :
         single_bar_dict = dict()
         single_bar_dict['ids' ] = bar_source[score+'_ids']
         single_bar_dict['y'] = np.array(bar_source[score+'_values'])
-        single_bar_source = ColumnDataSource ( dict( x = 0.5+np.array(range(single_bar_dict[score+'_ids'].length()) ),
-                                    ids = single_bar_dict['ids'], y = single_bar_dict[score+'_values'] )                                )
-        init_range = list( bar_source[score+'_ids'] )
+        single_bar_source = ColumnDataSource ( dict( x = 0.5+np.array( range( len(single_bar_dict['ids'])) ),
+                                    ids = single_bar_dict['ids'] ,
+                                    y = single_bar_dict['y'] ) )
+        init_range = list( single_bar_dict['ids'] )
 
     if 'None' in str(type( init_range )) :
         init_range = ['Null']
@@ -310,19 +321,19 @@ def vbar_plot   (   bar_source, tools = ['save'], addHeigth = 70 , init_range=No
         title       = title[0]
 
     p = figure (    tools = tools , background_fill_color = "white" ,
-                    title = title , x_range = init_range , y_range = Range1d( start=r_s, end=r_e ) , # EYE SORE. NEEDS TO BE SET TO SOMETHING
-                    plot_width = plot_pane_width, plot_height = plot_pane_height + addHeigth
+                    title = title , x_range = init_range , y_range = Range1d( start=r_s, end=r_e ) ,
+                    plot_width = plot_pane_width , plot_height = plot_pane_height + addHeigth
                 )
     p . vbar (
                 x = 'x' , width=0.95 , bottom = 0 , top = 'y' ,
-                fill_color = 'firebrick' , line_color = 'black', source = single_bar_source
+                fill_color = fill_color , line_color = line_color , source = single_bar_source
             )
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = "white"
     p.grid.grid_line_width  = 2
     p.xaxis.major_label_text_font_size = "10pt"
-    p.xaxis.major_label_orientation = np.pi/2
-    p.xaxis.axis_label = score
+    p.xaxis.major_label_orientation = np.pi/4
+    p.xaxis.axis_label = xaxis_label
     p.yaxis.axis_label = yaxis_label
     return ( p )
 
