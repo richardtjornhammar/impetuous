@@ -673,6 +673,56 @@ def calculate_rdf ( particles_i=None , particles_o=None , nbins=100 ,
                     n_dimensions = 3 , xformat="%.3f" , bLiquidState=True, constant=4.0/3.0 )""")
         exit ( 1 )
 
+def diar ( n ):
+    if n>1:
+        return ( np.sqrt(n)*diar(n-1) )
+    else:
+        return ( 1. )
+
+
+def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
+                    distance_matrix = None , bInGroup = None , bNotInGroup = None ,
+                    n_dimensions = 3 , xformat="%.3f" ,
+                    constant=4.0/3.0 , rho=1.0 , rmax=None ,
+                    bRemoveZeros = True ) :
+
+    import operator
+    crit1 = particles_i is None and particles_o is None
+    crit2 = bInGroup is None and distance_matrix is None and bNotInGroup is None
+
+    if not crit2 :
+        particles_i = distance_matrix_to_absolute_coordinates ( \
+                         select_from_distance_matrix ( bInGroup    , distance_matrix ) ,
+                         n_dimensions = n_dimensions ).T
+        particles_o = distance_matrix_to_absolute_coordinates ( \
+                         select_from_distance_matrix ( bNotInGroup , distance_matrix ) ,
+                         n_dimensions = n_dimensions ).T
+
+    if operator.xor( not crit1, not crit2 ) :
+        rdf_p = pd.DataFrame ( exclusive_pdist ( particles_i , particles_o ) ).apply( np.sqrt ).values.reshape(-1)
+        if bRemoveZeros :
+            rdf_p = [ r for r in rdf_p if not r==0. ]
+        if rmax is None :
+            rmax  = np.max ( rdf_p ) / diar( n_dimensions+1 )
+
+        rdf_p  = np.array ( [ r for r in rdf_p if r < rmax ] )
+        Y_ , X = np.histogram ( rdf_p , bins=nbins )
+        X_     = 0.5 * ( X[1:]+X[:-1] )
+
+        norm   = constant * np.pi * ( ( X_ + np.diff(X) )**(n_dimensions) - X_**(n_dimensions) ) * rho
+        dd     = Y_ / norm
+        rd     = X_
+
+        rdf_source = {'density_values': dd, 'density_ids':[ xformat % (d) for d in rd ] }
+        return ( rdf_source , rdf_p )
+    else :
+        print ( """calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
+                    distance_matrix = None , bInGroup = None , bNotInGroup = None ,
+                    n_dimensions = 3 , xformat="%.3f" ,
+                    constant=4.0/3.0 , rho=1.0 , rmax=None ,
+                    bRemoveZeros = True )""")
+        exit ( 1 )
+
 
 if __name__ == '__main__' :
 

@@ -192,6 +192,14 @@ def convert_rdata_to_dataframe ( filename ) :
     pandas2ri.deactivate()
     return ( full_df_dict )
 
+def read_xyz(fname='argon.xyz') :
+    df_ = pd.read_csv('./argon.xyz',header=2,sep=' ')
+    vals = df_.columns.values
+    df_.loc[len(df_)] = vals
+    df_.columns = ['A','X','Y','Z']
+    return ( df_.apply(pd.to_numeric) )
+
+
 import os
 if __name__ == '__main__' :
     #
