@@ -641,9 +641,10 @@ def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
                     distance_matrix = None , bInGroup = None , bNotInGroup = None ,
                     n_dimensions = 3 , xformat="%.3f" ,
                     constant=4.0/3.0 , rho=1.0 , rmax=None ,
-                    bRemoveZeros = True ) :
+                    bRemoveZeros = False ) :
 
     import operator
+    crit0 = particles_i is None
     crit1 = particles_i is None and particles_o is None
     crit2 = bInGroup is None and distance_matrix is None and bNotInGroup is None
 
@@ -655,7 +656,10 @@ def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
                          select_from_distance_matrix ( bNotInGroup , distance_matrix ) ,
                          n_dimensions = n_dimensions ).T
 
-    if operator.xor( not crit1, not crit2 ) :
+    if operator.xor( (not crit1) or (not crit0)  , not crit2 ) :
+        if not crit0 and particles_o is None :
+            particles_o = particles_i
+            bRemoveZeros = True
         rdf_p = pd.DataFrame ( exclusive_pdist ( particles_i , particles_o ) ).apply( np.sqrt ).values.reshape(-1)
         if bRemoveZeros :
             rdf_p = [ r for r in rdf_p if not r==0. ]
@@ -677,7 +681,7 @@ def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
                     distance_matrix = None , bInGroup = None , bNotInGroup = None ,
                     n_dimensions = 3 , xformat="%.3f" ,
                     constant=4.0/3.0 , rho=1.0 , rmax=None ,
-                    bRemoveZeros = True )""")
+                    bRemoveZeros = False )""")
         exit ( 1 )
 
 
