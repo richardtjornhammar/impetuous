@@ -162,7 +162,7 @@ if __name__ == '__main__' :
     print ( S2/N-S*S/N/N )
 ```
 
-# [Example 4](https://gist.githubusercontent.com/richardtjornhammar/a9704b238c74080fdea0827608a10a9a/raw/277ca835b8c56c3bb25d21e28e0d0eaa1661201f/example4.py) : Diabetes analysis
+# [Example 4](https://gist.githubusercontent.com/richardtjornhammar/a9704b238c74080fdea0827608a10a9a/raw/277ca835b8c56c3bb25d21e28e0d0eaa1661201f/example4.py): Diabetes analysis
 
 Here we show how to use a novel multifactor method on a diabetes data set to deduce important transcripts with respect to being diabetic. The data was obtained from the [Broad Insitute](http://www.gsea-msigdb.org/gsea/datasets.jsp) and contains gene expressions from a microarray hgu133a platform. We choose to employ the `Diabetes_collapsed_symbols.gct` file since it has already been collapsed down to useful transcripts. We have entered an `impetuous-gfa` ( version >= `0.50.0` ) environment and set up the a `diabetes.py` file with the following code content:
 
@@ -497,13 +497,10 @@ The functions `select_from_distance_matrix` uses boolean indexing to select rows
 
 # Notes
 
-These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions.
+These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions. For an example of the dynamic `triplot` routine (you can click on the lefthand and bottom scatter points) you can view it [here](https://bl.ocks.org/richardtjornhammar/raw/463e1aa3faceb95a4f894351f16b215a/?raw=true) ( with [revision dates](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/revisions) or download it [here](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/) ).
 
 # Manually updated code backups for this library :
 
 GitLab:	https://gitlab.com/richardtjornhammar/impetuous
 
 CSDN:	https://codechina.csdn.net/m0_52121311/impetuous
-
-
-
