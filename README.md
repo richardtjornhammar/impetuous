@@ -495,6 +495,30 @@ The [radial distribution function](https://en.wikipedia.org/wiki/Radial_distribu
 
 The functions `select_from_distance_matrix` uses boolean indexing to select rows and columns (it is symmetric) in the distance matrix and the `exclusive_pdist` function calculates all pairs between the points in the two separate groups.
 
+# [Example 11](https://gist.github.com/richardtjornhammar/609a3d31278adfcd373bf23ab843e290): More on absolute and relative coordinates
+
+This example ties in to Example 6 on this page with the goal of exemplifying how coordinates distances relate to field values. It's easier than you might think. Suppose that you have two gaussian processes that you measure the values from:
+```
+import numpy as np
+if __name__=='__main__':
+    N = [10,20]; M=[10,14]; S=[5,2.25];
+    SER = [ np.random.randn(N[0])*S[0]+M[0] , np.random.randn(N[1])*S[1]+M[1] ] # THESE ONES!
+```
+and you make a long list of all those values `S_ER = [*SER[0],*SER[1]]` then you can calculate how similar those values are to each other
+```
+D   = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in S_ER for q in S_ER ] ) .reshape(len(S_ER),len(S_ER)) # THIS IS A VALUE DISTANCE MATRIX!
+```
+as well as calculate what the new absolute coordinates would be
+```
+D   = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in S_ER for q in S_ER ] ) .reshape(len(S_ER),len(S_ER))
+```
+Why on earth would you want to do that? Well something important is going on (the SVD distance geometry), but you can rest assured that, at the very least, nothing really changed (if you translate both series by removing the minimal value)
+```
+print ( S_ER - np.min(S_ER) , X-np.min(X) )
+print ( np.sum( (S_ER-np.min(S_ER)) - (X-np.min(X))) ) # THIS SHOULD BE CLOSE TO ZERO (AND IT IS: -1.4832579608992091e-13)
+```
+
+
 # Notes
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions. For an example of the dynamic `triplot` routine (you can click on the lefthand and bottom scatter points) you can view it [here](https://bl.ocks.org/richardtjornhammar/raw/463e1aa3faceb95a4f894351f16b215a/?raw=true) ( with [revision dates](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/revisions) or download it [here](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/) ).
