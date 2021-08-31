@@ -210,37 +210,41 @@ def HighDimensionalAlignment ( P , Q ) :
     # HERE P IS THE MODEL AND Q IS THE DATA
     # WE MOVE THE MODEL
     #
+    if 'panda' in str(type(P)).lower() :
+        P = P.values
+    if 'panda' in str(type(Q)).lower() :
+        P = P.values
     N , DIM  = np.shape( P )
     M , DIM  = np.shape( Q )
     P0 = P.copy()
     Q0 = Q.copy()
-
+    #
     if DIM > N :
         print ( 'MALFORMED COORDINATE PROBLEM' )
         exit ( 1 )
-
+    #
     DP = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in P for q in P ] ) .reshape( N,N )
     DQ = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in Q for q in Q ] ) .reshape( M,M )
-
+    #
     PX = distance_matrix_to_absolute_coordinates ( DP , n_dimensions = DIM ).T
     QX = distance_matrix_to_absolute_coordinates ( DQ , n_dimensions = DIM ).T
-
+    #
     P = QX
     Q = Q
-
+    #
     q0 , p0 , p0x = np.mean(Q,0) , np.mean(P,0), np.mean(PX,0)
     cQ , cP = Q - q0 , P - p0
-
+    #
     H = np.dot(cP.T,cQ)
     I  = np.eye( DIM )
-
+    #
     U, S, VT = np.linalg.svd( H, full_matrices = False )
     Ut = np.dot( VT.T,U.T )
     I[DIM-1,DIM-1] = 2*(np.linalg.det(Ut) > 0)-1
     ROT = np.dot( VT.T,np.dot(I,U.T) )
-
+    #
     B = np.dot(ROT,PX.T).T + q0 - np.dot(ROT,p0x)
-
+    #
     return ( B )
 
 def low_missing_value_imputation ( fdf , fraction = 0.9 , absolute = 'True' ) :
