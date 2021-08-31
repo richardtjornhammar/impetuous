@@ -497,7 +497,11 @@ The functions `select_from_distance_matrix` uses boolean indexing to select rows
 
 # Notes
 
-These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions. For an example of the dynamic `triplot` routine (you can click on the lefthand and bottom scatter points) you can view it [here](https://bl.ocks.org/richardtjornhammar/raw/463e1aa3faceb95a4f894351f16b215a/?raw=true) ( with [revision dates](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/revisions) or download it [here](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/) ).
+These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. 
+
+The impetuous visualisation codes requires [Bokeh](https://docs.bokeh.org/en/latest/index.html) and are still being migrated to work with the latest Bokeh versions. For an example of the dynamic `triplot` routine (you can click on the lefthand and bottom scatter points) you can view it [here](https://bl.ocks.org/richardtjornhammar/raw/463e1aa3faceb95a4f894351f16b215a/?raw=true) ( with [revision dates](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/revisions) or download it [here](https://gist.github.com/richardtjornhammar/463e1aa3faceb95a4f894351f16b215a/) ).
+
+Some of the algorithms rely on the SVD implementation in Numpy. A switch is planned for the future.
 
 # Manually updated code backups for this library :
 
