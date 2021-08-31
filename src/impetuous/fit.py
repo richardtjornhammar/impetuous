@@ -213,7 +213,7 @@ def HighDimensionalAlignment ( P , Q ) :
     if 'panda' in str(type(P)).lower() :
         P = P.values
     if 'panda' in str(type(Q)).lower() :
-        P = P.values
+        Q = Q.values
     N , DIM  = np.shape( P )
     M , DIM  = np.shape( Q )
     P0 = P.copy()
