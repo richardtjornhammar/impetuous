@@ -510,7 +510,8 @@ D   = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in S_ER for q in S_ER ] ) .res
 ```
 as well as calculate what the new absolute coordinates would be
 ```
-D   = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in S_ER for q in S_ER ] ) .reshape(len(S_ER),len(S_ER))
+D = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in S_ER for q in S_ER ] ) .reshape(len(S_ER),len(S_ER))
+X = impc.distance_matrix_to_absolute_coordinates( D , n_dimensions=1 )
 ```
 Why on earth would you want to do that? Well something important is going on (the SVD distance geometry), but you can rest assured that, at the very least, nothing really changed (if you translate both series by removing the minimal value)
 ```
