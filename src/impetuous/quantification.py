@@ -387,7 +387,11 @@ def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose
 
 	return ( res_df , clusters_df )
 
-def knn_clustering_alignment( P , Q ) :
+
+def kmeans_clustering_alignment ( P, Q , bHighDim = False ) :
+    return ( knn_clustering_alignment( P , Q , bHighDim = bHighDim ) )
+
+def knn_clustering_alignment( P , Q , bHighDim=False ) : # ITS A SEEDED KMEANS THE NAME KNN IS A MISNOMER
 
     NOTE_ = "This is just a standard kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
     ispanda = lambda P: 'pandas' in str(type(P)).lower()
@@ -395,7 +399,11 @@ def knn_clustering_alignment( P , Q ) :
     P_ = BustedPanda ( P )
     Q_ = BustedPanda ( Q )
 
-    centroids = ifit .ShapeAlignment ( P_ , Q_ ,
+
+    if bHighDim :
+        centroids = ifit .HighDimensionalAlignment ( P_ , Q_ )
+    else :
+        centroids = ifit .ShapeAlignment ( P_ , Q_ ,
                     bReturnTransform = False ,
                     bShiftModel      = True  ,
                     bUnrestricted    = True  )
