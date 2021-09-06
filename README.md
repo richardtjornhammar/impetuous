@@ -391,8 +391,6 @@ if __name__=='__main__':
 
 You will notice that the largest variation is now aligned with the `X axis`, the second most variation aligned with the `Y axis` and the third most, aligned with the `Z axis` while the graph topology remained unchanged.
 
-The relationship to imaging and 3d models is straightforward. Store any variational data as contrast points and calculate all the pairwise distances between all such points. By taking several images and storing this for all objects present you can build a large but complete distance matrix. After this is done you can calculate the absolute 3D geometry of any photographed object. Works for medical images as well as satelite images.
-
 # [Example 7](https://gist.github.com/richardtjornhammar/1b9f5742391b1bcf30f4821a00f30b6a): Retrieval and analysis of obesity data
 
 In this example, we will show an analysis similar to the one conducted in Example 4. The only difference here is that we will model all of the data present in the journal. This includes the simultaneous analysis of categorical and number range descriptors present in the journal. We use an [impetuous shell](https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix) and download the required [python file](https://gist.github.com/richardtjornhammar/1b9f5742391b1bcf30f4821a00f30b6a) and execute it in the shell. Now you are done! Was that too fast? ok, so what is this about?
