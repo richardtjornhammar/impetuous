@@ -62,8 +62,7 @@ def get_procentile ( vals, procentile = 50 ):
 
 pi0 = lambda pvs : 1.
 
-def padded_rolling_window ( tv, tau ) :
-        # SIMPLY RETURN THE PADDED INDICES
+def padded_rolling_window ( tv, tau ) : # SIMPLY RETURN THE PADDED INDICES
 	if tau==1 :
 		return ( tv )
 	if len(tv)<tau :
@@ -105,6 +104,52 @@ def svd_reduced_mean ( x,axis=0,keep=[0] ) :
             else :
                 return ( xred )
     return ( x )
+
+def kth_householder ( A , k ):
+    A  = np .array( A )
+    n_ , m_ = np .shape(A)
+    if n_ < 2 :
+        return ( A )
+    k0 = k
+    k1 = k+1
+
+    alpha = ( 2*(A[k1][k0]<0)-1 )
+    alpha = alpha * np.sqrt( sum([ a**2 for a in A.T[k0][k1:] ]) )
+    r  = np.sqrt ( 0.5*(alpha**2-A[k1][k0]*alpha) )
+    v_ = [ 0 for z in range(k1) ] ; v_ .append( (A[k1][k0]-alpha)*0.5/r )
+    [ v_ .append ( (0.5/r) * A[j][k0] ) for j in range(k1+1,n_) ]
+    v_ = np.array( v_ )
+    Pk = np.eye( n_ ) - 2*np.array( [ v*w for v in v_ for w in v_ ] ).reshape(n_,n_)
+    Qk = Pk
+
+    if n_ != m_ :
+        alpha = ( 2*(A[k0][k1]<0)-1 )
+        alpha = alpha * np.sqrt( sum([ a**2 for a in A[k0][k1:] ]) )
+        r  = np.sqrt ( 0.5*(alpha**2-A[k0][k1]*alpha) )
+        w_ = [ 0 for z in range(k1) ] ; w_ .append( (A[k0][k1]-alpha)*0.5/r )
+        [ w_ .append ( (0.5/r) * A[k0][j] ) for j in range(k1+1,m_) ]
+        w_ = np.array( w_ )
+        Qk = np.eye( m_ ) - 2*np.array( [ v*w for v in w_ for w in w_ ] ).reshape(m_,m_)
+
+    Ak = np.dot( np.dot( Pk,A ),Qk )
+    return ( Pk,Ak,Qk )
+
+def Householder_transformation ( A ):
+    A     = np.array( A )
+    n , m = np.shape( A )
+    n = np.min( np.shape( A ) )
+    if n < 2 :
+        return ( A )
+    P = []
+    P0 , A0 , Q0 = kth_householder( A,k=0 )
+    P .append([P0,Q0])
+    for k in range( 1 , n-1 ) : # ends at k-2
+        P1 , A1 , Q1 = kth_householder( A0,k=k )
+        A0 = A1
+        P0 = P1
+        P  .append([P1,Q1])
+    return ( A1 , P )
+
 
 from sklearn.decomposition import PCA
 dimred = PCA ( n_components = 1 )
