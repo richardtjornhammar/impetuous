@@ -167,6 +167,23 @@ def AugumentedReducedDecomposition ( A ) :
     S = PAQ[-1][1]
     return ( U,S,V.T )
 
+def Householder_reduction ( A ):
+    A     = np.array( A )
+    n , m = np.shape( A )
+    n = np.min( np.shape( A ) )
+    if n < 2 :
+        return ( A )
+    P0 , A0 , Q0 = kth_householder( A,k=0 )
+    for k in range( 1 , n-1 ) : # ends at n-2
+        P1 , A1 , Q1 = kth_householder( A0,k=k )
+        A0 = A1
+        P0 = np.dot( P0 , P1 )
+        Q0 = np.dot( Q0 , Q1 )
+    U  = P0
+    S  = A1
+    VT = Q0.T
+    return ( U , S , VT )
+
 from sklearn.decomposition import PCA
 dimred = PCA ( n_components = 1 )
 
