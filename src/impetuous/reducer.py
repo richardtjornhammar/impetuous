@@ -144,12 +144,12 @@ def Householder_transformation ( A ):
         return ( A )
     P = []
     P0 , A0 , Q0 = kth_householder( A,k=0 )
-    P .append([P0,Q0])
-    for k in range( 1 , n-1 ) : # ends at k-2
+    P .append([P0,A0,Q0])
+    for k in range( 1 , n-1 ) : # ends at n-2
         P1 , A1 , Q1 = kth_householder( A0,k=k )
         A0 = A1
         P0 = P1
-        P  .append([P1,Q1])
+        P  .append([P1,A1,Q1])
     return ( A1 , P )
 
 
