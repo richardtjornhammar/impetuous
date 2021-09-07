@@ -106,6 +106,8 @@ def svd_reduced_mean ( x,axis=0,keep=[0] ) :
     return ( x )
 
 def kth_householder ( A , k ):
+    # THE K:TH HOUSHOLDER ITERATION
+    # NOMECLATURE CORRESPONDS TO GOLUBS PAPER
     A  = np .array( A )
     n_ , m_ = np .shape(A)
     if n_ < 2 :
