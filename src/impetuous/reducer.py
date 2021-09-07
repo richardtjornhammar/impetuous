@@ -152,6 +152,20 @@ def Householder_transformation ( A ):
         P  .append([P1,A1,Q1])
     return ( A1 , P )
 
+def AugumentedReducedDecomposition ( A ) :
+    PAQ = Householder_transformation(A)[1]
+    U = None
+    V = None
+    S = None
+    for p in PAQ :
+        if U is None :
+            U = p[ 0]
+            V = p[-1]
+        else :
+            U = np.dot( U , p[ 0] )
+            V = np.dot( V , p[-1] )
+    S = PAQ[-1][1]
+    return ( U,S,V.T )
 
 from sklearn.decomposition import PCA
 dimred = PCA ( n_components = 1 )
