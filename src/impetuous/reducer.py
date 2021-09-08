@@ -105,6 +105,40 @@ def svd_reduced_mean ( x,axis=0,keep=[0] ) :
                 return ( xred )
     return ( x )
 
+import math
+def rich_rot ( a , b , direction = 0 ) :
+    if a==0 and b==0 :
+        c = 0
+        s = 0
+        r = 0
+    else :
+        r = math.sqrt( a*a + b*b )
+        if direction == 0 :
+            if a == 0 :
+                s = r / b
+                c = 0
+            else :
+                s = b / r
+                c = ( r - s*b ) / a
+        else :
+            if a == 0 :
+                s = 0
+                c = r / b
+            else :
+                s = - a / r
+                c = ( r - s*b ) / a
+    return ( c , s , r )
+
+def skew_zero ( shape ):
+    return ( np.zeros(np.prod(shape)).reshape(shape) )
+
+def skew_eye ( shape ) :
+    Z = skew_zero(shape)
+    n = np.min(shape)
+    for i in range(n):
+        Z[i][i] = 1
+    return ( Z )
+
 def kth_householder ( A , k ):
     # THE K:TH HOUSHOLDER ITERATION
     # NOMECLATURE CORRESPONDS TO GOLUBS PAPER
