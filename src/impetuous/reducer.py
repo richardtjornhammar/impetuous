@@ -129,6 +129,38 @@ def rich_rot ( a , b , direction = 0 ) :
                 c = ( r - s*b ) / a
     return ( c , s , r )
 
+def diagonalize_2b2( A , tol=1E-13 , maxiter = 10 ) :
+    M   = A[:2,:2].copy()
+    M0  = A[:2,:2].copy()
+    k   = 0
+    ERR = 1
+    G_  = None
+    H_  = None
+    for k in range( maxiter ) :
+        # LEFT
+        c,s,r = rich_rot( M0[0,0],M0[1,0])
+        G0    = np.array( [[c,s],[-s,c]] )
+        M     = np.dot( G0 , M0 )
+        # RIGHT
+        M = M.T
+        c,s,r = rich_rot( M[0,0],M[1,0])
+        H0    = np.array( [[c,s],[-s,c]] )
+        M     = np.dot( H0 , M )
+        # BUILD
+        M0 = M.T
+        ERR = np.sqrt( M0[1,0]**2+M0[0,1]**2 )
+        if G_ is None :
+            G_ = G0
+        else :
+            G_ = np.dot(G0,G_)
+        if H_ is None :
+            H_ = H0
+        else :
+            H_ = np.dot(H0,H_)
+        if ERR < tol :
+            break
+    return ( G_ , M0 , H_ )
+
 def skew_zero ( shape ):
     return ( np.zeros(np.prod(shape)).reshape(shape) )
 
