@@ -106,6 +106,7 @@ def svd_reduced_mean ( x,axis=0,keep=[0] ) :
     return ( x )
 
 import math
+# YOU SHOULD READ Numerical Analysis by Burden and Faires
 def rich_rot ( a , b , direction = 0 ) :
     if a==0 and b==0 :
         c = 0
@@ -297,6 +298,9 @@ def AugumentedReducedDecomposition ( A , maxiter=1000 , tol=1E-16 ):
     return ( U,S,VT )
 
 def AugumentedSingularDecomposition( A , maxiter=1000 , tol=1E-16 ):
+    return ( AugumentedReducedDecomposition ( A,  maxiter=maxiter , tol=tol ) )
+
+def ASVD( A , maxiter=1000 , tol=1E-16 ):
     return ( AugumentedReducedDecomposition ( A,  maxiter=maxiter , tol=tol ) )
 
 from sklearn.decomposition import PCA
