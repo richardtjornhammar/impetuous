@@ -216,21 +216,6 @@ def Householder_transformation ( A ):
         P  .append([P1,A1,Q1])
     return ( A1 , P )
 
-def AugumentedReducedDecomposition ( A ) :
-    PAQ = Householder_transformation(A)[1]
-    U = None
-    V = None
-    S = None
-    for p in PAQ :
-        if U is None :
-            U = p[ 0]
-            V = p[-1]
-        else :
-            U = np.dot( U , p[ 0] )
-            V = np.dot( V , p[-1] )
-    S = PAQ[-1][1]
-    return ( U,S,V.T )
-
 def Householder_reduction ( A ):
     A     = np.array( A )
     n = np.min( np.shape( A ) )
@@ -246,6 +231,73 @@ def Householder_reduction ( A ):
     S  = A1
     VT = Q0.T
     return ( U , S , VT )
+
+def diagonalize_tridiagonal ( tridiagonal ,
+            maxiter = 1000 ,
+            tol     = 1E-16 ):
+
+        quench = lambda A_,tol_ : np.array([[ a if a**2>tol_**2 else 0 for a in al] for al in A_])
+        dot_assign = lambda  A_, B_ : B_ if A_ is None else np.dot( B_ , A_ )
+
+        S = tridiagonal.copy()
+        n_ , m_ = np.shape( S )
+
+        sI = skew_eye ( [ n_ , n_ ] )
+        tI = skew_eye ( [ m_ , m_ ] )
+        zI = skew_eye ( np.shape(S) )
+        GI = None
+        HI = None
+        #
+        sI_   = sI.copy()
+        tI_   = tI.copy()
+        nm_   = np.min(np.shape(S)) - 1
+        #
+        for k in range ( maxiter ) :
+            for i in range ( nm_ ):
+                sI_   = sI.copy()
+                tI_   = tI.copy()
+                if True :
+                    A     = S[ i:i+2 , i:i+2 ].copy()
+                    if True :
+                        G , Z , H = diagonalize_2b2 ( A , tol=tol , maxiter=maxiter )
+                        sI_[ i:i+2 , i:i+2 ] = G
+                        GI = dot_assign(GI,sI_)
+
+                        tI_[ i:i+2 , i:i+2 ] = H
+                        HI = dot_assign(HI,tI_)
+
+                        S =  np.dot( np.dot( sI_ , S ) , tI_.T )
+                        for ir in range( 2,nm_+1-i ):
+                            ii  = i
+                            jj  = i+ir
+                            idx = [ (ii,ii),(ii,jj),(jj,ii),(jj,jj) ]
+                            jdx = [ (0,0),(0,1),(1,0),(1,1) ]
+                            A   = np.array( [ S[i] for i in idx] ).reshape(2,2) # ROW ORDERED
+                            G , Z , H = diagonalize_2b2 ( A , tol=tol , maxiter=maxiter )
+                            sI_   = sI.copy()
+                            tI_   = tI.copy()
+                            H = H.T
+                            for i_,j_ in zip(idx,jdx) :
+                                sI_[i_] = G[j_]
+                                tI_[i_] = H[j_]
+                            tI_= tI_.T
+                            GI = dot_assign(GI,sI_)
+                            HI = dot_assign(HI,tI_)
+                            S =  np.dot( np.dot( sI_ , S ) , tI_.T )
+            ERR = sum( np.diag(S[:nm_],-1)**2 ) + sum( np.diag(S[:nm_] ,1)**2 )
+            if ERR < 2.0*tol**2 :
+                break;
+        return ( GI.T , S , HI )
+
+def AugumentedReducedDecomposition ( A , maxiter=1000 , tol=1E-16 ):
+    P , Z , QT = Householder_reduction( A )
+    G , S , HT = diagonalize_tridiagonal( Z , maxiter=maxiter , tol=tol )
+    U  = np.dot(P,G)
+    VT = np.dot(HT,QT)
+    return ( U,S,VT )
+
+def AugumentedSingularDecomposition( A , maxiter=1000 , tol=1E-16 ):
+    return ( AugumentedReducedDecomposition ( A,  maxiter=maxiter , tol=tol ) )
 
 from sklearn.decomposition import PCA
 dimred = PCA ( n_components = 1 )
