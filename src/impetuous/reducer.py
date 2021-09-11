@@ -21,6 +21,16 @@ import pandas as pd
 import numpy as np
 from scipy.stats import rankdata
 from impetuous.quantification import qvalues, permuter
+
+try :
+        from numba import jit
+        bUseNumba = True
+except ImportError :
+        #print ( "ImportError:"," NUMBA. WILL NOT USE IT")
+        bUseNumba = False
+except OSError:
+        #print ( "OSError:"," NUMBA. WILL NOT USE IT")
+        bUseNumba = False
 #
 # REGULAR CONTRAST
 contrast   = lambda A,B : ( A-B )/( A+B )
@@ -62,12 +72,12 @@ def get_procentile ( vals, procentile = 50 ):
 
 pi0 = lambda pvs : 1.
 
-def padded_rolling_window ( tv, tau ) : # SIMPLY RETURN THE PADDED INDICES
+def padded_rolling_window ( ran, tau ) :
 	if tau==1 :
-		return ( tv )
+		return ( [ (i,None) for i in range(len(ran)) ] )
 	if len(tv)<tau :
-		return ( [ np.mean(v_) for v_ in tv ] )
-	centered = lambda x:(x[0],x[1]) ; N=len(tv);
+		return ( [ (0,N) for v_ in ran ] )
+	centered = lambda x:(x[0],x[1]) ; N=len(ran);
 	w = int( np.floor(np.abs(tau)*0.5) ) ;
 	jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
 	idx = [ centered( jid(i,w,N) ) for i in range(N) ]
@@ -104,77 +114,13 @@ def svd_reduced_mean ( x,axis=0,keep=[0] ) :
             else :
                 return ( xred )
     return ( x )
-
-import math
-# YOU SHOULD READ Numerical Analysis by Burden and Faires
-def rich_rot ( a , b , direction = 0 ) :
-    if a==0 and b==0 :
-        c = 0
-        s = 0
-        r = 0
-    else :
-        r = math.sqrt( a*a + b*b )
-        if direction == 0 :
-            if a == 0 :
-                s = r / b
-                c = 0
-            else :
-                s = b / r
-                c = ( r - s*b ) / a
-        else :
-            if a == 0 :
-                s = 0
-                c = r / b
-            else :
-                s = - a / r
-                c = ( r - s*b ) / a
-    return ( c , s , r )
-
-def diagonalize_2b2( A , tol=1E-13 , maxiter = 10 ) :
-    M   = A[:2,:2].copy()
-    M0  = A[:2,:2].copy()
-    k   = 0
-    ERR = 1
-    G_  = None
-    H_  = None
-    for k in range( maxiter ) :
-        # LEFT
-        c,s,r = rich_rot( M0[0,0],M0[1,0])
-        G0    = np.array( [[c,s],[-s,c]] )
-        M     = np.dot( G0 , M0 )
-        # RIGHT
-        M = M.T
-        c,s,r = rich_rot( M[0,0],M[1,0])
-        H0    = np.array( [[c,s],[-s,c]] )
-        M     = np.dot( H0 , M )
-        # BUILD
-        M0 = M.T
-        ERR = np.sqrt( M0[1,0]**2+M0[0,1]**2 )
-        if G_ is None :
-            G_ = G0
-        else :
-            G_ = np.dot(G0,G_)
-        if H_ is None :
-            H_ = H0
-        else :
-            H_ = np.dot(H0,H_)
-        if ERR < tol :
-            break
-    return ( G_ , M0 , H_ )
-
-def skew_zero ( shape ):
-    return ( np.zeros(np.prod(shape)).reshape(shape) )
-
-def skew_eye ( shape ) :
-    Z = skew_zero(shape)
-    n = np.min(shape)
-    for i in range(n):
-        Z[i][i] = 1
-    return ( Z )
-
+#
+# Numerical Analysis by Burden and Faires
+# GOLUBS SVD PAPER
+#
+#
 def kth_householder ( A , k ):
     # THE K:TH HOUSHOLDER ITERATION
-    # NOMECLATURE CORRESPONDS TO GOLUBS PAPER
     A  = np .array( A )
     n_ , m_ = np .shape(A)
     if n_ < 2 :
@@ -204,7 +150,7 @@ def kth_householder ( A , k ):
     return ( Pk,Ak,Qk )
 
 def Householder_transformation ( A ):
-    A     = np.array( A )
+    A = np.array( A )
     n = np.min( np.shape( A ) )
     if n < 2 :
         return ( A )
@@ -218,7 +164,7 @@ def Householder_transformation ( A ):
     return ( A1 , P )
 
 def Householder_reduction ( A ):
-    A     = np.array( A )
+    A = np.array( A )
     n = np.min( np.shape( A ) )
     if n < 2 :
         return ( A )
@@ -233,61 +179,125 @@ def Householder_reduction ( A ):
     VT = Q0.T
     return ( U , S , VT )
 
+def rich_rot ( a , b , direction = 0 ) :
+    if a==0 and b==0 :
+        c = 0
+        s = 0
+        r = 0
+    else :
+        r = np.sqrt( a*a + b*b )
+        if direction == 0 :
+            if a == 0 :
+                s = r / b
+                c = 0
+            else :
+                s = b / r
+                c = ( r - s*b ) / a
+        else :
+            if a == 0 :
+                s = 0
+                c = r / b
+            else :
+                s = - a / r
+                c = ( r - s*b ) / a
+    return ( c , s , r )
+
+def skew_zero ( shape ) :
+    return ( np.zeros(np.prod(shape)).reshape(shape) )
+
+def skew_eye ( shape ) :
+    Z = np.zeros( shape[0]*shape[1] ).reshape(shape[0],shape[1])
+    n = shape[0] if (shape[0]<=shape[1]) else shape[1]
+    for i in range(n):
+        Z[i][i] = 1
+    return ( Z )
+
+def diagonalize_2b2( A , tol=1E-13 , maxiter = 100 ) :
+    M   = A[:2,:2].copy()
+    M0  = A[:2,:2].copy()
+    k   = 0
+    ERR = 1
+    G_  = None
+    H_  = None
+    for k in range( maxiter ) :
+        # LEFT
+        c,s,r = rich_rot( M0[0,0],M0[1,0])
+        G0    = np.array( [[c,s],[-s,c]] )
+        M     = np.dot( G0 , M0 )
+        # RIGHT
+        M     = M.T
+        c,s,r = rich_rot( M[0,0],M[1,0])
+        H0    = np.array( [[c,s],[-s,c]] )
+        M     = np.dot( H0 , M )
+        # BUILD
+        M0    = M.T
+        ERR   = np.sqrt( M0[1,0]**2+M0[0,1]**2 )
+        if G_ is None :
+            G_ = G0
+        else :
+            G_ = np.dot(G0,G_)
+        if H_ is None :
+            H_ = H0
+        else :
+            H_ = np.dot(H0,H_)
+        if ERR < tol :
+            break
+    return ( G_ , M0 , H_ )
+
 def diagonalize_tridiagonal ( tridiagonal ,
             maxiter = 1000 ,
-            tol     = 1E-16 ):
+            tol     = 1E-16 ) :
 
-        quench = lambda A_,tol_ : np.array([[ a if a**2>tol_**2 else 0 for a in al] for al in A_])
-        dot_assign = lambda  A_, B_ : B_ if A_ is None else np.dot( B_ , A_ )
-
-        S = tridiagonal.copy()
+        S       = tridiagonal.copy()
         n_ , m_ = np.shape( S )
+        tol22   = tol*0.1
+        maxi22  = int( np.ceil( maxiter*0.1 ))
 
         sI = skew_eye ( [ n_ , n_ ] )
         tI = skew_eye ( [ m_ , m_ ] )
         zI = skew_eye ( np.shape(S) )
-        GI = None
-        HI = None
+        GI = sI.copy()
+        HI = tI.copy()
         #
         sI_   = sI.copy()
         tI_   = tI.copy()
-        nm_   = np.min(np.shape(S)) - 1
-        #
+        shape = np.shape(S)
+        nm_   = shape[0] if (shape[0]<=shape[1]) else shape[1] - 1
+
         for k in range ( maxiter ) :
-            for i in range ( nm_ ):
-                sI_   = sI.copy()
-                tI_   = tI.copy()
-                if True :
-                    A     = S[ i:i+2 , i:i+2 ].copy()
-                    if True :
-                        G , Z , H = diagonalize_2b2 ( A , tol=tol , maxiter=maxiter )
-                        sI_[ i:i+2 , i:i+2 ] = G
-                        GI = dot_assign(GI,sI_)
-
-                        tI_[ i:i+2 , i:i+2 ] = H
-                        HI = dot_assign(HI,tI_)
-
-                        S =  np.dot( np.dot( sI_ , S ) , tI_.T )
-                        for ir in range( 2,nm_+1-i ):
-                            ii  = i
-                            jj  = i+ir
-                            idx = [ (ii,ii),(ii,jj),(jj,ii),(jj,jj) ]
-                            jdx = [ (0,0),(0,1),(1,0),(1,1) ]
-                            A   = np.array( [ S[i] for i in idx] ).reshape(2,2) # ROW ORDERED
-                            G , Z , H = diagonalize_2b2 ( A , tol=tol , maxiter=maxiter )
-                            sI_   = sI.copy()
-                            tI_   = tI.copy()
-                            H = H.T
-                            for i_,j_ in zip(idx,jdx) :
-                                sI_[i_] = G[j_]
-                                tI_[i_] = H[j_]
-                            tI_= tI_.T
-                            GI = dot_assign(GI,sI_)
-                            HI = dot_assign(HI,tI_)
-                            S =  np.dot( np.dot( sI_ , S ) , tI_.T )
-            ERR = sum( np.diag(S[:nm_],-1)**2 ) + sum( np.diag(S[:nm_] ,1)**2 )
-            if ERR < 2.0*tol**2 :
+            for i in range ( nm_ ) :
+                sI_   = sI .copy()
+                tI_   = tI .copy()
+                A     = S[ i:i+2 , i:i+2 ].copy()
+                G , Z , H = diagonalize_2b2 ( A , tol=tol22 , maxiter=maxi22 )
+                sI_[ i:i+2 , i:i+2 ] = G
+                GI = np.dot( sI_ , GI )
+                tI_[ i:i+2 , i:i+2 ] = H
+                HI = np.dot( tI_ , HI )
+                S =  np.dot( np.dot( sI_ , S ) , tI_.T )
+                for ir in range( 2,nm_+1-i ):
+                    ii  = i
+                    jj  = i+ir
+                    idx = [ (ii,ii),(ii,jj),(jj,ii),(jj,jj) ]
+                    jdx = [ (0,0),(0,1),(1,0),(1,1) ]
+                    A   = np.array( [ S[i] for i in idx] ).reshape(2,2)
+                    G , Z , H = diagonalize_2b2 ( A , tol=tol22 , maxiter=maxi22 )
+                    sI_ = sI .copy()
+                    tI_ = tI .copy()
+                    H = H.T
+                    for i_,j_ in zip(idx,jdx) :
+                        sI_[i_] = G[j_]
+                        tI_[i_] = H[j_]
+                    tI_= tI_.T
+                    GI = np.dot( sI_ , GI )
+                    HI = np.dot( tI_ , HI )
+                    S =  np.dot( np.dot( sI_ , S ) , tI_.T )
+            ERR = np.sum( S**2*(1-skew_eye([n_,m_]) ) )
+            if ERR < tol :
                 break;
+        # RETURNS THE MATRICES NEEDED TO CREATE THE INPUT DATA
+        # WHERE R[1] IS THE SINGULAR VALUE VECTOR
+        # DATA = np.dot( np.dot( R[0],R[1]),R[2] )
         return ( GI.T , S , HI )
 
 def AugumentedReducedDecomposition ( A , maxiter=1000 , tol=1E-16 ):
@@ -346,7 +356,6 @@ def hyper_params ( df_ , label = 'generic' , sep = ',' , power=1., centered=-1 )
     lvs      = np.log( df0_.loc[ :,'w_'].values )
     #
     return ( np.mean(lvs) , np.std(lvs) )
-
 
 def hyper_rdf ( df_ , label = 'generic' , sep = ',' , power=1. ,
                 diagnostic_output = False , MEAN=None , STD=None , centered=-1 ) :
@@ -451,3 +460,29 @@ if __name__ == '__main__' :
     print ( padded_rolling_average( np.array( svd_reduced_mean( Xdf ).values ) ,tau=4 ) )
     print ( padded_rolling_average( v0,tau=4 ) )
     print ( v0 )
+
+    if True :
+        import time
+        A_ = np.array([ [ 22 , 10 ,  2 ,   3 ,  7 ] ,
+                    [ 14 ,  7 , 10 ,   0 ,  8 ] ,
+                    [ -1 , 13 , -1 , -11 ,  3 ] ,
+                    [ -3 , -2 , 13 ,  -2 ,  4 ] ,
+                    [  9 ,  8 ,  1 ,  -2 ,  4 ] ,
+                    [  9 ,  1 , -7 ,   5 , -1 ] ,
+                    [  2 , -6 ,  6 ,   5 ,  1 ] ,
+                    [  4 ,  5 ,  0 ,  -2 ,  2 ] ] )
+        t0 = time.time()
+        U,S,VT = ASVD( A_ )
+        dt = time.time() - t0
+        print ( dt );
+        print ( np.dot(np.dot(U,S),VT) )
+
+        df  = lambda data:pd.DataFrame(data)
+
+        O,Z,WT = np.linalg.svd(A_)
+
+        print ( df( O).apply(np.abs) - df( U).apply(np.abs) )
+        print ( df( Z).apply(np.abs) - df(np.diag(S)).apply(np.abs) )
+        print ( df(VT).apply(np.abs) - df(WT).apply(np.abs) )
+        print ( np.sqrt(1248),20,np.sqrt(384),0,0 )
+        print ( np.diag(S) )
