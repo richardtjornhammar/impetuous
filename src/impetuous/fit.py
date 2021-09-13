@@ -21,12 +21,12 @@ import operator
 
 class quaternion ( ) :
     def __init__ ( self , vector=None , angle=None ):
-        self.v     = vector
-        self.angle = angle
-        self.assign_quaternion()
         self.bComplete = False
-        self.q     = np.array([0.,0.,0.,0.])
-        self.qrot = None
+	self.v         = vector
+        self.angle     = angle
+        self.assign_quaternion()
+        self.q         = np.array([0.,0.,0.,0.])
+        self.qrot      = None
 
     def assign_quaternion (self ,  v=None , angle=None ):
         if v is None :
