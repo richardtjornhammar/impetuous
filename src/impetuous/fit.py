@@ -18,6 +18,49 @@ import numpy as np
 import pandas as pd
 import operator
 
+
+class quaternion ( ) :
+    def __init__ ( self , vector=None , angle=None ):
+        self.v     = vector
+        self.angle = angle
+        self.assign_quaternion()
+        self.bComplete = False
+        self.q     = np.array([0.,0.,0.,0.])
+        self.qrot = None
+
+    def assign_quaternion (self ,  v=None , angle=None ):
+        if v is None :
+            v = self.v
+        else :
+            self.v = v
+        if angle is None :
+            angle = self.angle
+        else :
+            self.angle = angle
+        if angle is None or v is None :
+            self.bComplete_ = False
+            return
+        else :
+            self.bComplete = True
+        fi = angle*0.5
+        norm = 1.0 / np.sqrt( np.sum( v**2 ) )
+        self.q[0] = np.cos(fi)
+        self.q[1] = v[0]*norm*np.sin(fi)
+        self.q[2] = v[1]*norm*np.sin(fi)
+        self.q[3] = v[2]*norm*np.sin(fi)
+        self.calc_rotation_matrix()
+
+    def calc_rotation_matrix(self):
+        if self.bComplete :
+            q = self.q
+            self.qrot = np.array( [ [ q[0]*q[0]+q[1]*q[1]-q[2]*q[2]-q[3]*q[3] , 2*q[1]*q[2] - 2*q[0]*q[3] , 2*q[1]*q[3] + 2*q[0]*q[2] ] ,
+                                    [ 2*q[1]*q[2] + 2*q[0]*q[3] , q[0]*q[0]-q[1]*q[1] + q[2]*q[2]-q[3]*q[3] , 2*q[2]*q[3]-2*q[0]*q[1] ] ,
+                                    [ 2*q[1]*q[3] - 2*q[0]*q[2] , 2*q[2]*q[3] + 2*q[0]*q[1] , q[0]*q[0]-q[1]*q[1]-q[2]*q[2]+q[3]*q[3] ] ] )
+    def rotate_coord (self, x ) :
+        if self.bComplete :
+            return ( np.dot(self.qrot,x) )
+
+
 def F ( i , j , d = 2 ,
         s = lambda x,y : 2 * (x==y) ,
         sx = None , sy = None ) :
