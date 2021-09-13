@@ -75,7 +75,7 @@ pi0 = lambda pvs : 1.
 def padded_rolling_window ( ran, tau ) :
 	if tau==1 :
 		return ( [ (i,None) for i in range(len(ran)) ] )
-	if len(tv)<tau :
+	if len(ran)<tau :
 		return ( [ (0,N) for v_ in ran ] )
 	centered = lambda x:(x[0],x[1]) ; N=len(ran);
 	w = int( np.floor(np.abs(tau)*0.5) ) ;
@@ -117,7 +117,6 @@ def svd_reduced_mean ( x,axis=0,keep=[0] ) :
 #
 # Numerical Analysis by Burden and Faires
 # GOLUBS SVD PAPER
-#
 #
 def kth_householder ( A , k ):
     # THE K:TH HOUSHOLDER ITERATION
@@ -211,6 +210,35 @@ def skew_eye ( shape ) :
     for i in range(n):
         Z[i][i] = 1
     return ( Z )
+
+def eigensolve_2b2 ( M ) :
+    # MOHRS LILLA OLLE I SKOGEN GICK ...
+    s1      = M[0,0]
+    s2      = M[1,1]
+
+    tau2    = M[1,0] * M[0,1]
+    delta   = M[0,0] - M[1,1]
+    phi     = M[0,0] + M[1,1]
+
+    xi      = np.sqrt( delta**2+4*tau2 )
+    lambda0 = 0.5*( phi + xi )
+    lambda1 = 0.5*( phi - xi )
+    tau01   = M[0,1]
+    tau10   = M[1,0]
+
+    def transf ( tau, delta, xi , pm=1 ) :
+        nom0 = 0.5 * ( delta + pm*xi )/tau
+        nom1 = 1
+        c,s  = nom0 , nom1
+        norm = np.sqrt(c*c+s*s)
+        c    = c / norm
+        s    = s / norm
+        return ( np.array([[c,s],[s,-c]]) )
+
+    e10p = transf ( tau=tau10 , delta=delta , xi=xi , pm =  1 )
+    e10m = transf ( tau=tau10 , delta=delta , xi=xi , pm = -1 )
+
+    return ( np.array([lambda0,lambda1]),e10p[0],e10m[0] )
 
 def diagonalize_2b2( A , tol=1E-13 , maxiter = 100 ) :
     M   = A[:2,:2].copy()
