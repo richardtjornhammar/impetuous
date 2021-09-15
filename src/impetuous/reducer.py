@@ -155,6 +155,8 @@ def Householder_transformation ( A ):
         return ( A )
     P = []
     P0 , A0 , Q0 = kth_householder( A,k=0 )
+    if n==2 :
+        return ( A0 , [P0 , A0 , Q0] )
     P .append([P0,A0,Q0])
     for k in range( 1 , n-1 ) : # ends at n-2
         P1 , A1 , Q1 = kth_householder( A0,k=k )
@@ -168,6 +170,8 @@ def Householder_reduction ( A ):
     if n < 2 :
         return ( A )
     P0 , A0 , Q0 = kth_householder( A,k=0 )
+    if n==2 :
+        return ( P0 , A0 , Q0.T )
     for k in range( 1 , n-1 ) : # ends at n-2
         P1 , A1 , Q1 = kth_householder( A0,k=k )
         A0 = A1
@@ -320,7 +324,8 @@ def diagonalize_tridiagonal ( tridiagonal ,
                     GI = np.dot( sI_ , GI )
                     HI = np.dot( tI_ , HI )
                     S =  np.dot( np.dot( sI_ , S ) , tI_.T )
-            ERR = np.sum( S**2*(1-skew_eye([n_,m_]) ) )
+            #ERR = np.sum( S**2*(1-skew_eye([n_,m_]) ) )
+            ERR = sum( np.diag(S[:nm_],-1)**2 ) + sum( np.diag(S[:nm_] ,1)**2 )
             if ERR < tol :
                 break;
         # RETURNS THE MATRICES NEEDED TO CREATE THE INPUT DATA
