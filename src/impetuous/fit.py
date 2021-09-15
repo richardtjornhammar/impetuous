@@ -22,7 +22,7 @@ import operator
 class quaternion ( ) :
     def __init__ ( self , vector=None , angle=None ):
         self.bComplete = False
-	self.v         = vector
+        self.v         = vector
         self.angle     = angle
         self.assign_quaternion()
         self.q         = np.array([0.,0.,0.,0.])
