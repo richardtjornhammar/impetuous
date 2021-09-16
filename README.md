@@ -499,7 +499,7 @@ The functions `select_from_distance_matrix` uses boolean indexing to select rows
 
 # Example 10: Householder decomposition
 
-In this example we will compare the decompostion of square and rectangular matrices before and after Householder decomposition. We recall that the Householder decomposition is a way of factorising matrices into orthogonal components and a tridiagonal matrix. The routine is implemented in the `impetuous.reducer` module under the name `Householder_reduction`. Now, why is any of that important? The Householder matrices are deterministically determinable and consitutes an unambigous decomposition of your data. The factors are easy to use to further solve what different types of oprations will do you your original matrix. One can, for instance, use it to calculate the ambigous SVD decomposition or calculate eigenvalues for rectangular matrices.
+In this example we will compare the decompostion of square and rectangular matrices before and after Householder decomposition. We recall that the Householder decomposition is a way of factorising matrices into orthogonal components and a tridiagonal matrix. The routine is implemented in the `impetuous.reducer` module under the name `Householder_reduction`. Now, why is any of that important? The Householder matrices are deterministically determinable and consitutes an unambigous decomposition of your data. The factors are easy to use to further solve what different types of operations will do to your original matrix. One can, for instance, use it to calculate the ambigous SVD decomposition or calculate eigenvalues for rectangular matrices.
 
 Let us assume that you have a running environment and a set of matrices that you like
 ```
@@ -546,7 +546,7 @@ We readily note that this is also true for the singular values of the matrix `B`
     print ( "SVD ORIGINAL  : " , df(np.linalg.svd(A)[1]) )
     print ( "SVD HOUSEHOLD : " , df(np.linalg.svd(HOUSEH)[1]) )
 ```
-and lo and behold. They are. So we feel confident that using the eigenvalues from the square part of the Householder matrix (the rest is zero anyway) to calculate the eigenvalues of the rectangular matrix is ok. But wait, why are they complex valued now? :^D
+and lo and behold.
 ```
     n = np.min(np.shape(HOUSEH))
     print ( "SVD SKEW   H : " , df(np.linalg.svd(HOUSEH)[1]) )
@@ -554,6 +554,8 @@ and lo and behold. They are. So we feel confident that using the eigenvalues fro
     print ( "SVD ORIGINAL : " , df(np.linalg.svd(A)[1]) )
     print ( "EIGENVALUES  : " , np.linalg.eig(HOUSEH[:n,:n])[0] )
 ```
+They are. So we feel confident that using the eigenvalues from the square part of the Householder matrix (the rest is zero anyway) to calculate the eigenvalues of the rectangular matrix is ok. But wait, why are they complex valued now? :^D
+
 We can also reconstruct the original data by multiplying together the factors of either decomposition
 ```
     F,Z,GT = Householder_reduction ( A )
