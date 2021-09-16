@@ -73,6 +73,7 @@ if __name__=='__main__':
     import impetuous.quantification as impqu
     import impetuous.spectral as impsp
     import impetuous.reducer as impre
+    import impetuous.special as impspec
 ```
 You can execute it easily when you are in the [impetuous environment](https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix). Just write
 ```
@@ -494,6 +495,76 @@ In this [example](https://gist.githubusercontent.com/richardtjornhammar/e84056e0
 The [radial distribution function](https://en.wikipedia.org/wiki/Radial_distribution_function) is a useful tool for visualizing whether or not there are radial clustering tendencies at any average distance between the group of interest and any other constituents of the system. This structure assessment method is usually used for [analysis](https://gist.githubusercontent.com/richardtjornhammar/33162d3be1e92f1b1fafbd9e46954e91/raw/c0685bb79527c947213ffe08973d3ea4e072257e/argon.py) of particle systems, i.e. see [liquid structure](https://bl.ocks.org/richardtjornhammar/raw/bc1e9a8b4c693a338ef812a74ab685e9/?raw=true). It is implemented in the `clustering` module and is demonstrated [here](https://gist.githubusercontent.com/richardtjornhammar/f25ec2eef0703f07ebc0d678123f450e/raw/b9ac597a9d2587727af3cb06a8090ad0eaf0ba49/example10.py). If there is a significant density close to `r=0` then you cannot separate the group from the mean background. This also means that any significance test between those groups will tell you that the grouping is insignificant. The [resulting plot](https://bl.ocks.org/richardtjornhammar/raw/ff417450790c8c885b077fc7ee20409d/?raw=true) has [revision dates](https://gist.github.com/richardtjornhammar/ff417450790c8c885b077fc7ee20409d/revisions). Since the radial distribution function calculates the spherically symmetric distribution of points surrounding an analyte, or analyte group, of interest it is effectively analogous to segmenting the distance matrix and leaving out any self interaction distances that may or may not be present. 
 
 The functions `select_from_distance_matrix` uses boolean indexing to select rows and columns (it is symmetric) in the distance matrix and the `exclusive_pdist` function calculates all pairs between the points in the two separate groups.
+
+
+# Example 10: Householder decomposition
+
+In this example we will compare the decompostion of square and rectangular matrices before and after Householder decomposition. We recall that the Householder decomposition is a way of factorising matrices into orthogonal components and a tridiagonal matrix. The routine is implemented in the `impetuous.reducer` module under the name `Householder_reduction`. Now, why is any of that important? The Householder matrices are deterministically determinable and consitutes an unambigous decomposition of your data. The factors are easy to use to further solve what different types of oprations will do you your original matrix. One can, for instance, use it to calculate the ambigous SVD decomposition or calculate eigenvalues for rectangular matrices.
+
+Let us assume that you have a running environment and a set of matrices that you like
+```
+import numpy as np
+import pandas as pd
+
+if __name__=='__main__' :
+    from impetuous.reducer import ASVD, Householder_reduction
+
+    df = lambda x:pd.DataFrame(x)
+    if True :
+        B = np.array( [ [  4 ,  1 , -2 ,  2 ] ,
+                   [  1 ,  2 ,  0 ,  1 ] ,
+                   [ -2 ,  0 ,  3 , -2 ] ,
+                   [  2 ,  1 , -2 , -1 ] ] )
+
+    if True :
+        A = np.array([ [ 22 , 10 ,  2 ,   3 ,  7 ] ,
+                    [ 14 ,  7 , 10 ,   0 ,  8 ] ,
+                    [ -1 , 13 , -1 , -11 ,  3 ] ,
+                    [ -3 , -2 , 13 ,  -2 ,  4 ] ,
+                    [  9 ,  8 ,  1 ,  -2 ,  4 ] ,
+                    [  9 ,  1 , -7 ,   5 , -1 ] ,
+                    [  2 , -6 ,  6 ,   5 ,  1 ] ,
+                    [  4 ,  5 ,  0 ,  -2 ,  2 ] ] )
+```
+you might notice that the eigenvalues and the singular values of the square matrix `B` look similar
+```
+    print ( "FOR A SQUARE MATRIX:" )
+    print ( "SVD DIAGONAL MATRIX ",df(np.linalg.svd(B)[1]) )
+    print ( "SORTED ABSOLUTE EIGENVALUES ", df(sorted(np.abs(np.linalg.eig(B)[0]))[::-1]) )
+    print ( "BOTH RESULTS LOOK SIMILAR" )
+```
+but that the eigenvalues for the Householder reduction of the matrix B and the matrix B are the same
+```
+    HB = Householder_reduction ( B )[1]
+    print ( np.linalg.eig( B)[0]  )
+    print ( np.linalg.eig(HB)[0]  )
+```
+We readily note that this is also true for the singular values of the matrix `B` and the matrix `HB`. For the rectangular matrix `A` the eigenvalues are not defined when using `numpy`. The `SVD` decomposition is defined and we use it to check if the singular values are the same for the Householder reduction of the matrix A and the matrix A.
+```
+    print ( "BUT THE HOUSEHOLDER REDUCTION IS")
+    HOUSEH = Householder_reduction ( A )[1]
+    print ( "SVD ORIGINAL  : " , df(np.linalg.svd(A)[1]) )
+    print ( "SVD HOUSEHOLD : " , df(np.linalg.svd(HOUSEH)[1]) )
+```
+and lo and behold. They are. So we feel confident that using the eigenvalues from the square part of the Householder matrix (the rest is zero anyway) to calculate the eigenvalues of the rectangular matrix is ok. But wait, why are they complex valued now? :^D
+```
+    n = np.min(np.shape(HOUSEH))
+    print ( "SVD SKEW   H : " , df(np.linalg.svd(HOUSEH)[1]) )
+    print ( "SVD SQUARE H : " , df(np.linalg.svd(HOUSEH[:n,:n])[1]) )
+    print ( "SVD ORIGINAL : " , df(np.linalg.svd(A)[1]) )
+    print ( "EIGENVALUES  : " , np.linalg.eig(HOUSEH[:n,:n])[0] )
+```
+We can also reconstruct the original data by multiplying together the factors of either decomposition
+```
+    F,Z,GT = Householder_reduction ( A )
+    U,S,VT = ASVD(A)
+
+    print ( np.dot( np.dot(F,Z),GT ) )
+    print ( np.dot( np.dot(U,S),VT ) )
+    print ( A )
+```
+Thats all for now folks!
+
 
 # Notes
 
