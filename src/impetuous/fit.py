@@ -25,8 +25,26 @@ class quaternion ( ) :
         self.v         = vector
         self.angle     = angle
         self.q         = np.array([0.,0.,0.,0.])
+        self.assign_quaternion()
         self.qrot      = None
         self.assign_quaternion()
+
+    def __eq__  ( self , other ) :
+        return ( True )
+
+    def __str__ ( self ) :
+        return ( ', '.join( [ str(q_) for q_ in self.q ] ) )
+
+    def __repr__( self ) :
+        desc__= """< quaternion > instance at address [ """ + hex(id(self)) + """ ] \n """ + \
+                """quaternion > """ + ', '.join( [ str(v_) for v_ in self.q ] ) + \
+                """ \n  | angle  = """ + str ( self.angle ) + \
+                """ \n  | vector = """ + ', '.join( [ str(v_) for v_ in self.v ] )
+        return ( desc__ )
+
+    def get( self ) :
+        return ( [ self.U, self.S, self.VT ] )
+
 
     def assign_quaternion (self ,  v=None , angle=None ):
         if v is None :

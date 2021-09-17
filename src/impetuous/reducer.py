@@ -333,17 +333,17 @@ def diagonalize_tridiagonal ( tridiagonal ,
         # DATA = np.dot( np.dot( R[0],R[1]),R[2] )
         return ( GI.T , S , HI )
 
-def AugumentedReducedDecomposition ( A , maxiter=1000 , tol=1E-16 ):
+def AugumentedReducedDecomposition ( A , maxiter=1000 , tol=1E-30 ):
     P , Z , QT = Householder_reduction( A )
     G , S , HT = diagonalize_tridiagonal( Z , maxiter=maxiter , tol=tol )
     U  = np.dot(P,G)
     VT = np.dot(HT,QT)
     return ( U,S,VT )
 
-def AugumentedSingularDecomposition( A , maxiter=1000 , tol=1E-16 ):
+def AugumentedSingularDecomposition( A , maxiter=1000 , tol=1E-30 ):
     return ( AugumentedReducedDecomposition ( A,  maxiter=maxiter , tol=tol ) )
 
-def ASVD( A , maxiter=1000 , tol=1E-16 ):
+def ASVD( A , maxiter=1000 , tol=1E-30 ):
     return ( AugumentedReducedDecomposition ( A,  maxiter=maxiter , tol=tol ) )
 
 from sklearn.decomposition import PCA
