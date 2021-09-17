@@ -33,18 +33,20 @@ class quaternion ( ) :
         return ( True )
 
     def __str__ ( self ) :
-        return ( ', '.join( [ str(q_) for q_ in self.q ] ) )
+        return ( self.info() )
 
     def __repr__( self ) :
-        desc__= """< quaternion > instance at address [ """ + hex(id(self)) + """ ] \n """ + \
-                """quaternion > """ + ', '.join( [ str(v_) for v_ in self.q ] ) + \
+        return ( self.info() )
+
+    def info( self ):
+        desc__= """< quaternion > instance at address [ """ + hex(id(self)) + """ ]\n""" + \
+                """  quaternion > """ + ', '.join( [ str(v_) for v_ in self.q ] ) + \
                 """ \n  | angle  = """ + str ( self.angle ) + \
                 """ \n  | vector = """ + ', '.join( [ str(v_) for v_ in self.v ] )
         return ( desc__ )
 
     def get( self ) :
         return ( [ self.U, self.S, self.VT ] )
-
 
     def assign_quaternion (self ,  v=None , angle=None ):
         if v is None :
