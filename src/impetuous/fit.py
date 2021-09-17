@@ -25,7 +25,6 @@ class quaternion ( ) :
         self.v         = vector
         self.angle     = angle
         self.q         = np.array([0.,0.,0.,0.])
-        self.assign_quaternion()
         self.qrot      = None
         self.assign_quaternion()
 
