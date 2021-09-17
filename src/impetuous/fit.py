@@ -24,9 +24,9 @@ class quaternion ( ) :
         self.bComplete = False
         self.v         = vector
         self.angle     = angle
-        self.assign_quaternion()
         self.q         = np.array([0.,0.,0.,0.])
         self.qrot      = None
+        self.assign_quaternion()
 
     def assign_quaternion (self ,  v=None , angle=None ):
         if v is None :
@@ -38,7 +38,7 @@ class quaternion ( ) :
         else :
             self.angle = angle
         if angle is None or v is None :
-            self.bComplete_ = False
+            self.bComplete = False
             return
         else :
             self.bComplete = True
