@@ -3,18 +3,14 @@ This toolkit currently offers enrichment analysis, hierarchical enrichment analy
 
 The fine grained data can be studied via a statistical tests that relates it to observables in a coarse grained journal file. The final p values can then be rank corrected by employing a novel q-value method.
 
+[![License](https://img.shields.io/github/license/Qiskit/qiskit.svg?)](https://opensource.org/licenses/Apache-2.0)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5109938.svg)](https://doi.org/10.5281/zenodo.5109938)
 [![Downloads](https://pepy.tech/badge/impetuous-gfa)](https://pepy.tech/project/impetuous-gfa)
 [![Downloads](https://pepy.tech/badge/impetuous-gfa/month)](https://pepy.tech/project/impetuous-gfa)
 [![Downloads](https://pepy.tech/badge/impetuous-gfa/week)](https://pepy.tech/project/impetuous-gfa)
 
 Visit the active code via :
 https://github.com/richardtjornhammar/impetuous
-
-Visit the published code : 
-https://doi.org/10.5281/zenodo.2594690
-
-Cite using :
-DOI: 10.5281/zenodo.2594690
 
 # Pip installation with :
 ```
