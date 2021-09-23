@@ -79,6 +79,208 @@ class quaternion ( ) :
         if self.bComplete :
             return ( np.dot(self.qrot,x) )
 
+class ReservoirComputing ( ) :
+    def __init__ ( self ,
+            data = None ,
+            data_length   = None ,
+            work_fraction = 0.1  ,
+            work_length   = None ,
+            train_length  = None ,
+            test_length   = None ,
+            init_length   = None ,
+            input_size    = 1    ,
+            output_size   = 1    ,
+            result_size   = None ,
+            leak_factor   = 0.3  ,
+            regularisation_strength = 1E-8,
+            type          = 'ESN' ,
+            seed_id       = 111111,
+            bSVD          = True ) :
+
+        self.data         = data
+        if (not data is None) and (data_length is None) :
+            self.data_length = len ( data )
+        self.work_fraction   = work_fraction
+
+        self.assign_dimensions( train_length , test_length , init_length ,
+                                input_size   , output_size , result_size ,
+                                work_length  , data_length )
+
+        self.input_size   = input_size
+        self.output_size  = output_size
+        self.leak_factor  = leak_factor
+        self.regularisation_strength = regularisation_strength
+        self.type         = type
+
+        self.seed_id         = seed_id
+        self.bHaseAggregates = False
+        self.bSVD = bSVD
+        self.u    = None
+        self.x    = None
+        self.X    = None
+        self.Y    = None
+        self.Yt   = None
+        self.Win  = None
+        self.Wout = None
+        self.rhoW = None
+
+        if not self.data is None :
+            self.init( self.bSVD )
+            self.train()
+            self.generate()
+            self.calc_error()
+
+    def __eq__  ( self , other ) :
+        return ( True )
+
+    def __str__ ( self ) :
+        return ( self.info() )
+
+    def __repr__( self ) :
+        return ( self.info() )
+
+    def info( self ) :
+        desc__ = """
+ BASIC PRINCIPLES CAN BE STUDIED IN:
+ BASED ON        : https://mantas.info/code/simple_esn/ WITH LICENSE https://opensource.org/licenses/MIT
+ PUBLICATION     : Harnessing Nonlinearity: Predicting Chaotic Systems and Saving Energy om Wireless Communication
+                   Herbert Jaeger and Harald Haas
+                   2 APRIL 2004 VOL 304 SCIENCE
+ SHOULD BE CITED IF IT IS USED IN SCIENTIFIC WORK.
+ THIS IS NOT A COPY. THE ALGORITHM DIFFERS ON SOME POINTS
+ BOTH ALGORITHMICALLY AND COMPUTATIONALLY, BUT THE GENERAL IDEA
+ WAS ALREADY PRESENTED IN THE ABOVE PAPER
+ REMEMBER: YOU CAN FIT ANYTHING ONTO ANYTHING
+INPUT PARAMETERS :
+            data          
+            data_length   
+            work_fraction 
+            work_length   
+            train_length  
+            test_length   
+            init_length   
+            input_size    
+            output_size   
+            result_size   
+            leak_factor   
+            regularisation
+            type          
+            seed_id       
+            bSVD          
+        """
+        return ( desc__ )
+
+    def assign_dimensions ( self ,
+        train_length = None ,
+        test_length  = None ,
+        init_length  = None ,
+        input_size   = None ,
+        output_size  = None ,
+        result_size  = None ,
+        work_length  = None ,
+        data_length  = None ):
+
+        self.data_length = data_length
+        if not self.data is None :
+            self.data_length = len ( self.data )
+        if not self.work_fraction is None :
+            work_fraction = self.work_fraction
+        if not ( work_fraction>0 and 2*work_fraction<1 ) :
+            work_fraction = 0.1
+        self.work_fraction = work_fraction
+        self.work_length = work_length
+        if work_length is None :
+            self.work_length = int( np.ceil( self.data_length*work_fraction ) )
+        self.train_length = train_length
+        if self.train_length is None :
+            self.train_length = self.work_length*2
+        self.test_length = test_length
+        if self.test_length is None :
+            self.test_length = self.work_length*2
+        self.init_length = init_length
+        if init_length is None :
+            self.init_length = int( np.ceil( self.work_fraction**2*len(data) ) )
+        self.result_size = result_size
+        if result_size is None :
+            self.result_size = self.work_length
+
+    def init ( self , bSVD=True ):
+        np.random.seed( self.seed_id )
+        self.Win = (np.random.rand( self.result_size, 1+self.input_size ) - 0.5) * 1
+        self.W   =  np.random.rand( self.result_size,  self.result_size ) - 0.5
+        #
+        if bSVD :
+            self.rhoW = np.linalg.svd( self.W )[1][0]
+        else :
+            self.rhoW = np.sum( np.diag(self.W) )
+        #
+        # RESERVOIR MATRIX
+        self.W   *= 1.25 / self.rhoW
+        #
+        # COLLECTED STATE ACTIVATION MATRIX
+        self.X = np.zeros((1+self.input_size+self.result_size,self.train_length-self.init_length))
+        self.bHasAggregate = False
+
+    def train ( self , data = None ) :
+        #
+        self.init( )
+        #
+        self.Yt = self.data[ None , self.init_length+1:self.train_length+1 ]
+        #
+        # AGGREGATE RESERVOIR, COMPUTE X
+        self.x  = np.zeros((self.result_size,1))
+        #
+        a = self.leak_factor
+        for t in range ( self.train_length ) :
+            self.u = self.data[t]
+            v =  np.dot( self.Win, np.vstack((1,self.u)) ) + np.dot( self.W, self.x )
+            self.x = (1-a)*self.x + a * np.tanh( v )
+            if t >= self.init_length :
+                self.X[ :,t - self.init_length ] = np.vstack((1,self.u,self.x))[:,0]
+        #
+        self.u    = self.data[ self.train_length ]
+        self.Wout = np.linalg.solve( np.dot ( self.X , self.X.T  ) +\
+                             self.regularisation_strength*np.eye(1+self.input_size+self.result_size) ,
+                             np.dot ( self.X , self.Yt.T ) ).T
+        self.bHasAggregate = True
+        self.target = self.data[ self.train_length+1:self.train_length+self.test_length+1 ]
+        return
+
+    def generate ( self ) :
+        if not self.bHasAggregate :
+            return
+        self.Y   = np.zeros( (self.output_size,self.test_length) )
+        a   = self.leak_factor
+        for t in range(self.test_length) :
+            v =  np.dot( self.Win, np.vstack((1,self.u)) ) + np.dot( self.W, self.x )
+            self.x = (1-a)*self.x + a * np.tanh( v )
+            self.y = np.dot( self.Wout, np.vstack((1,self.u,self.x)) )
+            self.Y[:,t] = self.y
+            self.u = self.y
+        return
+
+    def error( self , errstr , severity=0 ):
+        print ( errstr )
+        if severity > 0 :
+            exit(1)
+        else :
+            return
+
+    def calc_error ( self ) :
+        self.error_length = 5*self.init_length
+        if self.train_length+self.error_length+1 >self.data_length:
+             self.error ( "BAD LENGTHS>" + str(self.error_length) + " " + str(self.data_length) )
+        self.mse = sum( np.square( self.data[self.train_length+1:self.train_length+self.error_length+1] -
+                          self.Y[0,0:self.error_length] ) ) / self.error_length
+        return
+
+    def get ( self ) :
+        return ( { 'target data'           : self.target   ,
+                   'predicted data'        : self.Y.T      ,
+                   'reservoir activations' : self.X.T      ,
+                   'output weights'        : self.Wout.T   ,
+                   'input weights'         : self.Win.T    } )
+
 
 def F ( i , j , d = 2 ,
         s = lambda x,y : 2 * (x==y) ,
