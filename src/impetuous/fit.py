@@ -199,7 +199,7 @@ INPUT PARAMETERS :
             self.test_length = self.work_length*2
         self.init_length = init_length
         if init_length is None :
-            self.init_length = int( np.ceil( self.work_fraction**2*len(data) ) )
+            self.init_length = int( np.ceil( self.work_fraction**2*len(self.data) ) )
         self.result_size = result_size
         if result_size is None :
             self.result_size = self.work_length
