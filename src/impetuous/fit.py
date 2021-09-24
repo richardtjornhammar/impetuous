@@ -79,31 +79,39 @@ class quaternion ( ) :
         if self.bComplete :
             return ( np.dot(self.qrot,x) )
 
+
 class ReservoirComputing ( ) :
     def __init__ ( self ,
-            data = None ,
-            data_length   = None ,
-            work_fraction = 0.1  ,
-            work_length   = None ,
-            train_length  = None ,
-            test_length   = None ,
-            init_length   = None ,
-            input_size    = 1    ,
-            output_size   = 1    ,
-            result_size   = None ,
-            leak_factor   = 0.3  ,
+            data           = None  ,
+            order          = None  ,
+            data_length    = None  ,
+            work_fraction  = 0.1   ,
+            work_length    = None  ,
+            train_length   = None  ,
+            test_length    = None  ,
+            init_length    = None  ,
+            input_size     = 1     ,
+            output_size    = 1     ,
+            reservoir_size = None  ,
+            leak_factor    = 0.3   ,
             regularisation_strength = 1E-8,
-            type          = 'ESN' ,
-            seed_id       = 111111,
-            bSVD          = True ) :
+            type           = 'ESN' ,
+            seed_id        = 11111 ,
+            bSVD           = True ) :
 
-        self.data         = data
-        if (not data is None) and (data_length is None) :
+        self.data        = data
+        if ( not data is None ) and ( data_length is None ) :
+            nm = np.shape(data)
+            if len(nm) > 1 :
+                if nm[0] < nm[1] :
+                    data = data.T
+                data = data.T[0]
+                self.data = data
             self.data_length = len ( data )
         self.work_fraction   = work_fraction
 
         self.assign_dimensions( train_length , test_length , init_length ,
-                                input_size   , output_size , result_size ,
+                                input_size   , output_size , reservoir_size ,
                                 work_length  , data_length )
 
         self.input_size   = input_size
@@ -112,8 +120,8 @@ class ReservoirComputing ( ) :
         self.regularisation_strength = regularisation_strength
         self.type         = type
 
-        self.seed_id         = seed_id
-        self.bHaseAggregates = False
+        self.seed_id        = seed_id
+        self.bHasAggregates = False
         self.bSVD = bSVD
         self.u    = None
         self.x    = None
@@ -128,7 +136,7 @@ class ReservoirComputing ( ) :
             self.init( self.bSVD )
             self.train()
             self.generate()
-            self.calc_error()
+            #self.calc_error()
 
     def __eq__  ( self , other ) :
         return ( True )
@@ -143,7 +151,7 @@ class ReservoirComputing ( ) :
         desc__ = """
  BASIC PRINCIPLES CAN BE STUDIED IN:
  BASED ON        : https://mantas.info/code/simple_esn/ WITH LICENSE https://opensource.org/licenses/MIT
- PUBLICATION     : Harnessing Nonlinearity: Predicting Chaotic Systems and Saving Energy om Wireless Communication
+ PUBLICATION     : Harnessing Nonlinearity: Predicting Chaotic Systems and Saving Energy in Wireless Communication
                    Herbert Jaeger and Harald Haas
                    2 APRIL 2004 VOL 304 SCIENCE
  SHOULD BE CITED IF IT IS USED IN SCIENTIFIC WORK.
@@ -161,9 +169,9 @@ INPUT PARAMETERS :
             init_length   
             input_size    
             output_size   
-            result_size   
+            reservoir_size
             leak_factor   
-            regularisation
+            regularisation_strength
             type          
             seed_id       
             bSVD          
@@ -198,7 +206,7 @@ INPUT PARAMETERS :
         if self.test_length is None :
             self.test_length = self.work_length*2
         self.init_length = init_length
-        if init_length is None :
+        if self.init_length is None :
             self.init_length = int( np.ceil( self.work_fraction**2*len(self.data) ) )
         self.result_size = result_size
         if result_size is None :
@@ -206,6 +214,8 @@ INPUT PARAMETERS :
 
     def init ( self , bSVD=True ):
         np.random.seed( self.seed_id )
+        #
+        # result_size IS SET BY reservoir_size INPUT
         self.Win = (np.random.rand( self.result_size, 1+self.input_size ) - 0.5) * 1
         self.W   =  np.random.rand( self.result_size,  self.result_size ) - 0.5
         #
@@ -225,32 +235,39 @@ INPUT PARAMETERS :
         #
         self.init( )
         #
-        self.Yt = self.data[ None , self.init_length+1:self.train_length+1 ]
+        # Y TRAIN
+        self.Yt = self.data[ self.init_length+1:self.train_length+1 ]
         #
-        # AGGREGATE RESERVOIR, COMPUTE X
+        # AGGREGATE RESERVOIR, COMPUTE X ACTIVATIONS
         self.x  = np.zeros((self.result_size,1))
         #
         a = self.leak_factor
         for t in range ( self.train_length ) :
             self.u = self.data[t]
-            v =  np.dot( self.Win, np.vstack((1,self.u)) ) + np.dot( self.W, self.x )
+            v      =  np.dot( self.Win, np.vstack((1,self.u)) ) + np.dot( self.W, self.x )
             self.x = (1-a)*self.x + a * np.tanh( v )
             if t >= self.init_length :
                 self.X[ :,t - self.init_length ] = np.vstack((1,self.u,self.x))[:,0]
         #
         self.u    = self.data[ self.train_length ]
-        self.Wout = np.linalg.solve( np.dot ( self.X , self.X.T  ) +\
+        self.Wout = np.linalg.solve( np.dot ( self.X , self.X.T  ) + \
                              self.regularisation_strength*np.eye(1+self.input_size+self.result_size) ,
                              np.dot ( self.X , self.Yt.T ) ).T
         self.bHasAggregate = True
         self.target = self.data[ self.train_length+1:self.train_length+self.test_length+1 ]
         return
 
-    def generate ( self ) :
+    def generate ( self , start_value = None, nsteps=None ) :
         if not self.bHasAggregate :
             return
-        self.Y   = np.zeros( (self.output_size,self.test_length) )
-        a   = self.leak_factor
+        a = self.leak_factor
+
+        if 'float' in str(type(start_value)) :
+            self.u = start_value
+        if 'int' in str(type(nsteps)) :
+            self.test_length = nsteps
+
+        self.Y = np.zeros( (self.output_size,self.test_length) )
         for t in range(self.test_length) :
             v =  np.dot( self.Win, np.vstack((1,self.u)) ) + np.dot( self.W, self.x )
             self.x = (1-a)*self.x + a * np.tanh( v )
@@ -267,7 +284,7 @@ INPUT PARAMETERS :
             return
 
     def calc_error ( self ) :
-        self.error_length = 5*self.init_length
+        self.error_length = 5*(self.init_length+1)
         if self.train_length+self.error_length+1 >self.data_length:
              self.error ( "BAD LENGTHS>" + str(self.error_length) + " " + str(self.data_length) )
         self.mse = sum( np.square( self.data[self.train_length+1:self.train_length+self.error_length+1] -
@@ -278,6 +295,7 @@ INPUT PARAMETERS :
         return ( { 'target data'           : self.target   ,
                    'predicted data'        : self.Y.T      ,
                    'reservoir activations' : self.X.T      ,
+                   'reservoir'             : self.W        ,
                    'output weights'        : self.Wout.T   ,
                    'input weights'         : self.Win.T    } )
 
