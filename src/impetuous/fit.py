@@ -80,6 +80,124 @@ class quaternion ( ) :
             return ( np.dot(self.qrot,x) )
 
 
+from impetuous.reducer import smoothbinred
+smoothmax    = lambda x,eta,varpi : x * smoothbinred(x-np.min(x),eta-np.min(x),varpi)
+class NonSequentialReservoirComputing ( ) :
+    def __init__ ( self ,
+            data           = None  ,
+            data_length    = None  ,
+            coldim         = 1     ,
+            reservoir_size = None  ,
+            leak_factor    = 0.3   ,
+            alpha          = 1E-8  ,
+            seed_id        = 11111 ) :
+
+        self.indata        = data
+        self.target        = data
+        self.data_length   = data_length
+        if ( not data is None ) :
+            nm = np.shape(data)
+            if len(nm) > 1 :
+                if nm[0] < nm[1] :
+                    data = data.T
+                self.target = data.T[0]
+                if nm[1]>1 :
+                    self.target  = data.T[1]
+                self.indata  = data.T[0]
+            self.data_length = len ( data )
+
+        if data_length is None :
+            self.data_length = len( self.indata )
+
+        self.leak_factor     = leak_factor
+        self.alpha           = alpha
+        self.seed_id         = seed_id
+        self.coldim          = coldim
+        self.nres            = reservoir_size
+        if reservoir_size is None :
+            self.nres        = int( np.ceil(self.data_length*0.2) )
+
+        self.W        = None # A POOL OF SAIGA NEURONS
+        self.Win      = None
+        self.Wout     = None
+        self.X        = [None,None]
+        self.pathways = [None,None]
+        self.Y        = None
+        self.Yt       = None
+
+        if not self.indata is None :
+            self.init()
+            self.train()
+            self.generate()
+
+    def __eq__  ( self , other ) :
+        return ( True )
+
+    def __str__ ( self ) :
+        return ( self.info() )
+
+    def __repr__( self ) :
+        return ( self.info() )
+
+    def info( self ) :
+        desc__ = """
+NON SEQUENTIAL RESERVOIR COMPUTING BY RICHARD "SAIGA" TJÖRNHAMMAR
+        """
+        return ( desc__ )
+
+    def init ( self , bSVD=True ) :
+        np.random.seed( self.seed_id )
+        self.Win = np.random.rand( self.nres , 1 + self.coldim ) - 0.5
+        self.W   = np.random.rand( self.nres ,     self.nres   ) - 0.5
+        self.W  /= np.sum( np.diag(self.W) )
+
+    def stimulate_neurons ( self , indat, io=0 ) :
+        n         = len( indat )
+        nres      = len( self.W )
+        indat     = np.dot ( self.Win, [np.ones(n),indat] )
+        X         = np.random.rand( nres,n ) - 0.5
+        pathway   = np.dot( self.W,X )
+        xi        = indat + pathway
+        eta,varpi = np.mean( xi ) , np.std( xi )
+        X         = smoothmax( xi , eta , varpi )
+        if io == 0 :
+            Yt = self.target
+            self.Wout = np.linalg.solve( np.dot(X,X.T)+self.alpha*np.eye(nres) , np.dot( X , Yt ) )
+        if io == 1 :
+            self.Y = np.dot ( self.Wout, X )
+        self.pathways[io] = pathway
+        self.X[io] = X
+        return
+
+    def train( self ) :
+        self.stimulate_neurons(self.indata,io=0)
+        return
+
+    def generate ( self , userdata=None ) :
+        if not userdata is None :
+            self.stimulus = userdata
+        else:
+            self.stimulus = self.indata[:self.nres]
+        self.stimulate_neurons(self.stimulus,io=1)
+        return
+
+    def error( self , errstr , severity=0 ):
+        print ( errstr )
+        if severity > 0 :
+            exit(1)
+        else :
+            return
+
+    def get ( self ) :
+        return ( { 'target data'           : self.target   ,
+                   'predicted data'        : self.Y        ,
+                   'reservoir activations' : self.X        ,
+                   'neuronal pathways'     : self.pathways ,
+                   'reservoir'             : self.W        ,
+                   'output weights'        : self.Wout     ,
+                   'input weights'         : self.Win      } )
+
+
 class ReservoirComputing ( ) :
     def __init__ ( self ,
             data           = None  ,
