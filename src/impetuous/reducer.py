@@ -42,6 +42,7 @@ e_contrast = lambda x   : 1 - e_flatness(x)
 # SPURIOUS LOW VALUE REMOVAL
 confred = lambda x,eta,varpi : 0.5*x*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*eta)/(0.5*(eta+x)))
 smoothbinred = lambda x,eta,varpi : 0.5*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*eta)/(0.5*(eta+x)))
+smoothmax    = lambda x,eta,varpi : x * smoothbinred(x-np.min(x),eta-np.min(x),varpi)
 
 def frac_procentile ( vals=[12.123, 1.2, 1000, 4] ):
     vals = np.array(vals).copy()
