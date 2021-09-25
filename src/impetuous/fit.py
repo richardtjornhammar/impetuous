@@ -18,7 +18,6 @@ import numpy as np
 import pandas as pd
 import operator
 
-
 class quaternion ( ) :
     def __init__ ( self , vector=None , angle=None ):
         self.bComplete = False
@@ -79,9 +78,6 @@ class quaternion ( ) :
         if self.bComplete :
             return ( np.dot(self.qrot,x) )
 
-
-from impetuous.reducer import smoothbinred
-smoothmax    = lambda x,eta,varpi : x * smoothbinred(x-np.min(x),eta-np.min(x),varpi)
 class NonSequentialReservoirComputing ( ) :
     def __init__ ( self ,
             data           = None  ,
@@ -92,6 +88,8 @@ class NonSequentialReservoirComputing ( ) :
             alpha          = 1E-8  ,
             seed_id        = 11111 ) :
 
+        self.smoothbinred  = lambda x,eta,varpi : 0.5*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*eta)/(0.5*(eta+x)))
+        self.smoothmax     = lambda x,eta,varpi : x * self.smoothbinred(x-np.min(x),eta-np.min(x),varpi)
         self.indata        = data
         self.target        = data
         self.data_length   = data_length
@@ -159,7 +157,7 @@ NON SEQUENTIAL RESERVOIR COMPUTING BY RICHARD "SAIGA" TJÖRNHAMMAR
         pathway   = np.dot( self.W,X )
         xi        = indat + pathway
         eta,varpi = np.mean( xi ) , np.std( xi )
-        X         = smoothmax( xi , eta , varpi )
+        X         = self.smoothmax( xi , eta , varpi )
         if io == 0 :
             Yt = self.target
             self.Wout = np.linalg.solve( np.dot(X,X.T)+self.alpha*np.eye(nres) , np.dot( X , Yt ) )
