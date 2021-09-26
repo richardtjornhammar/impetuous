@@ -99,7 +99,7 @@ class NonSequentialReservoirComputing ( ) :
                 if nm[0] < nm[1] :
                     data = data.T
                 self.target = data.T[0]
-                if nm[1]>1 :
+                if nm[0]>1 :
                     self.target  = data.T[1]
                 self.indata  = data.T[0]
             self.data_length = len ( data )
@@ -149,18 +149,17 @@ NON SEQUENTIAL RESERVOIR COMPUTING BY RICHARD "SAIGA" TJÖRNHAMMAR
         self.W   = np.random.rand( self.nres ,     self.nres   ) - 0.5
         self.W  /= np.sum( np.diag(self.W) )
 
-    def stimulate_neurons ( self , indat, io=0 ) :
-        n         = len( indat )
-        nres      = len( self.W )
-        indat     = np.dot ( self.Win, [np.ones(n),indat] )
-        X         = np.random.rand( nres,n ) - 0.5
-        pathway   = np.dot( self.W,X )
-        xi        = indat + pathway
-        eta,varpi = np.mean( xi ) , np.std( xi )
+    def stimulate_neurons ( self , indat, io=0 , wl=1.0 ) :
+        n         = len (  indat )
+        nres      = len ( self.W )
+        indat     = np.dot( self.Win, [np.ones(n),indat] )
+        pathway   = np.dot( self.W , indat )
+        xi        = pathway
+        eta,varpi = np.mean( xi )*wl , np.std( xi )*wl
         X         = self.smoothmax( xi , eta , varpi )
         if io == 0 :
             Yt = self.target
-            self.Wout = np.linalg.solve( np.dot(X,X.T)+self.alpha*np.eye(nres) , np.dot( X , Yt ) )
+            self.Wout = np.linalg.solve( np.dot(X,X.T) + self.alpha*np.eye(nres) , np.dot( X , Yt ) )
         if io == 1 :
             self.Y = np.dot ( self.Wout, X )
         self.pathways[io] = pathway
