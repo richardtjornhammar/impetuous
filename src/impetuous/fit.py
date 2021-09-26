@@ -139,7 +139,7 @@ class NonSequentialReservoirComputing ( ) :
 
     def info( self ) :
         desc__ = """
-NON SEQUENTIAL RESERVOIR COMPUTING BY RICHARD "SAIGA" TJÖRNHAMMAR
+NON SEQUENTIAL RESERVOIR COMPUTING
         """
         return ( desc__ )
 
