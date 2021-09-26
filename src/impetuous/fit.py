@@ -90,6 +90,7 @@ class NonSequentialReservoirComputing ( ) :
 
         self.smoothbinred  = lambda x,eta,varpi : 0.5*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*eta)/(0.5*(eta+x)))
         self.smoothmax     = lambda x,eta,varpi : x * self.smoothbinred(x-np.min(x),eta-np.min(x),varpi)
+        self.sabsmax       = lambda x,eta,varpi : x * self.smoothbinred(np.abs(x),np.abs(eta),varpi)
         self.indata        = data
         self.target        = data
         self.data_length   = data_length
@@ -140,6 +141,7 @@ class NonSequentialReservoirComputing ( ) :
     def info( self ) :
         desc__ = """
 NON SEQUENTIAL RESERVOIR COMPUTING
+IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
         """
         return ( desc__ )
 
@@ -149,14 +151,14 @@ NON SEQUENTIAL RESERVOIR COMPUTING
         self.W   = np.random.rand( self.nres ,     self.nres   ) - 0.5
         self.W  /= np.sum( np.diag(self.W) )
 
-    def stimulate_neurons ( self , indat, io=0 , wl=1.0 ) :
+    def stimulate_neurons ( self , indat, io=0 ) :
         n         = len (  indat )
         nres      = len ( self.W )
+        indat     = np.array( [ i_/nres for i_ in indat] )
         indat     = np.dot( self.Win, [np.ones(n),indat] )
         pathway   = np.dot( self.W , indat )
         xi        = pathway
-        eta,varpi = np.mean( xi )*wl , np.std( xi )*wl
-        X         = self.smoothmax( xi , eta , varpi )
+        X         = self.sabsmax( xi , np.sqrt(np.mean(xi**2)) , np.std(xi)*np.prod(np.shape(xi)) )
         if io == 0 :
             Yt = self.target
             self.Wout = np.linalg.solve( np.dot(X,X.T) + self.alpha*np.eye(nres) , np.dot( X , Yt ) )
