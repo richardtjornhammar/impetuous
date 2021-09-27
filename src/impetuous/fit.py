@@ -154,8 +154,15 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
     def stimulate_neurons ( self , indat, io=0 ) :
         n         = len (  indat )
         nres      = len ( self.W )
-        indat     = np.array( [ i_/nres for i_ in indat] )
-        indat     = np.dot( self.Win, [np.ones(n),indat] )
+        #
+        # SLIGHTLY TRANSLATED INFORMATION REACHES THREE DIFFERENT INPUT NEURONS
+        indat0    = np.array( [ i_/(nres+np.pi) for i_ in indat] )
+        indatp1   = np.array( [ (i_+np.pi)/(nres+np.pi) for i_ in indat] )
+        indatm1   = np.array( [ (i_-np.pi)/(nres+np.pi) for i_ in indat] )
+        indat     = np.dot ( self.Win , [ np.ones(n) , indat0  ] ) + \
+                    np.dot ( self.Win , [ np.ones(n) , indatp1 ] ) + \
+                    np.dot ( self.Win , [ np.ones(n) , indatp1 ] )
+        #
         pathway   = np.dot( self.W , indat )
         xi        = pathway
         X         = self.sabsmax( xi , np.sqrt(np.mean(xi**2)) , np.std(xi)*np.prod(np.shape(xi)) )
@@ -168,7 +175,7 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
         self.X[io] = X
         return
 
-    def train( self ) :
+    def train ( self ) :
         self.stimulate_neurons(self.indata,io=0)
         return
 
@@ -180,12 +187,34 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
         self.stimulate_neurons(self.stimulus,io=1)
         return
 
-    def error( self , errstr , severity=0 ):
+    def error ( self , errstr , severity=0 ):
         print ( errstr )
         if severity > 0 :
             exit(1)
         else :
             return
+
+    def coserr ( self, Fe , Fs ) :
+        return ( np.dot( Fe,Fs )/np.sqrt(np.dot( Fe,Fe ))/np.sqrt(np.dot( Fs,Fs )) )
+
+    def z2error ( self, data_uncertanties = None ) :
+        N   = np.min( [ len(self.target) , len(self.Y) ] )
+        Fe  = self.target[:N]
+        Fs  = self.Y[:N]
+        if data_uncertanties is None :
+            dFe = np.array( [ 0.05 for d in range(N) ] )
+        else :
+            if len(data_uncertanties)<N :
+                self.error( " DATA UNCERTANTIES MUST CORRESPOND TO THE TARGET DATA " ,0 )
+            dFe = data_uncertanties[:N]
+        def K ( Fs , Fe , dFe ) :
+            return ( np.sum( np.abs(Fs)*np.abs(Fe)/dFe**2 ) / np.sum( (Fe/dFe)**2 ) )
+        k = K ( Fs,Fe,dFe )
+        z2e = np.sqrt(  1/(N-1) * np.sum( ( (np.abs(Fs) - k*np.abs(Fe))/(k*dFe) )**2 )  )
+        cer = self.coserr(Fe,Fs)
+        qer = z2e/cer
+        self.z2err = ( qer, z2e , cer , self.nres, N )
+        return
 
     def get ( self ) :
         return ( { 'target data'           : self.target   ,
@@ -194,7 +223,8 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
                    'neuronal pathways'     : self.pathways ,
                    'reservoir'             : self.W        ,
                    'output weights'        : self.Wout     ,
-                   'input weights'         : self.Win      } )
+                   'input weights'         : self.Win      ,
+                   'error estimates'       : self.z2err    } )
 
 
 class ReservoirComputing ( ) :
