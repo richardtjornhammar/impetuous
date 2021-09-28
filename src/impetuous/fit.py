@@ -128,6 +128,7 @@ class NonSequentialReservoirComputing ( ) :
             self.init()
             self.train()
             self.generate()
+            self.z2error()
 
     def __eq__  ( self , other ) :
         return ( True )
@@ -224,7 +225,7 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
                    'reservoir'             : self.W        ,
                    'output weights'        : self.Wout     ,
                    'input weights'         : self.Win      ,
-                   'error estimates'       : self.z2error  } )
+                   'error estimates'       : self.z2err    } )
 
 
 class ReservoirComputing ( ) :
