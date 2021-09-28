@@ -124,10 +124,17 @@ def error ( self , errstr , severity=0 ):
     else :
         return
 
-def arr_contrast ( self , c , n=1, ctyp='f' ) :
+def arr_contrast ( self , c , n=1, ctyp='c' ) :
     if ctyp=='c':
-        return ( np.append( np.zeros(n) , (c[n:]-c[:-n])/(c[n:]+c[:-n]) ) )
+        return ( np.append( (c[n:]-c[:-n])/(c[n:]+c[:-n]) ,  np.zeros(n)  ) )
     return ( np.append( np.zeros(n) , (c[n:]-c[:-n])/(c[n:]+c[:-n]) ) )
+
+def all_conts ( c ) :
+    s   = c*0.0
+    inv = 1.0/len(c)
+    for i in range(len(c)):
+        s += arr_contrast(c,i+1)*inv
+    return ( s )
 
 def mse ( Fs,Fe ) :
     return ( np.mean( (Fs-Fe)**2 ) )
