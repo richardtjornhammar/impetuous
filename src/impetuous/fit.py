@@ -197,15 +197,15 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
     def coserr ( self, Fe , Fs ) :
         return ( np.dot( Fe,Fs )/np.sqrt(np.dot( Fe,Fe ))/np.sqrt(np.dot( Fs,Fs )) )
 
-    def z2error ( self, data_uncertanties = None ) :
+    def z2error ( self, data_uncertainties = None ) :
         N   = np.min( [ len(self.target) , len(self.Y) ] )
         Fe  = self.target[:N]
         Fs  = self.Y[:N]
-        if data_uncertanties is None :
+        if data_uncertainties is None :
             dFe = np.array( [ 0.05 for d in range(N) ] )
         else :
-            if len(data_uncertanties)<N :
-                self.error( " DATA UNCERTANTIES MUST CORRESPOND TO THE TARGET DATA " ,0 )
+            if len(data_uncertainties)<N :
+                self.error( " DATA UNCERTAINTIES MUST CORRESPOND TO THE TARGET DATA " ,0 )
             dFe = data_uncertanties[:N]
         def K ( Fs , Fe , dFe ) :
             return ( np.sum( np.abs(Fs)*np.abs(Fe)/dFe**2 ) / np.sum( (Fe/dFe)**2 ) )

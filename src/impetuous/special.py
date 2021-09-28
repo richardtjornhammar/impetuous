@@ -130,7 +130,7 @@ def mse ( Fs,Fe ) :
 def coserr ( Fe , Fs ) :
     return ( np.dot( Fe,Fs )/np.sqrt(np.dot( Fe,Fe ))/np.sqrt(np.dot( Fs,Fs )) )
 
-def z2error ( model_data , evidence_data , evidence_uncertanties = None ) :
+def z2error ( model_data , evidence_data , evidence_uncertainties = None ) :
     Fe = evidence_data
     Fs = model_data
     N  = np.min( [ len(evidence_data) , len(model_data) ] )
@@ -140,9 +140,9 @@ def z2error ( model_data , evidence_data , evidence_uncertanties = None ) :
         Fs  = model_data[:N]
 
     dFe = np.array( [ 0.05 for d in range(N) ] )
-    if not data_uncertanties is None :
-        if len(data_uncertanties)==N :
-            dFe = data_uncertanties
+    if not data_uncertainties is None :
+        if len(data_uncertainties)==N :
+            dFe = data_uncertainties
         else :
             error ( " DATA UNCERTANTIES MUST CORRESPOND TO THE TARGET DATA " , 0 )
 
