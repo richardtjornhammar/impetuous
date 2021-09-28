@@ -156,14 +156,14 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
         nres      = len ( self.W )
         #
         # SLIGHTLY TRANSLATED INFORMATION REACHES THREE DIFFERENT INPUT NEURONS
-        indat0    = np.array( [ i_/(nres+np.pi) for i_ in indat] )
-        indatp1   = np.array( [ (i_+np.pi)/(nres+np.pi) for i_ in indat] )
-        indatm1   = np.array( [ (i_-np.pi)/(nres+np.pi) for i_ in indat] )
-        indat     = np.dot ( self.Win , [ np.ones(n) , indat0  ] ) + \
-                    np.dot ( self.Win , [ np.ones(n) , indatp1 ] ) + \
-                    np.dot ( self.Win , [ np.ones(n) , indatp1 ] )
+        indat0   = np.array( [ i_/(nres+np.pi) for i_ in indat] )
+        indatp   = np.array( [ (i_+np.pi)/(nres+np.pi) for i_ in indat] )
+        indatm   = np.array( [ (i_-np.pi)/(nres+np.pi) for i_ in indat] )
+        indat_   = np.dot ( self.Win , [ np.ones(n) , indat0  ] ) + \
+                    np.dot ( self.Win , [ np.ones(n) , indatp ] ) + \
+                    np.dot ( self.Win , [ np.ones(n) , indatm ] )
         #
-        pathway   = np.dot( self.W , indat )
+        pathway   = np.dot( self.W , indat_ )
         xi        = pathway
         X         = self.sabsmax( xi , np.sqrt(np.mean(xi**2)) , np.std(xi)*np.prod(np.shape(xi)) )
         if io == 0 :
