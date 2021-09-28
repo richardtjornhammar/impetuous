@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+# command to run tests
+script:
+  - wget https://gist.githubusercontent.com/richardtjornhammar/34e163cba547d6c856d902244edc2039/raw/2a069b062df486b8d081c8cfedbbb30321e44f36/example0.py && python3 example0.py
