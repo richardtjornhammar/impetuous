@@ -224,7 +224,7 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
                    'reservoir'             : self.W        ,
                    'output weights'        : self.Wout     ,
                    'input weights'         : self.Win      ,
-                   'error estimates'       : self.z2err    } )
+                   'error estimates'       : self.z2error  } )
 
 
 class ReservoirComputing ( ) :
