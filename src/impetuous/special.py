@@ -124,6 +124,11 @@ def error ( self , errstr , severity=0 ):
     else :
         return
 
+def arr_contrast ( self , c , n=1, ctyp='f' ) :
+    if ctyp=='c':
+        return ( np.append( np.zeros(n) , (c[n:]-c[:-n])/(c[n:]+c[:-n]) ) )
+    return ( np.append( np.zeros(n) , (c[n:]-c[:-n])/(c[n:]+c[:-n]) ) )
+
 def mse ( Fs,Fe ) :
     return ( np.mean( (Fs-Fe)**2 ) )
 
