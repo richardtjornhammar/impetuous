@@ -124,7 +124,13 @@ def error ( self , errstr , severity=0 ):
     else :
         return
 
-def arr_contrast ( self , c , n=1, ctyp='c' ) :
+def seqsum ( c , n = 1 ) :
+    return ( c[n:] + c[:-n] )
+
+def seqdiff ( c , n = 1 ) :
+    return ( c[n:] - c[:-n] )
+
+def arr_contrast ( c , n=1, ctyp='c' ) :
     if ctyp=='c':
         return ( np.append( (c[n:]-c[:-n])/(c[n:]+c[:-n]) ,  np.zeros(n)  ) )
     return ( np.append( np.zeros(n) , (c[n:]-c[:-n])/(c[n:]+c[:-n]) ) )
@@ -167,3 +173,28 @@ def z2error ( model_data , evidence_data , evidence_uncertainties = None ) :
     qer = z2e/cer
 
     return ( qer, z2e , cer , N )
+
+
+if __name__ == '__main__' :
+    print ( sign(-10) )
+    print (  abs(-10) , abs(10) )
+    print ( factorial ( 3 ) )
+    print ( factorial ( 0 ) )
+    print ( factorial (-3 ) )
+
+    x = np.array( [ a for a in range(20) ] )
+    Y = all_conts(x)
+    Y = all_conts(1/x)
+
+    Y = all_conts( np.exp( -((x-5)/3)**2 )  )
+
+
+    print ( arr_contrast(x) )
+    print ( seqdiff(x) )
+    print ( np.diff(x) )
+    print ( seqsum(x) )
+
+    import matplotlib.pyplot as plt
+    plt.figure(1).clear()
+    plt.plot(x,-Y, 'b'  )
+    plt.show()
