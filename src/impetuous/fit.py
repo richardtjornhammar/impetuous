@@ -203,7 +203,7 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
             self.stimulus = userdata
         else :
             self.stimulus = self.indata
-        self.stimulate_neurons(self.stimulus,io=1)
+        self.stimulate_neurons( self.stimulus , io=1 , bSequential=self.bSequential )
         self.z2error()
         return self.Y
 
