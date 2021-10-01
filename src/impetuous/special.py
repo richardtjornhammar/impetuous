@@ -165,9 +165,9 @@ def z2error ( model_data , evidence_data , evidence_uncertainties = None ) :
         Fs  = model_data[:N]
 
     dFe = np.array( [ 0.05 for d in range(N) ] )
-    if not data_uncertainties is None :
-        if len(data_uncertainties)==N :
-            dFe = data_uncertainties
+    if not evidence_uncertainties is None :
+        if len(evidence_uncertainties)==N :
+            dFe = evidence_uncertainties
         else :
             error ( " DATA UNCERTANTIES MUST CORRESPOND TO THE TARGET DATA " , 0 )
 
