@@ -128,7 +128,7 @@ class NonSequentialReservoirComputing ( ) :
         self.z2err    = None
 
         self.nmem     = nmem
-        if self.nres >= self.nmem :
+        if self.nres <= self.nmem :
             self.nmem = self.nres-1
 
         self.bSequential = bSequential
