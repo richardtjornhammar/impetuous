@@ -143,10 +143,10 @@ class NonSequentialReservoirComputing ( ) :
         return ( True )
 
     def __str__ ( self ) :
-        return ( str( self.get() ) )
+        return ( self.info() + '\n\n' str( self.get() ) )
 
     def __repr__( self ) :
-        return ( self.info() )
+        return ( self.get() )
 
 
     def info( self ) :
