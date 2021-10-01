@@ -48,10 +48,13 @@ $ nix-shell impetuous-shell.nix
 Now you should be able to start your jupyter notebook locally:
 
 ```
-$ jupyter-notebook impetuous_finance.ipynb
+$ jupyter-notebook impetuous.ipynb
 ```
 
 and that's it.
+
+# Test installation
+You can [download](https://gist.githubusercontent.com/richardtjornhammar/e2f95f70c3ba56e764117aa0f7398dfb/raw/1e88526ce601b2b613abbefe17084ddf98e2e11c/test_impetuous.py) and run that python file to verify the installation. If it isn't working then there is an error with the package 
 
 # [Example 0](https://gist.githubusercontent.com/richardtjornhammar/34e163cba547d6c856d902244edc2039/raw/2a069b062df486b8d081c8cfedbbb30321e44f36/example0.py):
 After installing `impetuous-gfa version >=0.66.5` you should be able to execute the code
