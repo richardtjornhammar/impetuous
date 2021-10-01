@@ -82,15 +82,17 @@ class NonSequentialReservoirComputing ( ) :
     def __init__ ( self ,
             data           = None  ,
             data_length    = None  ,
-            coldim         = 1     ,
             reservoir_size = None  ,
             leak_factor    = 0.3   ,
             alpha          = 1E-8  ,
+            bSequential    = False ,
+            nmem           = 2     ,
             seed_id        = 11111 ) :
 
         self.smoothbinred  = lambda x,eta,varpi : 0.5*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*eta)/(0.5*(eta+x)))
         self.smoothmax     = lambda x,eta,varpi : x * self.smoothbinred(x-np.min(x),eta-np.min(x),varpi)
-        self.sabsmax       = lambda x,eta,varpi : x * self.smoothbinred(np.abs(x),np.abs(eta),varpi)
+        self.sabsmax       = lambda x,eta,varpi : x * self.smoothbinred(np.abs(x),eta,varpi)
+
         self.indata        = data
         self.target        = data
         self.data_length   = data_length
@@ -111,7 +113,7 @@ class NonSequentialReservoirComputing ( ) :
         self.leak_factor     = leak_factor
         self.alpha           = alpha
         self.seed_id         = seed_id
-        self.coldim          = coldim
+        self.coldim          = 1
         self.nres            = reservoir_size
         if reservoir_size is None :
             self.nres        = int( np.ceil(self.data_length*0.2) )
@@ -123,6 +125,13 @@ class NonSequentialReservoirComputing ( ) :
         self.pathways = [None,None]
         self.Y        = None
         self.Yt       = None
+        self.z2err    = None
+
+        self.nmem     = nmem
+        if self.nres >= self.nmem :
+            self.nmem = self.nres-1
+
+        self.bSequential = bSequential
 
         if not self.indata is None :
             self.init()
@@ -134,61 +143,71 @@ class NonSequentialReservoirComputing ( ) :
         return ( True )
 
     def __str__ ( self ) :
-        return ( self.info() )
+        return ( str( self.get() ) )
 
     def __repr__( self ) :
         return ( self.info() )
 
+
     def info( self ) :
         desc__ = """
+!!! YOU MIGHT STILL BE RUNNING A SEQUENTIALLY DEPENDENT ANALOG!!!
 NON SEQUENTIAL RESERVOIR COMPUTING
 IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
         """
         return ( desc__ )
 
-    def init ( self , bSVD=True ) :
+    def init ( self ) :
         np.random.seed( self.seed_id )
-        self.Win = np.random.rand( self.nres , 1 + self.coldim ) - 0.5
-        self.W   = np.random.rand( self.nres ,     self.nres   ) - 0.5
-        self.W  /= np.sum( np.diag(self.W) )
+        self.Win  = np.random.rand( self.nres , self.nmem + self.coldim ) - 0.5
+        self.W    = np.random.rand( self.nres ,     self.nres   ) - 0.5
+        self.W   /= np.sum( np.diag(self.W) )
 
-    def stimulate_neurons ( self , indat, io=0 ) :
-        n         = len (  indat )
-        nres      = len ( self.W )
-        #
-        # SLIGHTLY TRANSLATED INFORMATION REACHES THREE DIFFERENT INPUT NEURONS
-        indat0   = np.array( [ i_/(nres+np.pi) for i_ in indat] )
-        indatp   = np.array( [ (i_+np.pi)/(nres+np.pi) for i_ in indat] )
-        indatm   = np.array( [ (i_-np.pi)/(nres+np.pi) for i_ in indat] )
-        indat_   = np.dot ( self.Win , [ np.ones(n) , indat0  ] ) + \
-                    np.dot ( self.Win , [ np.ones(n) , indatp ] ) + \
-                    np.dot ( self.Win , [ np.ones(n) , indatm ] )
-        #
-        pathway   = np.dot( self.W , indat_ )
-        xi        = pathway
-        X         = self.sabsmax( xi , np.sqrt(np.mean(xi**2)) , np.std(xi)*np.prod(np.shape(xi)) )
+    def stimulate_neurons ( self , indat , io=0 , bSVD=False , bSequential=False ) :
+        n        = len (  indat )
+        nres     = len ( self.W )
+        indat0   = np.array( [ i_ for i_ in indat] )
+        if bSVD and io == 0 :
+            Y_   = np.dot( self.Win, np.vstack( ( np.ones(n*(self.nmem-1)).reshape((self.nmem-1),n),self.target,indat0) )  )
+            self .Win = np.linalg.svd(Y_)[0][:,:(self.nmem + self.coldim)]
+
+        indat_   = np.dot ( self.Win , np.vstack( (np.ones(n*(self.nmem)).reshape((self.nmem),n),indat0) ) )
+
+        if bSequential :
+            x = np.zeros((nres,1)) ; X = []
+            for i in range( n ) :
+                xp = (indat_.T[i,:] + np.dot( self.W , x ).T[0]).reshape(-1,1)
+                x  = (1-self.leak_factor)* x + self.leak_factor*np.tanh(xp)
+                X.append( x.reshape(-1) )
+            X = np.array( X ).T
+        else :
+            xi = np.dot( self.W , indat_ )
+            X  = self.sabsmax( xi , np.sqrt( np.mean(xi**2) ) , np.mean(xi**2) )
+
         if io == 0 :
             Yt = self.target
-            self.Wout = np.linalg.solve( np.dot(X,X.T) + self.alpha*np.eye(nres) , np.dot( X , Yt ) )
+            self.Wout = np.linalg.solve( np.dot(X,X.T) + self.alpha*np.eye(nres) , np.dot( X , Yt ))
         if io == 1 :
             self.Y = np.dot ( self.Wout, X )
-        self.pathways[io] = pathway
         self.X[io] = X
         return
 
-    def train ( self ) :
-        self.stimulate_neurons(self.indata,io=0)
+    def train( self , data = None ) :
+        if data is None :
+            data = self.indata
+        self.stimulate_neurons( data , io=0 , bSequential=self.bSequential )
         return
 
-    def generate ( self , userdata=None ) :
+    def generate ( self , userdata = None ) :
         if not userdata is None :
             self.stimulus = userdata
-        else:
-            self.stimulus = self.indata[:self.nres]
+        else :
+            self.stimulus = self.indata
         self.stimulate_neurons(self.stimulus,io=1)
-        return
+        self.z2error()
+        return self.Y
 
-    def error ( self , errstr , severity=0 ):
+    def error ( self , errstr , severity = 0 ):
         print ( errstr )
         if severity > 0 :
             exit(1)
@@ -198,15 +217,15 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
     def coserr ( self, Fe , Fs ) :
         return ( np.dot( Fe,Fs )/np.sqrt(np.dot( Fe,Fe ))/np.sqrt(np.dot( Fs,Fs )) )
 
-    def z2error ( self, data_uncertainties = None ) :
+    def z2error ( self, data_uncertanties = None ) :
         N   = np.min( [ len(self.target) , len(self.Y) ] )
         Fe  = self.target[:N]
         Fs  = self.Y[:N]
-        if data_uncertainties is None :
+        if data_uncertanties is None :
             dFe = np.array( [ 0.05 for d in range(N) ] )
         else :
-            if len(data_uncertainties)<N :
-                self.error( " DATA UNCERTAINTIES MUST CORRESPOND TO THE TARGET DATA " ,0 )
+            if len(data_uncertanties)<N :
+                self.error( " DATA UNCERTANTIES MUST CORRESPOND TO THE TARGET DATA " ,0 )
             dFe = data_uncertanties[:N]
         def K ( Fs , Fe , dFe ) :
             return ( np.sum( np.abs(Fs)*np.abs(Fe)/dFe**2 ) / np.sum( (Fe/dFe)**2 ) )
@@ -221,11 +240,11 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
         return ( { 'target data'           : self.target   ,
                    'predicted data'        : self.Y        ,
                    'reservoir activations' : self.X        ,
-                   'neuronal pathways'     : self.pathways ,
                    'reservoir'             : self.W        ,
                    'output weights'        : self.Wout     ,
                    'input weights'         : self.Win      ,
                    'error estimates'       : self.z2err    } )
+
 
 
 class ReservoirComputing ( ) :
