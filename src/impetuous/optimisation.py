@@ -52,7 +52,7 @@ maptool2.cc around line 646
     if coordinates is None:
         coordinates = get_coordinates(values,length_scales)
     R = [ coordinates,values ]
-    
+
     golden_ratio    = ( 5.0**0.5-1.0 )*0.5
     a , b , fc , fd = -1.0*extreme, 1.0*extreme, 0.0, 0.0
     c , d =  b-golden_ratio*(b-a), a+golden_ratio*(b-a)
@@ -77,5 +77,5 @@ if __name__ == '__main__':
     print ( golden_ration_phasetransition_search ( data.values ) )
 
 
-    
+
 

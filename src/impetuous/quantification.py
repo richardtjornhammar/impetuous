@@ -134,7 +134,6 @@ def find_category_interactions ( istr ) :
     interacting_categories = [ [all_cats[i-1],all_cats[i]] for i in range(1,len(interacting)) if interacting[i] ]
     return ( interacting_categories )
 
-
 def create_encoding_data_frame ( journal_df , formula , bVerbose = False ) :
     #
     # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)
@@ -211,11 +210,10 @@ def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
 
 
 def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
-			analyte_df = None , journal_df = None ,
-			bVerbose = False , synonyms = None ,
-			blur_cutoff = 99.8 , exclude_labels_from_centroids = [''] ,
-			study_axii = None , owner_by = 'tesselation' ):
-
+                                     analyte_df = None , journal_df = None ,
+                                     bVerbose = False , synonyms = None ,
+                                     blur_cutoff = 99.8 , exclude_labels_from_centroids = [''] ,
+                                     study_axii = None , owner_by = 'tesselation' ):
     if bVerbose :
         print ( np.shape(encoding_df) )
         print ( np.shape(analyte_df)  )
@@ -349,43 +347,42 @@ def run_rpls_regression ( analyte_df , journal_df , formula ,
     scorex = rpls_res.x_scores_
 
     res_df = calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
-    			journal_df = journal_df, analyte_df = analyte_df , blur_cutoff = blur_cutoff ,
-    			bVerbose = bVerbose, exclude_labels_from_centroids = exclude_labels_from_centroids ,
-			study_axii = study_axii , owner_by = owner_by )
+                       journal_df = journal_df, analyte_df = analyte_df , blur_cutoff = blur_cutoff ,
+                       bVerbose = bVerbose, exclude_labels_from_centroids = exclude_labels_from_centroids ,
+                       study_axii = study_axii , owner_by = owner_by )
 
     return ( res_df )
 
 import impetuous.fit as ifit
 import impetuous.clustering as icluster
 def run_shape_alignment_clustering ( analyte_df , journal_df , formula, bVerbose = False ) :
-	NOTE_ = "This is just a kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
-	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
+        NOTE_ = "This is just a kmeans in arbitrary dimensions that start out with centroids that have been shape aligned"
+        encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
 
-	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
-	P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
+        Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
+        P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).values
 
-	centroids = ifit.ShapeAlignment( P, Q ,
-				bReturnTransform = False ,
-				bShiftModel = True ,
-				bUnrestricted = True )
-	#
-	# FOR DIAGNOSTIC PURPOSES
-	centroids_df = pd.DataFrame ( centroids ,
-			index = encoding_df.columns ,
-			columns = encoding_df.index )
-	lookup_ = {i:n for n,i in zip( centroids_df.index,range(len(centroids_df.index)) ) }
+        centroids = ifit.ShapeAlignment( P, Q ,
+                        bReturnTransform = False ,
+                        bShiftModel = True ,
+                        bUnrestricted = True )
+        #
+        # FOR DIAGNOSTIC PURPOSES
+        centroids_df = pd.DataFrame ( centroids ,
+                        index = encoding_df.columns ,
+                        columns = encoding_df.index )
+        lookup_ = {i:n for n,i in zip( centroids_df.index,range(len(centroids_df.index)) ) }
 
-	labels , centroids = icluster.seeded_kmeans( P , centroids )
+        labels , centroids = icluster.seeded_kmeans( P , centroids )
 
-	res_df = pd.DataFrame( [labels] , columns=analyte_df.index , index=['cluster index'] )
-	nam_df = pd.DataFrame( [ lookup_[l] for l in labels ] ,
-				 columns=['cluster name'] ,
-				 index = analyte_df.index ).T
+        res_df = pd.DataFrame( [labels] , columns=analyte_df.index , index=['cluster index'] )
+        nam_df = pd.DataFrame( [ lookup_[l] for l in labels ] ,
+                     columns = ['cluster name'] , index = analyte_df.index ).T
 
-	res_df = pd.concat( [ res_df , nam_df ] )
-	clusters_df = pd.concat( [ centroids_df, pd.DataFrame( res_df.T.groupby('cluster name').apply(len),columns=['size']) ] ,axis=1 )
+        res_df = pd.concat( [ res_df , nam_df ] )
+        clusters_df = pd.concat( [ centroids_df, pd.DataFrame( res_df.T.groupby('cluster name').apply(len),columns=['size']) ] ,axis=1 )
 
-	return ( res_df , clusters_df )
+        return ( res_df , clusters_df )
 
 
 def kmeans_clustering_alignment ( P, Q , bHighDim = False ) :
@@ -553,39 +550,39 @@ def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           study_axii = None , owner_by = 'tesselation' ,
                           transform = crop ) :
 
-	print ( 'WARNING: STILL UNDER DEVELOPMENT' )
-	print ( 'WARNING: DEFAULT IS TO CROP ALIGNED FACTORS!!')
+        print ( 'WARNING: STILL UNDER DEVELOPMENT' )
+        print ( 'WARNING: DEFAULT IS TO CROP ALIGNED FACTORS!!')
 
-	encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
+        encoding_df = interpret_problem ( analyte_df , journal_df , formula , bVerbose = bVerbose )
 
-	Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).copy().values
-	P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).copy().values
+        Q = encoding_df.T.apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).copy().values
+        P = analyte_df   .apply( lambda x:(rankdata(x,'average')-0.5)/len(x) ).copy().values
 
-	centroids = ifit.ShapeAlignment( P, Q ,
-				bReturnTransform = False ,
-				bShiftModel = True ,
-				bUnrestricted = True )
-	#
-	# FOR DIAGNOSTIC PURPOSES
-	centroids_df = pd.DataFrame ( centroids ,
-			index = encoding_df.columns ,
-			columns = encoding_df.index )
+        centroids = ifit.ShapeAlignment( P, Q ,
+                        bReturnTransform = False ,
+                        bShiftModel = True ,
+                        bUnrestricted = True )
+        #
+        # FOR DIAGNOSTIC PURPOSES
+        centroids_df = pd.DataFrame ( centroids ,
+                            index = encoding_df.columns ,
+                            columns = encoding_df.index )
 
-	xws = ifit.WeightsAndScoresOf( P )
-	yws = ifit.WeightsAndScoresOf( centroids )
+        xws = ifit.WeightsAndScoresOf( P )
+        yws = ifit.WeightsAndScoresOf( centroids )
 
-	W = np.min( [*np.shape(xws[0]),*np.shape(yws[0])] )
+        W = np.min( [*np.shape(xws[0]),*np.shape(yws[0])] )
 
-	quantx = transform( xws[0],W )
-	quanty = transform( yws[0],W )
-	scorex = transform( xws[1],W )
+        quantx = transform( xws[0],W )
+        quanty = transform( yws[0],W )
+        scorex = transform( xws[1],W )
 
-	res_df = calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
-			analyte_df = analyte_df.copy() , journal_df = journal_df.copy() ,
-			blur_cutoff = blur_cutoff , bVerbose = bVerbose,
-			exclude_labels_from_centroids = exclude_labels_from_centroids ,
-			study_axii = study_axii , owner_by = owner_by, synonyms=synonyms )
-	return ( res_df )
+        res_df = calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
+                    analyte_df = analyte_df.copy() , journal_df = journal_df.copy() ,
+                    blur_cutoff = blur_cutoff , bVerbose = bVerbose,
+                    exclude_labels_from_centroids = exclude_labels_from_centroids ,
+                    study_axii = study_axii , owner_by = owner_by, synonyms=synonyms )
+        return ( res_df )
 
 
 def add_foldchanges ( df, information_df , group='', fc_type=0 , foldchange_indentifier = 'FC,') :
@@ -716,16 +713,10 @@ def glm_test (  formula , df , jdf , distribution='Gaussian' ) :
 
 def t_test ( df , endogen = 'expression' , group = 'disease' ,
              pair_values = ('Sick','Healthy') , test_type = 'independent',
-             equal_var = False , alternative = 'greater' ,
-             bDeprecated = False ) :
+             equal_var = False , alternative = 'greater' ) :
 
-    if bDeprecated :
-        print ( 'WILL BE REMOVED IN FUTURE VERSIONS' )
-        group1 = df[df[group] == pair_values[0]][endogen].astype(float)
-        group2 = df[df[group] == pair_values[1]][endogen].astype(float)
-    else :
-        group1 = df.iloc[:,[n in pair_values[0] for n in df.loc[group,:].values] ].loc[endogen,:].astype(float)
-        group2 = df.iloc[:,[n in pair_values[1] for n in df.loc[group,:].values] ].loc[endogen,:].astype(float)
+    group1 = df.iloc[:,[n in pair_values[0] for n in df.loc[group,:].values] ].loc[endogen,:].astype(float)
+    group2 = df.iloc[:,[n in pair_values[1] for n in df.loc[group,:].values] ].loc[endogen,:].astype(float)
 
     if test_type == 'independent' :
         pv = ttest_ind ( group1, group2 , equal_var = equal_var )
@@ -912,8 +903,6 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
             edf.loc[l] = q
     return ( edf.T )
 
-
-
 class APCA ( object ) :
     #
     # THIS CLASS PERFORMS A SPARSE PCA IF REQUESTED
@@ -985,7 +974,6 @@ class APCA ( object ) :
         self.F_ = np.dot( self.F_,R.T )
         self.components_ = self.V_
         return ( self.F_ )
-
 
 dimred = PCA()
 
@@ -1084,14 +1072,14 @@ def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                     metrics = [ c.split(',')[0] for c in loc_q.columns]
                     for metric in metrics:
                         statistic = qad.loc[ :, [c for c in qad.columns if metric in c and ',s' in c] ]
-                        group_analytes_pos_neg_ind_d[ metric + ',N_positive' ] = np.sum ( 
-                            [ 1 if p<tolerance and s>0 else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ] 
+                        group_analytes_pos_neg_ind_d[ metric + ',N_positive' ] = np.sum (
+                            [ 1 if p<tolerance and s>0 else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ]
                         )
-                        group_analytes_pos_neg_ind_d[ metric + ',N_negative' ] = np.sum ( 
-                            [ 1 if p<tolerance and s<0 else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ] 
+                        group_analytes_pos_neg_ind_d[ metric + ',N_negative' ] = np.sum (
+                            [ 1 if p<tolerance and s<0 else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ]
                         )
-                        group_analytes_pos_neg_ind_d[ metric + ',N_indetermined' ] = np.sum ( 
-                            [ 1 if p>tolerance else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ] 
+                        group_analytes_pos_neg_ind_d[ metric + ',N_indetermined' ] = np.sum (
+                            [ 1 if p>tolerance else 0 for (p,s) in zip(loc_q.loc[:,[metric+',p']].values,statistic.values) ]
                         )
                         group_analytes_pos_neg_ind_d[ metric + ',N_tot' ] = len(statistic)
 

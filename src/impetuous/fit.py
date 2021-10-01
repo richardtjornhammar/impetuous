@@ -245,8 +245,6 @@ IMPLEMENTED FOR TESTING PURPOSES : DEVELOPMENTAL
                    'input weights'         : self.Win      ,
                    'error estimates'       : self.z2err    } )
 
-
-
 class ReservoirComputing ( ) :
     def __init__ ( self ,
             data           = None  ,
@@ -585,19 +583,19 @@ def KabschAlignment( P,Q ):
 
 
 def WeightsAndScoresOf( P , bFA=False ) :
-	p0 = np.mean( P,0 )
-	U, S, VT = np.linalg.svd( P-p0 , full_matrices=False )
-	weights = U
-	if bFA :
-		scores = np.dot(S,VT).T
-		return ( weights , scores )
-	scores = VT.T
-	return ( weights , scores )
+        p0 = np.mean( P,0 )
+        U, S, VT = np.linalg.svd( P-p0 , full_matrices=False )
+        weights = U
+        if bFA :
+            scores = np.dot(S,VT).T
+            return ( weights , scores )
+        scores = VT.T
+        return ( weights , scores )
 
 def ShapeAlignment( P, Q ,
-		 bReturnTransform = False ,
-		 bShiftModel = True ,
-		 bUnrestricted = False ) :
+                bReturnTransform = False ,
+                bShiftModel = True ,
+                bUnrestricted = False ) :
     #
     # [*] C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
     # FIND SHAPE FIT FOR A SIMILIAR CODE IN THE RICHFIT REPO

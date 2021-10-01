@@ -18,5 +18,5 @@ from impetuous.quantification import *
 import sys
 
 if __name__ == '__main__' :
-	contributions__ = { "Richard Tjörnhammar": "All methods" ,
+    contributions__ = { "Richard Tjörnhammar": "All methods" ,
                         "Edward Tjörnhammar" : "RPLS method" }

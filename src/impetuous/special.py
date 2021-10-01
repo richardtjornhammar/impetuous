@@ -23,6 +23,7 @@ AS WELL AS EASE DEBUGGING IN THE FUTURE.
 
 CURRENT: REDUNDANT DEFINITIONS (HERE VS REDUCER) EXISTS FOR
 
+reducer::
 frac_procentile
 get_procentile
 smoothbinred
@@ -33,6 +34,12 @@ e_contrast
 confred
 padded_rolling_window
 
+quantification::
+isItPrime
+# FIRST APPEARENCE:
+# https://gist.github.com/richardtjornhammar/ef1719ab0dc683c69d5a864cb05c5a90
+Fibonacci
+F_truth
 """
 
 import numpy as np
@@ -174,6 +181,33 @@ def z2error ( model_data , evidence_data , evidence_uncertainties = None ) :
 
     return ( qer, z2e , cer , N )
 
+import math
+def isItPrime( N , M=None,p=None,lM05=None ) :
+    if p is None :
+        p = 1
+    if M is None :
+        M = N
+    if lM05 is None:
+        lM05 = math.log(M)*0.5
+    if ((M%p)==0 and p>=2) :
+        return ( N==2 )
+    else :
+       if math.log(p) > lM05:
+           return ( True )
+       return ( isItPrime(N-1,M=M,p=p+1,lM05=lM05) )
+
+# FIRST APPEARENCE:
+# https://gist.github.com/richardtjornhammar/ef1719ab0dc683c69d5a864cb05c5a90
+def Fibonacci(n):
+    if n-2>0:
+        return ( Fibonacci(n-1)+Fibonacci(n-2) )
+    if n-1>0:
+        return ( Fibonacci(n-1) )
+    if n>0:
+       return ( n )
+
+def F_truth(i):
+    return ( Fibonacci(i)**2+Fibonacci(i+1)**2 == Fibonacci(2*i+1))
 
 if __name__ == '__main__' :
     print ( sign(-10) )

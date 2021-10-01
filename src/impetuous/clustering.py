@@ -30,84 +30,86 @@ except OSError:
 
 # THE FOLLOWING KMEANS ALGORITHM IS THE AUTHOR OWN LOCAL VERSION
 if bUseNumba :
-	@jit(nopython=True)
-	def seeded_kmeans( dat, cent ):
-		#
-		# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
-		# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
-		# AROUND LINE 2345
-		# AGAIN CONSIDER USING THE C++ VERSION SINCE IT IS ALOT FASTER
-		# HERE WE SPEED IT UP USING NUMBA IF THE USER HAS IT INSTALLED AS A MODULE
-		#
-		NN , MM = np.shape ( dat  )
-		KK , LL = np.shape ( cent )
-		if not LL == MM :
-			print ( 'WARNING DATA FORMAT ERROR. NON COALESCING COORDINATE AXIS' )
+        @jit(nopython=True)
+        def seeded_kmeans( dat, cent ):
+                #
+                # PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # AROUND LINE 2345
+                # AGAIN CONSIDER USING THE C++ VERSION SINCE IT IS ALOT FASTER
+                # HERE WE SPEED IT UP USING NUMBA IF THE USER HAS IT INSTALLED AS A MODULE
+                #
+                NN , MM = np.shape ( dat  )
+                KK , LL = np.shape ( cent )
+                if not LL == MM :
+                        print ( 'WARNING DATA FORMAT ERROR. NON COALESCING COORDINATE AXIS' )
 
-		labels = [ int(z) for z in np.zeros(NN) ]
-		w = labels
-		counts = np.zeros(KK)
-		tmp_ce = np.zeros(KK*MM).reshape(KK,MM)
-		old_error , error , TOL = 0. , 1. , 1.0E-10
-		while abs ( error - old_error ) > TOL :
-			old_error = error
-			error = 0.
-			counts = counts * 0.
-			tmp_ce = tmp_ce * 0.
-			# START BC
-			for h in range ( NN ) :
-				min_distance = 1.0E30
-				for i in range ( KK ) :
-					distance = np.sum( ( dat[h]-cent[i] )**2 )
-					if distance < min_distance :
-						labels[h] = i
-						min_distance = distance
-				tmp_ce[labels[h]] += dat[ h ]
-				counts[labels[h]] += 1.0
-				error += min_distance
-			# END BC
-			for i in range ( KK ) :
-				if counts[i]>0:
-					cent[i] = tmp_ce[i]/counts[i]
-		centroids = cent
-		return ( labels, centroids )
+                labels = [ int(z) for z in np.zeros(NN) ]
+                w = labels
+                counts = np.zeros(KK)
+                tmp_ce = np.zeros(KK*MM).reshape(KK,MM)
+                old_error , error , TOL = 0. , 1. , 1.0E-10
+                while abs ( error - old_error ) > TOL :
+                        old_error = error
+                        error = 0.
+                        counts = counts * 0.
+                        tmp_ce = tmp_ce * 0.
+                        # START BC
+                        for h in range ( NN ) :
+                                min_distance = 1.0E30
+                                for i in range ( KK ) :
+                                        distance = np.sum( ( dat[h]-cent[i] )**2 )
+                                        if distance < min_distance :
+                                                labels[h] = i
+                                                min_distance = distance
+                                tmp_ce[labels[h]] += dat[ h ]
+                                counts[labels[h]] += 1.0
+                                error += min_distance
+                        # END BC
+                        for i in range ( KK ) :
+                                if counts[i]>0:
+                                        cent[i] = tmp_ce[i]/counts[i]
+                centroids = cent
+                return ( labels, centroids )
 else :
-	def seeded_kmeans( dat, cent ):
-		#
-		# SLOW SLUGGISH KMEANS WITH A DUBBLE FOR LOOP
-		# IN PYTHON! WOW! SUCH SPEED!
-		#
-		NN , MM = np.shape ( dat  )
-		KK , LL = np.shape ( cent )
-		if not LL == MM :
-			print ( 'WARNING DATA FORMAT ERROR. NON COALESCING COORDINATE AXIS' )
-		labels = [ int(z) for z in np.zeros(NN) ]
-		w = labels
-		counts = np.zeros(KK)
-		tmp_ce = np.zeros(KK*MM).reshape(KK,MM)
-		old_error , error , TOL = 0. , 1. , 1.0E-10
-		while abs ( error - old_error ) > TOL :
-			old_error = error
-			error = 0.
-			counts = counts * 0.
-			tmp_ce = tmp_ce * 0.
-			# START BC
-			for h in range ( NN ) :
-				min_distance = 1.0E30
-				for i in range ( KK ) :
-					distance = np.sum( ( dat[h]-cent[i] )**2 )
-					if distance < min_distance :
-						labels[h] = i
-						min_distance = distance
-				tmp_ce[labels[h]] += dat[ h ]
-				counts[labels[h]] += 1.0
-				error += min_distance
-			# END BC
-			for i in range ( KK ) :
-				if counts[i]>0:
-					cent[i] = tmp_ce[i]/counts[i]
-		centroids = cent
-		return ( labels, centroids )
+        def seeded_kmeans( dat, cent ):
+                #
+                # SLOW SLUGGISH KMEANS WITH A DUBBLE FOR LOOP
+                # IN PYTHON! WOW! SUCH SPEED!
+                #
+                NN , MM = np.shape ( dat  )
+                KK , LL = np.shape ( cent )
+                if not LL == MM :
+                        print ( 'WARNING DATA FORMAT ERROR. NON COALESCING COORDINATE AXIS' )
+
+                labels = [ int(z) for z in np.zeros(NN) ]
+                w = labels
+                counts = np.zeros(KK)
+                tmp_ce = np.zeros(KK*MM).reshape(KK,MM)
+                old_error , error , TOL = 0. , 1. , 1.0E-10
+                while abs ( error - old_error ) > TOL :
+                        old_error = error
+                        error = 0.
+                        counts = counts * 0.
+                        tmp_ce = tmp_ce * 0.
+                        # START BC
+                        for h in range ( NN ) :
+                                min_distance = 1.0E30
+                                for i in range ( KK ) :
+                                        distance = np.sum( ( dat[h]-cent[i] )**2 )
+                                        if distance < min_distance :
+                                                labels[h] = i
+                                                min_distance = distance
+                                tmp_ce[labels[h]] += dat[ h ]
+                                counts[labels[h]] += 1.0
+                                error += min_distance
+                        # END BC
+                        for i in range ( KK ) :
+                                if counts[i]>0:
+                                        cent[i] = tmp_ce[i]/counts[i]
+                centroids = cent
+                return ( labels, centroids )
+
 
 from scipy.spatial.distance import squareform , pdist
 absolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
@@ -121,22 +123,22 @@ distance_matrix_to_geometry_conversion_notes = """
 """
 
 if bUseNumba :
-	@jit(nopython=True)
-	def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
-		if not bSquared :
-			D = D**2.
-		DIM = n_dimensions
-		DIJ = D*0.
-		M = len(D)
-		for i in range(M) :
-			for j in range(M) :
-				DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
-		D = DIJ
-		U,S,Vt = np.linalg.svd ( D , full_matrices = True )
-		S[DIM:] *= 0.
-		Z = np.diag(S**0.5)[:,:DIM]
-		xr = np.dot( Z.T,Vt )
-		return ( xr )
+        @jit(nopython=True)
+        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+                if not bSquared :
+                        D = D**2.
+                DIM = n_dimensions
+                DIJ = D*0.
+                M = len(D)
+                for i in range(M) :
+                        for j in range(M) :
+                                DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
+                D = DIJ
+                U,S,Vt = np.linalg.svd ( D , full_matrices = True )
+                S[DIM:] *= 0.
+                Z = np.diag(S**0.5)[:,:DIM]
+                xr = np.dot( Z.T,Vt )
+                return ( xr )
 else :
         def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
                 if not bSquared :
@@ -154,67 +156,64 @@ else :
                 xr = np.dot( Z.T,Vt )
                 return ( xr )
 
-
-#bUseNumba=False
-
 if bUseNumba :
-	@jit(nopython=True)
-	def connectivity ( B , val, bVerbose=False ) :
-		description = """ This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems."""
-		if bVerbose :
-			print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
-		# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
-		# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
-		# AROUND LINE 2277
-		# CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
-		# A LOT FASTER
-		# FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
-		# https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
-		#
-		nr_sq,mr_sq = np.shape(B)
-		if nr_sq != mr_sq :
-			print ( 'ERROR:: FAILED' )
-		N = mr_sq
-		res, nvisi, s, NN, ndx, C = [0], [0], [0], [0], [0], 0
-		res .append(0)
-		for i in range(N) :
-			nvisi.append(i+1)
-			res.append(0); res.append(0)
-			ndx.append(i)
+        @jit(nopython=True)
+        def connectivity ( B , val, bVerbose=False ) :
+                description = """ This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems."""
+                if bVerbose :
+                        print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
+                # PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # AROUND LINE 2277
+                # CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
+                # A LOT FASTER
+                # FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
+                # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+                #
+                nr_sq,mr_sq = np.shape(B)
+                if nr_sq != mr_sq :
+                        print ( 'ERROR: FAILED' )
+                N = mr_sq
+                res , nvisi, s, NN, ndx, C = [0], [0], [0], [0], [0], 0
+                res .append(0)
+                for i in range(N) :
+                        nvisi.append(i+1)
+                        res.append(0); res.append(0)
+                        ndx.append(i)
 
-		res   = res[1:]
-		nvisi = nvisi[1:]
-		ndx   = ndx[1:]
-		while ( len(ndx)>0 ) :
-			i = ndx[-1] ; ndx = ndx[:-1]
-			NN = []
-			if ( nvisi[i]>0 ) :
-				C-=1
-				for j in range(N) :
-					if ( B[i,j]<=val ) :
-						NN.append(j)
-				while ( len(NN)>0 ) :
-					# back pop_back
-					k = NN[-1]; NN = NN[:-1]
-					nvisi[k] = C
-					for j in range(N):
-						if ( B[j,k]<=val ) :
-							for q in range(N) :
-								if ( nvisi[q] == j+1 ) :
-									NN.append(q)
-		if bVerbose : # VERBOSE
-			print ( "INFO "+str(-1*C) +" clusters" )
-		Nc = [ 0 for i in range(-1*C) ]
-		for q in range(N) :
-			res[  q*2+1 ] = q;
-			res[  q*2   ] = nvisi[q]-C;
-			Nc [res[q*2]]+= 1;
-			if bVerbose :
-				print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
-		if bVerbose:
-			for i in range(-1*C) :
-				print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
-		return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+                res   = res[1:]
+                nvisi = nvisi[1:]
+                ndx   = ndx[1:]
+                while ( len(ndx)>0 ) :
+                        i = ndx[-1] ; ndx = ndx[:-1]
+                        NN = []
+                        if ( nvisi[i]>0 ) :
+                                C-=1
+                                for j in range(N) :
+                                        if ( B[i,j]<=val ) :
+                                                NN.append(j)
+                                while ( len(NN)>0 ) :
+                                        # back pop_back
+                                        k = NN[-1]; NN = NN[:-1]
+                                        nvisi[k] = C
+                                        for j in range(N):
+                                                if ( B[j,k]<=val ) :
+                                                        for q in range(N) :
+                                                                if ( nvisi[q] == j+1 ) :
+                                                                        NN.append(q)
+                if bVerbose : # VERBOSE
+                        print ( "INFO "+str(-1*C) +" clusters" )
+                Nc = [ 0 for i in range(-1*C) ]
+                for q in range(N) :
+                        res[  q*2+1 ] = q;
+                        res[  q*2   ] = nvisi[q]-C;
+                        Nc [res[q*2]]+= 1;
+                        if bVerbose :
+                                print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
+                if bVerbose:
+                        for i in range(-1*C) :
+                                print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
+                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
 else :
         def connectivity ( B , val, bVerbose=False ) :
                 description="""
@@ -274,60 +273,8 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
 
 
 def connectivity_legacy001 ( B , val, bVerbose=False ) :
-	description="""
-This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems.
-        """
-	if bVerbose :
-            print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
-	# PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
-	# https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
-	# AROUND LINE 2277
-	# CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
-	# A LOT FASTER
-	# FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
-	# https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
-	#
-	nr_sq,mr_sq = np.shape(B)
-	if nr_sq != mr_sq :
-		print ( 'ERROR' )
-		exit (1)
-	N = mr_sq
-	res , nvisi, s, NN, ndx, C = [], [], [], [], [], 0
-	res .append(0)
-	for i in range(N) :
-		nvisi.append(i+1)
-		res.append(0); res.append(0)
-		ndx.append(i)
-	while ( len(ndx)>0 ) :
-		i = ndx[-1] ; ndx = ndx[:-1]
-		NN = []
-		if ( nvisi[i]>0 ) :
-			C-=1
-			for j in range(N) :
-				if ( B[i,j]<=val ) :
-					NN.append(j)
-			while ( len(NN)>0 ) :
-				# back pop_back
-				k = NN[-1]; NN = NN[:-1]
-				nvisi[k] = C
-				for j in range(N):
-					if ( B[j,k]<=val ) :
-						for q in range(N) :
-							if ( nvisi[q] == j+1 ) :
-								NN.append(q)
-	if bVerbose : # VERBOSE
-		print ( "INFO "+str(-1*C) +" clusters" )
-	Nc = [ 0 for i in range(-1*C) ]
-	for q in range(N) :
-		res[  q*2+1 ] = q;
-		res[  q*2   ] = nvisi[q]-C;
-		Nc [res[q*2]]+= 1;
-		if bVerbose :
-			print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
-	if bVerbose:
-		for i in range(-1*C) :
-			print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
-	return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+        print('REMOVED AS OF 0.77.2')
+        exit(1)
 
 
 clustering_algorithm = None
@@ -702,10 +649,10 @@ if __name__ == '__main__' :
 
     if True :
         A = np.array( [ [0.00, 0.10, 0.10, 9.00, 9.00, 9.00],
-        		[0.10, 0.00, 0.15, 9.00, 9.00, 9.00],
-        		[0.10, 0.15, 0.00, 9.00, 9.00, 9.00],
-        		[9.00, 9.00, 9.00, 0.00, 0.10, 0.10],
-        		[9.10, 9.00, 9.00, 0.10, 0.00, 0.15],
-        		[9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
+                        [0.10, 0.00, 0.15, 9.00, 9.00, 9.00],
+                        [0.10, 0.15, 0.00, 9.00, 9.00, 9.00],
+                        [9.00, 9.00, 9.00, 0.00, 0.10, 0.10],
+                        [9.10, 9.00, 9.00, 0.10, 0.00, 0.15],
+                        [9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
         print ( connectivity(A,0.11) )
         print ( dbscan(distance_matrix=pd.DataFrame(A).values,eps=0.11,minPts=2) )

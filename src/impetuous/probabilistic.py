@@ -34,7 +34,7 @@ def cluster_probability_of_x ( X ,
 
     ispanda = lambda P: 'pandas' in str(type(P)).lower()
     BustedPanda = lambda R : R.values if ispanda(R) else R
-    
+
     desc_ = """
     DOING THE SIMPLE PROBABILISTIC MODELLING FOR THE DATA
     YOU CAN USE THIS TO DO VORONOI TESSELATION WITH K = 1 IN 2D
@@ -66,11 +66,11 @@ def cluster_probability_of_x ( X ,
             print("CENTROIDS SHOULD BE 2D ARRAY OF DIMENSION M,DIM "); bFailure=True
         if not ( 'array' in str(type(X)) and len(np.shape(X)) == 2 ) :
             print("X SHOULD BE 2D ARRAY OF DIMENSION P,DIM "); bFailure=True
-        
+
         if bFailure :
             print( desc_ )
             exit(1)
-    #        
+    #
     all_cluster_names = sorted(list(set( [ l[0] for l in labels] )))
     print ( all_cluster_names )
     #
@@ -101,7 +101,7 @@ if __name__ == '__main__' :
     # https://github.com/richardtjornhammar/RichTools
     # WHERE YOU CAN FIND THE FILES USED HERE
     #
-    if True :        
+    if True :
         print( D(1),D(2),D(3),D(4) )
         print( D(1,True),D(2,True),D(3,True),D(4,True) )
 

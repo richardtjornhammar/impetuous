@@ -74,30 +74,30 @@ def get_procentile ( vals, procentile = 50 ):
 pi0 = lambda pvs : 1.
 
 def padded_rolling_window ( ran, tau ) :
-	if tau==1 :
-		return ( [ (i,None) for i in range(len(ran)) ] )
-	if len(ran)<tau :
-		return ( [ (0,N) for v_ in ran ] )
-	centered = lambda x:(x[0],x[1]) ; N=len(ran);
-	w = int( np.floor(np.abs(tau)*0.5) ) ;
-	jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
-	idx = [ centered( jid(i,w,N) ) for i in range(N) ]
-	return ( idx )
+        if tau==1 :
+                return ( [ (i,None) for i in range(len(ran)) ] )
+        if len(ran)<tau :
+                return ( [ (0,N) for v_ in ran ] )
+        centered = lambda x:(x[0],x[1]) ; N=len(ran);
+        w = int( np.floor(np.abs(tau)*0.5) ) ;
+        jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
+        idx = [ centered( jid(i,w,N) ) for i in range(N) ]
+        return ( idx )
 
 def padded_rolling_average( tv , tau ) :
-	# AS OF THE PANDAS VERSION ( 1.1.0 )
-	# WINDOW CALCULATION WAS NOT PADDED SO
-	# THIS IS A NUMPY ONLY IMPLEMENTATION
-	if tau==1 :
-		return ( tv )
-	if len(tv)<tau :
-		return ( [ np.mean(v_) for v_ in tv ] )
-	centered = lambda x:(x[0],x[1]) ; N=len(tv);
-	w = int(np.floor(np.abs(tau)*0.5)) ;
-	jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
-	idx = [ centered( jid(i,w,N) ) for i in range(N) ]
-	mvalues = [ np.mean(tv[i[0]:i[1]]) for i in idx ]
-	return ( mvalues )
+        # AS OF THE PANDAS VERSION ( 1.1.0 )
+        # WINDOW CALCULATION WAS NOT PADDED SO
+        # THIS IS A NUMPY ONLY IMPLEMENTATION
+        if tau==1 :
+                return ( tv )
+        if len(tv)<tau :
+                return ( [ np.mean(v_) for v_ in tv ] )
+        centered = lambda x:(x[0],x[1]) ; N=len(tv);
+        w = int(np.floor(np.abs(tau)*0.5)) ;
+        jid = lambda i,w,N:[int((i-w)>0)*((i-w)%N),int(i+w<N)*((i+w)%N)+int(i+w>=N)*(N-1)]
+        idx = [ centered( jid(i,w,N) ) for i in range(N) ]
+        mvalues = [ np.mean(tv[i[0]:i[1]]) for i in idx ]
+        return ( mvalues )
 
 def svd_reduced_mean ( x,axis=0,keep=[0] ) :
     if True :
