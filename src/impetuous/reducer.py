@@ -183,6 +183,24 @@ def Householder_reduction ( A ):
     VT = Q0.T
     return ( U , S , VT )
 
+
+def seqdot( B ) :
+    if len(B)  > 2 :
+        return ( np.dot( B[0] , seqdot( B[1:] ) ) )
+    if len(B)  > 1 :
+        return ( np.dot( B[0] , B[1] ) )
+    return ( B[0] )
+
+def tjornhammar_reduction ( A ) :
+    U,s,VT = np.linalg.svd(A,full_matrices=True)
+    S = skew_eye(np.shape(A))
+    for i in range(len(s)) :
+        S[i,i] = s[i]
+    O,Z,WT = Householder_reduction(  U ) # L
+    Q,C,MT = Householder_reduction( VT ) # R
+    return ( O,Z,WT , S , Q,C,MT )
+
+
 def rich_rot ( a , b , direction = 0 ) :
     if a==0 and b==0 :
         c = 0
