@@ -658,6 +658,10 @@ def HighDimensionalAlignment ( P , Q ) :
     # as of commit https://github.com/richardtjornhammar/RichTools/commit/99c79d94c2338252b1ef1067c0c061179b6edbd9 2016
     # SHAPE ALIGNMENT SEARCH FOR (shape_fit) SHAPE FIT
     #
+    #
+    # THE DISTANCE GEMOETRY TO ABSOLUTE COORDINATES CAN BE FOUND HERE (2015)
+    # https://github.com/richardtjornhammar/RichTools/commit/a6eef7c0712d1f87a20f319f951e09379a4171f0#diff-25a6634263c1b1f6fc4697a04e2b9904ea4b042a89af59dc93ec1f5d44848a26
+    #
     # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
     # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
     # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY (FIRST IMPLEMENTED FOR GROMACS 4.0.7 QMMM CLUSTERING IN LATE 2009)
