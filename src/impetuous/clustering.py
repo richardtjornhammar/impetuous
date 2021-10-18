@@ -170,6 +170,12 @@ if bUseNumba :
                 # FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
                 # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
                 #
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY (FIRST IMPLEMENTED BY ME (RICHARD)
+                # FOR GROMACS 4.0.7 QMMM CLUSTERING IN LATE 2009) BUT THE GMX-MPQC INTERFACE DIDN'T MAKE IT
+                # INTO THE FINAL PRODUCTION UPDATE AFTER THAT VERSION
+                #
                 nr_sq,mr_sq = np.shape(B)
                 if nr_sq != mr_sq :
                         print ( 'ERROR: FAILED' )
