@@ -559,6 +559,7 @@ def KabschAlignment( P,Q ):
     #
     # https://en.wikipedia.org/wiki/Kabsch_algorithm
     # C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
+    # as of commit https://github.com/richardtjornhammar/RichTools/commit/99c79d94c2338252b1ef1067c0c061179b6edbd9 (YEAR:2016)
     #	IN VINCINITY OF LINE 524
     #
     N,DIM  = np.shape( P )
@@ -598,6 +599,7 @@ def ShapeAlignment( P, Q ,
                 bUnrestricted = False ) :
     #
     # [*] C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
+    # as of commit https://github.com/richardtjornhammar/RichTools/commit/99c79d94c2338252b1ef1067c0c061179b6edbd9 (YEAR:2016)
     # FIND SHAPE FIT FOR A SIMILIAR CODE IN THE RICHFIT REPO
     #
     description = """
@@ -651,6 +653,14 @@ def HighDimensionalAlignment ( P , Q ) :
     # https://en.wikipedia.org/wiki/Kabsch_algorithm
     # C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
     #   IN VINCINITY OF LINE 524
+    #
+    # https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
+    # as of commit https://github.com/richardtjornhammar/RichTools/commit/99c79d94c2338252b1ef1067c0c061179b6edbd9 2016
+    # SHAPE ALIGNMENT SEARCH FOR (shape_fit) SHAPE FIT
+    #
+    # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+    # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+    # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY (FIRST IMPLEMENTED FOR GROMACS 4.0.7 QMMM CLUSTERING IN LATE 2009)
     #
     # ALSO AN ALIGNMENT METHOD BUT NOT REDUCED TO ELLIPSOIDS WHERE THERE ARE SIGN AMBIGUITIES
     #
