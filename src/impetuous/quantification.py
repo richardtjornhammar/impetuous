@@ -465,6 +465,51 @@ def multifactor_evaluation (  analyte_df , journal_df , formula ) :
             res_df.loc[:,c.split(',p')[0]+',q'] = q
     return ( res_df )
 
+def regression_assessment ( model , X , y , bLog = False ) :
+    desc_ = """
+     ALTERNATIVE NAIVE MODEL ASSESSMENT FOR A REGRESSION MODEL
+     !PRVT2D1701CM5487!
+    """
+    y_    = y
+    coefs = model.coef_
+    mstat = dict()
+
+    if bLog :
+        X  = np.array( [ [ np.log(x) for x in xx ] for xx in X ])
+        yp = np.exp(np.dot( coefs, X ) + model.intercept_ )
+    else :
+        yp =       (np.dot( coefs, X ) + model.intercept_ )
+    #
+    n   = len ( y_ ) ; p = len(coefs)
+    ym  = np.mean( y_ ) # CRITICAL DIMENSION ...
+    #
+    # BZ FORMS
+    TSS = np.array([ np.sum((  y_ - ym  ) ** 2, axis=0) ])[0]; dof_tss = n-1 ; mstat['TSS'] = TSS
+    RSS = np.array([ np.sum((  y_ - yp  ) ** 2, axis=0) ])[0]; dof_rss = n-p ; mstat['RSS'] = RSS
+    ESS = np.array([ np.sum((  yp - ym  ) ** 2, axis=0) ])[0]; dof_ess = p-1 ; mstat['ESS'] = ESS
+    mstat['dof_tss'] = dof_tss ; mstat['dof_rss'] = dof_rss ; mstat['dof_ess'] = dof_ess
+    #
+    TMS = TSS / dof_tss ; mstat['TMS'] = TMS
+    RMS = RSS / dof_rss ; mstat['RMS'] = RMS
+    EMS = ESS / dof_ess ; mstat['EMS'] = EMS
+    #
+    #   F-TEST
+    dof_numerator   = dof_rss
+    dof_denominator = dof_ess
+    from scipy.stats import f
+    fdist = f( dof_numerator , dof_denominator )
+    f0    = EMS / RMS
+    #
+    mstat['dof_numerator']   = dof_numerator
+    mstat['dof_denominator'] = dof_denominator
+    mstat['p-value']         = 1 - fdist.cdf(f0)
+    mstat['f0']              = f0
+    mstat['yp']              = yp
+    mstat['model']           = model
+    #
+    return ( mstat )
+
+
 
 def proj_c ( P ) :
     # P CONTAINS MUTUTALLY ORTHOGONAL COMPONENTS ALONG THE COLUMNS
