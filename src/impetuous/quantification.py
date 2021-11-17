@@ -692,6 +692,266 @@ def qvalues ( p_values_in , pi0 = None ) :
         qs_ = q
     return qs_
 
+class MultiFactorAnalysis ( object ) :
+    def __init__( self, analyte_df, journal_df, formula ) :
+        #super(MultiFactorAnalysis,self).__init__()
+        self.rankdata = rankdata
+        self.A   = analyte_df
+        self.J   = journal_df
+        self.f   = formula
+        self.E   = None
+        self.C   = None
+        self.B   = None
+        self.R   = None
+        self.TOL = None
+        self.multifactor_evaluation ( self.A , self.J , self.f )
+        #print ( self.predict(self.A.iloc[:,0],'male') )
+
+    def fit(self, analyte_df, journal_df, formula) :
+        self.__init__( analyte_df, journal_df, formula )
+
+    def tol_check ( self, val, TOL=1E-10 ):
+        if val > TOL :
+            print ( "WARNING: DATA ENTROPY HIGH (SNR LOW)", val )
+
+    def recover ( self, U, S, Vt ):
+        return ( np.dot(U*S,Vt) )
+
+    def qvalues ( self, p_values_in , pi0 = None ) :
+        p_s = p_values_in
+        if pi0 is None :
+            pi0 = 1.
+        qs_ = []
+        m = float(len(p_s)) ; itype = str( type( p_s[0] ) ) ; added_info = False
+        if 'list' in itype or 'tuple' in itype :
+            added_info = True
+            ps = [ p[0] for p in p_s ]
+        else :
+            ps = p_s
+        frp_ = rankdata( ps,method='ordinal' )/m
+        ifrp_ = [ ( (p<=f)*f + p*(p>f) ) for p,f in zip(ps,frp_) ]
+        for ip in range(len(ps)) :
+            p_ = ps[ ip ] ; f_ = frp_[ip]
+            q_ = pi0 * p_ / ifrp_[ip]
+            qs_.append( (q_,p_) )
+        if added_info :
+            q   = [ tuple( [qvs[0]]+list(pinf) ) for ( qvs,pinf ) in zip(qs_,p_s) ]
+            qs_ = q
+        return qs_
+
+    def solve ( self , C=None , E=None ) :
+        if C is None :
+            C = self.C
+        if E is None :
+            E = self.E
+        if not 'pandas' in str(type(C)) or not 'pandas' in str(type(E)):
+            print ( "ERROR MUST SUPPLY TWO PANDAS DATAFRAMES" )
+            return ( -1 )
+
+        cU, cS, cVt    = np.linalg.svd(C, full_matrices=False )
+        cST            = 1/cS
+        psuedo_inverse = pd.DataFrame( self.recover(cVt.T,cST,cU.T) , index=C.columns ,columns=C.index )
+        identity       = np.dot( C , psuedo_inverse )
+        TOLERANCE      = np.max( np.sqrt( ( identity * ( ( 1-np.eye(len(np.diag(identity)))) ) )**2 ))
+        self.B         = np.dot( psuedo_inverse,E )
+        self.TOL       = TOLERANCE
+        return ( self.B , self.TOL )
+
+    def encode_categorical ( self , G = ['A','B'] ):
+        #
+        # CREATES AN BINARY ENCODING MATRIX FROM THE SUPPLIED LIST
+        # USES A PANDAS DATAFRAME AS INTERMEDIATE FOR ERROR CHECKING
+        #
+        ugl = list(set(G)) ; n = len(ugl) ; m = len(G)
+        lgu = { u:j for u,j in zip(ugl,range(n)) }
+        enc_d = pd.DataFrame( np.zeros(m*n).reshape(-1,n),columns=ugl )
+        for i in range ( m ) :
+            j = lgu[G[i]]
+            enc_d.iloc[i,j] = 1
+        return ( enc_d )
+
+    def create_encoding_journal ( self , use_categories, journal_df ) :
+        encoding_df = None
+        for category in use_categories :
+            catvals = journal_df.loc[category].to_list()
+            cat_encoding = self.encode_categorical( catvals )
+            cat_encoding.index = journal_df.columns.values
+            if encoding_df is None :
+                encoding_df = cat_encoding.T
+            else :
+                encoding_df = pd.concat([encoding_df,cat_encoding.T])
+        return ( encoding_df )
+
+    def find_category_interactions ( self , istr ) :
+        all_cats = re.findall( r'C\((.*?)\)', istr )
+        interacting = [ ':' in c for c in istr.split(')') ][ 0:len(all_cats) ]
+        interacting_categories = [ [all_cats[i-1],all_cats[i]] for i in range(1,len(interacting)) if interacting[i] ]
+        return ( interacting_categories )
+
+    def create_encoding_data_frame ( self, journal_df=None , formula=None , bVerbose = False ) :
+        #
+        # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)
+        # THE FORMULA IS THE SEMANTIC DESCRIPTION OF THE PROBLEM
+        #
+        if journal_df is None :
+            journal_df = self.J
+        if formula is None :
+            formula    = self.f
+
+        interaction_pairs = self.find_category_interactions ( formula.split('~')[1] )
+        add_pairs = []
+        sjdf = set(journal_df.index)
+        if len( interaction_pairs ) > 0 :
+            for pair in interaction_pairs :
+                cpair = [ 'C('+p+')' for p in pair ]
+                upair = [ pp*(pp in sjdf)+cp*(cp in sjdf and not pp in sjdf) for (pp,cp) in zip( pair,cpair) ]
+                journal_df.loc[ ':'.join(upair) ] = [ p[0]+'-'+p[1] for p in journal_df.loc[ upair,: ].T.values ]
+                add_pairs.append(':'.join(upair))
+        use_categories = list(set(find_category_variables(formula.split('~')[1])))
+        cusecats = [ 'C('+p+')' for p in use_categories ]
+        use_categories = [ u*( u in sjdf) + cu *( cu in sjdf ) for (u,cu) in zip(use_categories,cusecats) ]
+        use_categories = [ *use_categories,*add_pairs ]
+        #
+        if len( use_categories ) > 0 :
+            encoding_df = self.create_encoding_journal ( use_categories , journal_df ).T
+        else :
+            encoding_df = None
+        #
+        if bVerbose :
+            print ( [ v for v in encoding_df.columns.values ] )
+            print ( 'ADD IN ANY LINEAR TERMS AS THEIR OWN AXIS' )
+        #
+        # THIS TURNS THE MODEL INTO A MIXED LINEAR MODEL
+        add_df = journal_df.loc[ [c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C('in c],: ]
+        if len(add_df)>0 :
+            if encoding_df is None :
+                encoding_df = add_df.T
+            else :
+                encoding_df = pd.concat([ encoding_df.T ,
+                            journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
+        self.E = encoding_df.apply(pd.to_numeric)
+        return ( self.E )
+
+    def threshold ( self, E , A ) :
+        if not 'pandas' in str(type(A)) or not 'pandas' in str(type(E)):
+            print ( "ERROR MUST SUPPLY TWO PANDAS DATAFRAMES" )
+            return ( -1 )
+        thresholds_df = pd .DataFrame ( np.dot( E,A.T ) ,
+                          columns = A .index ,
+                          index   = E .index ) .apply ( lambda x:x/np.sum(E,1) )
+        return ( thresholds_df )
+
+    def multifactor_solution ( self , analyte_df=None , journal_df=None ,
+                               formula=None , bLegacy = False ) :
+        A , J , f = analyte_df , journal_df , formula
+        if A is None :
+            A = self.A
+        if J is None :
+            J = self.J
+        if f is None :
+            f = self.f
+
+        encoding_df = self.create_encoding_data_frame ( journal_df = J , formula = f ).T
+        encoding_df.loc['NormFinder'] = np.array([1 for i in range(len(encoding_df.columns))])
+        self.E      = encoding_df
+
+        solution_   = self.solve ( A.T, encoding_df.T )
+        self.tol_check ( solution_[1] )
+        beta_df = pd.DataFrame ( solution_[0] , index=A.index , columns=encoding_df.index )
+        self.B  = beta_df
+        return ( encoding_df.T , beta_df )
+
+    def quantify_density_probability ( self , rpoints , cutoff = None ) :
+        #
+        # DETERMINE P VALUES
+        loc_pdf = lambda X,mean,variance : [ 1./np.sqrt(2.*np.pi*variance)*np.exp(-((x-mean)/(2.*variance))**2) for x in X ]
+        from scipy.special import erf as erf_
+        loc_cdf = lambda X,mean,variance : [      0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+        loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+        M_,Var_ = np.mean(rpoints),np.std(rpoints)**2
+        #
+        # INSTEAD OF THE PROBABILTY DENSITY WE RETURN THE FRACTIONAL RANKS
+        # SINCE THIS ALLOWS US TO CALCULATE RANK STATISTICS FOR THE PROJECTION
+        corresponding_density = ( self.rankdata (rpoints,'average')-0.5 ) / len( set(rpoints) )
+        corresponding_pvalue  = loc_Q  ( rpoints,M_,Var_ )
+        return ( corresponding_pvalue , corresponding_density )
+
+    def predict ( self, X, name ) :
+        desc__=""" print ( self.predict(X.iloc[:,0],'male') ) """
+        if len( X ) == len(self.A.iloc[:,0].values) and name in set(self.B.columns) :
+            coefs = self.B.loc[:,name].values
+            return ( name , np.dot( coefs,X )>self.TOL  )
+        else :
+            print ( "CANNOT PREDICT" )
+
+    def regression_assessment ( self ) :
+        desc_ = """
+         ALTERNATIVE NAIVE MODEL ASSESSMENT FOR A REGRESSION MODEL
+         !PRVT2D1701CM5487!
+         NO CV; NOT YET INFORMATIVE
+        """
+        X     = self.A
+        coefs = self.B.T
+        yp    = np.dot( coefs,X )
+        y_    = self.E.values
+        #
+        # NORMFINDER IS INTERCEPT
+        mstat = dict()
+        #
+        n     = len ( y_ ); p = len(coefs); q = len ( coefs.T )
+        if q>n :
+            print ( "OVER DETERMINED SYSTEM OF EQUATIONS " )
+        ym  = np.mean( y_ , axis=0 )
+        #
+        # BZ FORMS
+        TSS = np.array([ np.sum((  y_ - ym  ) ** 2, axis=1) ])[0]; dof_tss = np.abs(n-1) ; mstat['TSS'] = TSS
+        RSS = np.array([ np.sum((  y_ - yp  ) ** 2, axis=1) ])[0]; dof_rss = np.abs(n-q) ; mstat['RSS'] = RSS
+        ESS = np.array([ np.sum((  yp - ym  ) ** 2, axis=1) ])[0]; dof_ess = np.abs(p-1) ; mstat['ESS'] = ESS
+        mstat['dof_tss'] = dof_tss ; mstat['dof_rss'] = dof_rss ; mstat['dof_ess'] = dof_ess
+        #
+        TMS = TSS / dof_tss ; mstat['TMS'] = TMS
+        RMS = RSS / dof_rss ; mstat['RMS'] = RMS
+        EMS = ESS / dof_ess ; mstat['EMS'] = EMS
+        #
+        #   F-TEST
+        dof_numerator   = dof_rss
+        dof_denominator = dof_ess
+        from scipy.stats import f
+        fdist = f( dof_numerator , dof_denominator )
+        f0    = EMS / RMS
+        #
+        #
+        mstat['dof_numerator']   = dof_numerator
+        mstat['dof_denominator'] = dof_denominator
+        mstat['p-value']         = 1 - fdist.cdf(f0)
+        mstat['f0']              = f0
+        mstat['yp']              = yp
+        mstat['model']           = model
+        return ( mstat )
+
+    def multifactor_evaluation (  self, analyte_df=None , journal_df=None , formula=None ) :
+        #
+        if analyte_df is None :
+            analyte_df = self.A
+        if journal_df is None :
+            journal_df = self.J
+        if formula is None :
+            formula = self.f
+
+        encoding_df , beta_df = self.multifactor_solution ( analyte_df , journal_df , formula )
+        eval_df = beta_df.apply(lambda x:x**2)
+        all     = [ beta_df ]
+        for c in eval_df.columns :
+            all.append ( pd.DataFrame ( self.quantify_density_probability ( eval_df.loc[:,c].values ),
+                    index = [c+',p',c+',r'], columns=eval_df.index ).T)
+        res_df = pd.concat( all , axis=1 )
+        for c in res_df.columns :
+            if ',p' in c :
+                q = [ qv[0] for qv in self.qvalues(res_df.loc[:,c].values) ]
+                res_df.loc[:,c.split(',p')[0]+',q'] = q
+        self.R = res_df
+        return ( self.R )
+
 
 from scipy import stats
 from statsmodels.stats.anova import anova_lm as anova
