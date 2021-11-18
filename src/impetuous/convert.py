@@ -21,6 +21,133 @@ from networkx.readwrite import json_graph
 import json
 import sys
 
+import typing
+
+class Node ( object ) :
+    def __init__ ( self ) :
+        self.id_          = ""
+        self.label_       = ""
+        self.description_ = ""
+        self.level_       = 0
+        self.metrics_     = list()
+        self.links_       = list()
+        self.edges_       = list()
+
+    def assign_all ( self, identification : str ,
+                           links : type(list(str())) ,
+                           label : str = "" ,
+                           description : str = "" ) -> object :
+        self.set_id( identification )
+        self.add_label( label )
+        self.add_description( description )
+        self.add_links( links , bClear=True )
+        return ( self )
+    
+    def set_id ( self, identification:str ) -> None :
+        self.id_ = identification
+
+    def add_label ( self, label : str ) -> None :
+        self.label_ = label
+
+    def add_description ( self, description : str ) -> None :
+        self.description_ = description
+
+    def identification ( self ) -> str :
+        return ( self.id_ )
+
+    def label ( self ) -> str :
+        return ( self.label_ )
+        
+    def description ( self ) -> str :
+        return ( self.description_ )
+        
+    def add_link ( self, identification:str ) -> None :
+        self.links_ .push_back( identification )
+    #
+    # NOTE : list[str] type declaration is not working in Python3.8
+    def add_links ( self, links:type(list(str())), bClear:bool = True ) -> None :
+        if bClear :
+            self.links_ = list()
+        for e in links :
+            self.links_ .append ( e )
+
+    def get_links ( self ) -> type(list(str())) :
+        return ( self.links_ )
+
+    def show ( self ) -> None :
+        s_inf = "NODE [" + self.identification() \
+                   + "," + self.label() + "] - " \
+                   + self.description() + "\nLINKS:\n"
+        for l in self.get_links() :
+            s_inf += l + '\t'
+        print ( s_inf )
+
+
+class NodeGraph ( Node ) :
+    def __init__( self ) :
+        self.root_id_       = ''
+        self.desc_          = "SUPPORTS DAGS :: NO STRUCTURE ASSERTION"
+        self.num_edges_     = 0
+        self.num_vertices_  = 0
+        self.graph_map_     = dict()
+
+    def get_node ( self, nid : str ) -> Node :
+        return ( self.graph_map_[nid] )
+
+    def set_root_id ( self, identification : str ) -> None :
+        self.root_id_ = identification
+
+    def get_root_id ( self ) -> str :
+        return ( self.root_id_ )
+    
+    def add ( self, n : Node ) -> None :
+        self.graph_map_[ n.identification() ] = n
+        if len ( self.graph_map_ ) == 1 :
+            self.set_root_id( n.identification() )
+
+    def get_dag ( self ) -> dict() :
+        return ( self.graph_map_ )
+
+    def show ( self ) -> None :
+        print ( self.desc_ )
+        for item in self.get_dag().items() :
+            print ( '\n' + item[0] + '::' )
+            item[1].show()
+
+    def search ( self , order:str = 'breadth', root_id:str=None ) -> dict :
+        path:list   = list()
+        visited:set = set()
+        if root_id is None :
+            root_id = self.get_root_id()
+        S:list      = [ root_id ]
+
+        if order == 'breadth' :
+            while ( len(S)>0 ) :
+                v = S[0] ; S = S[1:]
+                ncurrent:Node = self.get_node(v)
+                visited       = visited|set([v])
+                path.append( ncurrent.identification() )
+                links         = ncurrent.get_links()
+                for w in links :
+                    if not w in visited and len(w)>0:
+                        S.append( w ) # QUE
+
+        if order == 'depth' :
+            while ( len(S)>0 ) :
+                v = S[0] ; S = S[1:]
+                if not v in visited and len(v)>0 :
+                    visited       = visited|set([v])
+                    ncurrent:Node = self.get_node(v)
+                    links         = ncurrent.get_links()
+                    for w in links :
+                        if not w in visited and len(w)>0:
+                            S = [*[w],*S] # STACK
+                    path.append( ncurrent.identification() )
+        
+        return ( { 'path':path,'order':order } )
+
+
+
 def drop_duplicate_indices( df ):
     df_ = df.loc[~df.index.duplicated(keep='first')]
     return df_
@@ -238,3 +365,44 @@ if __name__ == '__main__' :
                 print(gname)
             else:
                 print('MISSING:',gname)
+
+    n = Node()
+    n.set_id("richard")
+    n.add_label("eating")
+    n.add_description("rice")
+    n.add_links(["cola","soysauce"])
+    n.show()
+
+    RichTree = NodeGraph()
+    nodeid = "0"; label = "2"; v_ids = ["1","6"]
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "1"; label = "7"; v_ids = ["2","3"]
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "2"; label="2"; v_ids=["",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "3"; label="6"; v_ids=["4","5"];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "4"; label="5"; v_ids=["",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "5"; label="11"; v_ids=["",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "6"; label="5"; v_ids=["7",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "7"; label="9"; v_ids=["8",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "8"; label="4"; v_ids=["",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "9"; label="3"; v_ids=["",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    nodeid = "10"; label="1"; v_ids=["",""];
+    RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
+    
+    #RichTree.show()
+    print ( "ROOT::", RichTree.get_root_id() )
+    route = RichTree.search( root_id='0', order='breadth' )
+    print ( "ROUTE:: " , route )
+    route = RichTree.search( root_id='0', order='depth' )
+    print ( "ROUTE:: " , route )    
+
+                
+             
