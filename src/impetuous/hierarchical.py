@@ -35,17 +35,19 @@ def pathway_frame_from_file ( filename ,
             pdf = pd.concat([pdf,pd.DataFrame(ps).T])
     return ( pdf )
 
-def create_dag_representation_df ( pathway_file = '../data/GROUPDEFINITIONS.gmt' ,
-                                   pcfile = '../data/PCLIST.txt'
+
+def create_dag_representation_df ( pathway_file:str = '../data/GROUPDEFINITIONS.gmt' ,
+                                   pcfile:str = '../data/PCLIST.txt', identifier:str='R-HSA'
                                  ) :
     pc_list_file = pcfile
-    tree , ance , desc = parent_child_to_dag ( pc_list_file )
+    tree , ance , desc = parent_child_to_dag ( pc_list_file , identifier=identifier )
     pdf = make_pathway_ancestor_data_frame ( ance )
     pdf_ = pathway_frame_from_file( pathway_file )
     pdf.index = [v.replace(' ','') for v in  pdf.index.values]
     pdf_.index= [v.replace(' ','') for v in pdf_.index.values]
     dag_df = pd.concat([pdf.T,pdf_.T]).T
     return ( dag_df , tree )
+
 
 def HierarchalEnrichment (
             analyte_df , dag_df , dag_level_label = 'DAG,l' ,
@@ -59,6 +61,7 @@ def HierarchalEnrichment (
             ancestors_id_label = ancestors_id_label , id_name = id_name , threshold = threshold ,
             p_label = p_label , analyte_name_label = analyte_name_label ,
             item_delimiter = item_delimiter , alexa_elim = alexa_elim , alternative = alternative ) )
+
 
 def HierarchicalEnrichment (
             analyte_df , dag_df , dag_level_label = 'DAG,l' ,

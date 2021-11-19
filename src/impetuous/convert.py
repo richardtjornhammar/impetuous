@@ -179,7 +179,7 @@ class NodeGraph ( Node ) :
         if root_id is None :
             root_id = self.get_root_id()
         S:list      = [ root_id ]
-        if not order in set([]) :
+        if not order in set(['breadth','depth']) :
             print ( 'order MUST BE EITHER breadth XOR depth' )
             exit ( 1 )
 
@@ -208,11 +208,13 @@ class NodeGraph ( Node ) :
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
 
+
 def add_attributes_to_node_graph ( p_df:type(pd.DataFrame) , tree:NodeGraph ) -> NodeGraph :
     for idx in p_df.index.values :
         for attribute in p_df.columns.values :
             tree.get_node( idx ).get_data()[attribute] = p_df.loc[idx,attribute]
     return ( tree )
+
 
 def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
@@ -264,51 +266,17 @@ def write_tree( tree , outfile='tree.json' ):
             json.dump(o_json, o_file )
     return( o_json )
 
-def add_attributes_to_tree ( p_df , tree , bLegacy= False ):
-
-    if not bLegacy :
-        add_attributes_to_node_graph ( p_df , tree )
-
-    id_lookup = { rid:lid for (lid,rid) in nx.get_node_attributes(tree,'source').items() }
-    add_attributes = p_df.columns.values
-    for attribute in add_attributes:
-        propd = { id_lookup[idx]:{attribute:val} for (idx,val)
-                      in zip(p_df.index.values,p_df.loc[:,attribute]) if idx in set(id_lookup.keys()) }
-        nx.set_node_attributes( tree , propd )
+def add_attributes_to_tree ( p_df , tree ):
+    add_attributes_to_node_graph ( p_df , tree )
     return ( tree )
 
 def parent_child_to_dag (
-             relationship_file = './PCLIST.txt' ,
-             i_p = 0 , i_c = 1 , bLegacy=False
+             relationship_file:str = './PCLIST.txt' ,
+             i_p:int = 0 , i_c:int = 1 , identifier:str = None
            ) :
 
-    if not bLegacy :
-        return ( ascendant_descendant_to_dag ( relationship_file = relationship_file,
-                                      i_a = i_p , i_d = i_c ) )
-
-    print ( 'WARNING LEGACY :: NETWORKX WILL BE DELETED SOON ' )
-
-    n_df = pd .read_csv ( relationship_file , '\t' )
-    pair_tuples = [ (p,c) for (p,c) in zip(n_df.iloc[:,i_p],n_df.iloc[:,i_c]) ]
-    children_of = {} ; all_names = set([])
-    for ( p,c ) in pair_tuples :
-        if not 'list' in str(type(c)):
-            C = [c]
-        all_names = all_names | set([p]) | set(C)
-        if p in children_of :
-            children_of[p] .append(c)
-        else :
-            children_of[p] = [c]
-    G = nx .DiGraph()
-    G .add_nodes_from (  all_names  )
-    G .add_edges_from ( pair_tuples )
-    tree = nx.algorithms.dag.dag_to_branching( G )
-    root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
-    descendants = [ ( idx , nx.algorithms.dag.descendants(G,idx) ) for idx in all_names ]
-    ancestors   = [ ( idx , nx.algorithms.dag.ancestors(G,idx) ) for idx in all_names ]
-
-    return ( tree,ancestors,descendants )
-
+    return ( ascendant_descendant_to_dag ( relationship_file = relationship_file,
+                                      i_a = i_p , i_d = i_c , identifier=identifier ) )
 
 def make_pathway_ancestor_data_frame(ancestors):
     p_df = None
