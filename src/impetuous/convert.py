@@ -121,6 +121,7 @@ class Node ( object ) :
         print ( s_inf )
 
 class NodeGraph ( Node ) :
+    # https://github.com/richardtjornhammar/RichTools/commit/c4b9daa78f2a311995d142b0e74fba7c3fdbed20#diff-0b990604c2ec9ebd6f320ebe92099d46e0ab8e854c6e787fac2f208409d112d3
     def __init__( self ) :
         self.root_id_       = ''
         self.desc_          = "SUPPORTS DAGS :: NO STRUCTURE ASSERTION"
