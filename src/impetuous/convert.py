@@ -25,13 +25,28 @@ import typing
 
 class Node ( object ) :
     def __init__ ( self ) :
-        self.id_          = ""
-        self.label_       = ""
-        self.description_ = ""
-        self.level_       = 0
-        self.metrics_     = list()
-        self.links_       = list()
-        self.edges_       = list()
+        self.id_          :str   = ""
+        self.label_       :str   = ""
+        self.description_ :str   = ""
+        self.level_       :int   = 0      # NODES ARE MYOPIC
+        self.metrics_     :list  = list()
+        self.links_       :list  = list()
+        self.ascendants_  :list  = list() # INWARD LINKS  , DIRECT ASCENDENCY  ( 1 LEVEL )
+        self.descendants_ :list  = list() # OUTWARD LINKS , DIRECT DESCENDENCY ( 1 LEVEL )
+        self.data_        :dict  = dict() # OTHER THINGS SHOULD BE ALL INFORMATION FLOATING IN USERSPACE
+
+    def can_it_be_root(self) -> bool :
+        return ( len(self.ascendants) == 0 )
+
+    def supplement ( self, n:super ) -> None :
+        self.label_       = n.label_
+        self.description_ = n.description_
+        self.level_       = n.level_
+        self.metrics_     = [ *self.metrics_     , *n.metrics_     ]
+        self.links_       = [ *self.links_       , *n.links_       ]
+        self.ascendants_  = [ *self.ascendants_  , *n.ascendants_  ]
+        self.descendants_ = [ *self.descendants_ , *n.descendants_ ]
+        self.data_        = { **self.data_, **n.data_ }
 
     def assign_all ( self, identification : str ,
                            links : type(list(str())) ,
@@ -42,7 +57,13 @@ class Node ( object ) :
         self.add_description( description )
         self.add_links( links , bClear=True )
         return ( self )
-    
+
+    def get_data ( self ) -> dict :
+        return ( self.data_ )
+
+    def overwrite_data ( self, data:dict ) -> None :
+        self.data_ = data
+
     def set_id ( self, identification:str ) -> None :
         self.id_ = identification
 
@@ -57,31 +78,47 @@ class Node ( object ) :
 
     def label ( self ) -> str :
         return ( self.label_ )
-        
+
     def description ( self ) -> str :
         return ( self.description_ )
-        
-    def add_link ( self, identification:str ) -> None :
-        self.links_ .push_back( identification )
+
+    def add_link ( self, identification:str , bClear:bool = False , linktype:str = 'links' ) -> None :
+        edges = self.get_links( linktype )
+        if bClear :
+            edges = list()
+        edges .append( identification )
+        self.links_ = list(set( edges ))
     #
     # NOTE : list[str] type declaration is not working in Python3.8
-    def add_links ( self, links:type(list(str())), bClear:bool = True ) -> None :
+    def add_links ( self, links:type(list(str())), bClear:bool = False , linktype:str = 'links' ) -> None :
+        edges = self.get_links( linktype )
         if bClear :
-            self.links_ = list()
+            edges = list()
         for e in links :
-            self.links_ .append ( e )
+            edges .append ( e )
+        self.links_ = list(set( edges ))
 
-    def get_links ( self ) -> type(list(str())) :
-        return ( self.links_ )
+    def get_links ( self , linktype:str='links' ) -> type(list(str())) :
+        if not linktype in set([ 'links' , 'ascendants' , 'descendants' ]):
+            print ( ' \n\n!!FATAL!!\t' + ', '.join([ 'links' , 'ascendants' , 'descendants' ]) \
+                  + '\t ARE THE ONLY VALID EDGE TYPES (linktype)' )
+            exit ( 1 )
+        if linktype == 'links' :
+            return ( self.links_ )
+        if linktype == 'ascendants' :
+            return ( self.ascendants_  )
+        if linktype == 'descendants' :
+            return ( self.descendants_ )
 
     def show ( self ) -> None :
         s_inf = "NODE [" + self.identification() \
                    + "," + self.label() + "] - " \
-                   + self.description() + "\nLINKS:\n"
-        for l in self.get_links() :
-            s_inf += l + '\t'
+                   + self.description() + "\nEDGES:"
+        for linktype in [ 'links' , 'ascendants' , 'descendants' ] :
+            s_inf += '\n['+linktype+'] : '
+            for l in self.get_links(linktype=linktype) :
+                s_inf += l + '\t'
         print ( s_inf )
-
 
 class NodeGraph ( Node ) :
     def __init__( self ) :
@@ -91,6 +128,15 @@ class NodeGraph ( Node ) :
         self.num_vertices_  = 0
         self.graph_map_     = dict()
 
+    def keys ( self )   -> list :
+        return( self.graph_map_.keys() )
+
+    def values ( self ) -> list :
+        return( self.graph_map_.values() )
+
+    def items ( self )  -> list :
+        return( self.graph_map_.values() )
+
     def get_node ( self, nid : str ) -> Node :
         return ( self.graph_map_[nid] )
 
@@ -99,11 +145,14 @@ class NodeGraph ( Node ) :
 
     def get_root_id ( self ) -> str :
         return ( self.root_id_ )
-    
+
     def add ( self, n : Node ) -> None :
-        self.graph_map_[ n.identification() ] = n
-        if len ( self.graph_map_ ) == 1 :
-            self.set_root_id( n.identification() )
+        if n.identification() in self.graph_map_ :
+            self.graph_map_[ n.identification() ].supplement( n )
+        else :
+            self.graph_map_[ n.identification() ] = n
+            if len ( self.graph_map_ ) == 1 :
+                self.set_root_id( n.identification() )
 
     def get_dag ( self ) -> dict() :
         return ( self.graph_map_ )
@@ -114,12 +163,24 @@ class NodeGraph ( Node ) :
             print ( '\n' + item[0] + '::' )
             item[1].show()
 
-    def search ( self , order:str = 'breadth', root_id:str=None ) -> dict :
+    def complete_lineage ( self , identification : str ,
+                           order:str    = 'depth'      ,
+                           linktype:str = 'ascendants' ) -> dict :
+        # 'ascendants' , 'descendants'
+        root_id = identification
+        results = self.search( order=order , root_id=identification , linktype=linktype )
+        results['path'] = [ idx for idx in results['path'] if not idx==identification ]
+        return ( results )
+
+    def search ( self , order:str = 'breadth', root_id:str = None , linktype:str = 'links' ) -> dict :
         path:list   = list()
         visited:set = set()
         if root_id is None :
             root_id = self.get_root_id()
         S:list      = [ root_id ]
+        if not order in set([]) :
+            print ( 'order MUST BE EITHER breadth XOR depth' )
+            exit ( 1 )
 
         if order == 'breadth' :
             while ( len(S)>0 ) :
@@ -127,7 +188,7 @@ class NodeGraph ( Node ) :
                 ncurrent:Node = self.get_node(v)
                 visited       = visited|set([v])
                 path.append( ncurrent.identification() )
-                links         = ncurrent.get_links()
+                links         = ncurrent.get_links(linktype)
                 for w in links :
                     if not w in visited and len(w)>0:
                         S.append( w ) # QUE
@@ -138,14 +199,55 @@ class NodeGraph ( Node ) :
                 if not v in visited and len(v)>0 :
                     visited       = visited|set([v])
                     ncurrent:Node = self.get_node(v)
-                    links         = ncurrent.get_links()
+                    links         = ncurrent.get_links(linktype)
                     for w in links :
                         if not w in visited and len(w)>0:
                             S = [*[w],*S] # STACK
                     path.append( ncurrent.identification() )
-        
-        return ( { 'path':path,'order':order } )
 
+        return ( { 'path':path , 'order':order , 'linktype':linktype } )
+
+def add_attributes_to_node_graph ( p_df:type(pd.DataFrame) , tree:NodeGraph ) -> NodeGraph :
+    for idx in p_df.index.values :
+        for attribute in p_df.columns.values :
+            tree.get_node( idx ).get_data()[attribute] = p_df.loc[idx,attribute]
+    return ( tree )
+
+def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
+                                  i_a:int = 0 , i_d:int = 1 ,
+                                  identifier:str = None , sep:str = '\t' ) -> NodeGraph :
+    RichTree = NodeGraph()
+    with open(relationship_file,'r') as input :
+        for line in input :
+            if not identifier is None :
+                if not identifier in line :
+                    continue
+            lsp = line.split(sep)
+            ascendant  = lsp[i_a].replace('\n','')
+            descendant = lsp[i_d].replace('\n','')
+
+            n = Node()
+            n.set_id(ascendant)
+            n.add_label("")
+            n.add_description("")
+            n.add_links([descendant],linktype='links'       )
+            n.add_links([descendant],linktype='descendants' )
+
+            m = Node()
+            m.set_id(descendant)
+            m.add_label("")
+            m.add_description("")
+            m.add_links([ascendant],linktype='links'      )
+            m.add_links([ascendant],linktype='ascendants' )
+
+            RichTree.add(n)
+            RichTree.add(m)
+
+    all_names   = RichTree.keys()
+    descendants = [ ( idx , set( RichTree.complete_lineage( idx,linktype='descendants')['path'] ) ) for idx in all_names ]
+    ancestors   = [ ( idx , set( RichTree.complete_lineage( idx,linktype='ascendants' )['path'] ) ) for idx in all_names ]
+
+    return ( RichTree , ancestors , descendants )
 
 
 def drop_duplicate_indices( df ):
@@ -153,6 +255,7 @@ def drop_duplicate_indices( df ):
     return df_
 
 def write_tree( tree , outfile='tree.json' ):
+    print ( 'WARNING::LEGACY' )
     root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
     o_json = json_graph.tree_data( tree , root )
     if not outfile is None:
@@ -160,19 +263,30 @@ def write_tree( tree , outfile='tree.json' ):
             json.dump(o_json, o_file )
     return( o_json )
 
-def add_attributes_to_tree ( p_df , tree ):
+def add_attributes_to_tree ( p_df , tree , bLegacy= False ):
+
+    if not bLegacy :
+        add_attributes_to_node_graph ( p_df , tree )
+
     id_lookup = { rid:lid for (lid,rid) in nx.get_node_attributes(tree,'source').items() }
     add_attributes = p_df.columns.values
     for attribute in add_attributes:
         propd = { id_lookup[idx]:{attribute:val} for (idx,val)
                       in zip(p_df.index.values,p_df.loc[:,attribute]) if idx in set(id_lookup.keys()) }
         nx.set_node_attributes( tree , propd )
-    return( tree )
+    return ( tree )
 
 def parent_child_to_dag (
              relationship_file = './PCLIST.txt' ,
-             i_p = 0 , i_c = 1
+             i_p = 0 , i_c = 1 , bLegacy=False
            ) :
+
+    if not bLegacy :
+        return ( ascendant_descendant_to_dag ( relationship_file = relationship_file,
+                                      i_a = i_p , i_d = i_c ) )
+
+    print ( 'WARNING LEGACY :: NETWORKX WILL BE DELETED SOON ' )
+
     n_df = pd .read_csv ( relationship_file , '\t' )
     pair_tuples = [ (p,c) for (p,c) in zip(n_df.iloc[:,i_p],n_df.iloc[:,i_c]) ]
     children_of = {} ; all_names = set([])
@@ -191,7 +305,9 @@ def parent_child_to_dag (
     root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
     descendants = [ ( idx , nx.algorithms.dag.descendants(G,idx) ) for idx in all_names ]
     ancestors   = [ ( idx , nx.algorithms.dag.ancestors(G,idx) ) for idx in all_names ]
+
     return ( tree,ancestors,descendants )
+
 
 def make_pathway_ancestor_data_frame(ancestors):
     p_df = None
