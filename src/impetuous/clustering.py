@@ -119,7 +119,7 @@ distance_matrix_to_geometry_conversion_notes = """
 
 *) PDIST REALLY LIKES TO COMPUTE SQUARE ROOT OF THINGS SO WE SQUARE THE RESULT IF IT IS NOT SQUARED.
 
-*) IN SHORT THE DISTANCE MATRIX IN THE CONVERSION ROUTINE BACK TO ABSOLUTE COORDINATES USES R2 DISTANCES.
+*) THE DISTANCE MATRIX CONVERSION ROUTINE BACK TO ABSOLUTE COORDINATES USES R2 DISTANCES.
 """
 
 if bUseNumba :
@@ -172,9 +172,7 @@ if bUseNumba :
                 #
                 # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
                 # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
-                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY (FIRST IMPLEMENTED BY ME (RICHARD)
-                # FOR GROMACS 4.0.7 QMMM CLUSTERING IN LATE 2009) BUT THE GMX-MPQC INTERFACE DIDN'T MAKE IT
-                # INTO THE FINAL PRODUCTION UPDATE AFTER THAT VERSION
+                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY 
                 #
                 nr_sq,mr_sq = np.shape(B)
                 if nr_sq != mr_sq :
