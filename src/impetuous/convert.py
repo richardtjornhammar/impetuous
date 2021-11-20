@@ -136,7 +136,7 @@ class NodeGraph ( Node ) :
         return( self.graph_map_.values() )
 
     def items ( self )  -> list :
-        return( self.graph_map_.values() )
+        return( self.graph_map_.items() )
 
     def get_node ( self, nid : str ) -> Node :
         return ( self.graph_map_[nid] )
