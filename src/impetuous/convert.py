@@ -16,9 +16,6 @@ limitations under the License.
 
 import pandas as pd
 import numpy as np
-import networkx as nx
-from networkx.readwrite import json_graph
-import json
 import sys
 
 import typing
@@ -258,7 +255,10 @@ def drop_duplicate_indices( df ):
     return df_
 
 def write_tree( tree , outfile='tree.json' ):
-    print ( 'WARNING::LEGACY' )
+    import networkx as nx
+    from networkx.readwrite import json_graph
+    import json
+    print ( 'WARNING::LEGACY::WILL BE REMOVED' )
     root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
     o_json = json_graph.tree_data( tree , root )
     if not outfile is None:
