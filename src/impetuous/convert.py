@@ -55,6 +55,12 @@ class Node ( object ) :
         self.add_links( links , bClear=True )
         return ( self )
 
+    def set_level ( self,level ) :
+        self.level_ = level
+
+    def level ( self ) :
+        return ( self.level_ )
+
     def get_data ( self ) -> dict :
         return ( self.data_ )
 
@@ -206,6 +212,59 @@ class NodeGraph ( Node ) :
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
 
 
+    def calculate_node_level( self, node:Node ) -> None :
+        level = len( self.search(root_id=node.identification(),linktype='ascendants')['path'] ) - 1
+        node.set_level( level )
+
+    def hprint ( self, node:Node, visited:set,
+                 I:int = 0, outp:str = "" , linktype:str = "descendants",
+                 bCalcLevel = True ) -> (str,int) :
+        I = I+1
+        if bCalcLevel :
+            self.calculate_node_level( node )
+            #level = len( self.search(root_id=node.identification(),linktype='ascendants')['path'] ) - 1
+            #node.set_level( level )
+        head_string   = "{\"source\": \"" + node.identification() + "\", id: " + str(I)
+        head_string   = head_string + ", level: " + str(node.level())
+        desc_         = str(node.description())
+        if len( desc_ ) == 0 :
+            desc_ = "\"\""
+        head_string   = head_string + ", description: " + desc_
+        dat = node.get_data().items()
+        if len( dat )>0 :
+            for k,v in dat :
+                head_string   = head_string + "\", " + str(k) + ": " + str(v)
+        desc_h_str    = ", \"children\": ["
+        desc_t_str    = "]"
+        tail_string   = "}"
+
+        visited = visited|set( [node.identification()] )
+        outp    = outp + head_string
+        links   = node.get_links(linktype)
+        for w in links :
+            if not w in visited and len(w)>0 :
+                outp = outp + desc_h_str
+                outp,I = self.hprint ( self.get_node(w), visited, I, outp, linktype  )
+                outp = outp + desc_t_str
+        outp = outp + tail_string
+        return ( outp,I )
+
+    def write_json ( self , jsonfile:str = 'rtree.json', bCalcLevel:bool = True ,
+                     linktype:str = 'descendants', root_id:str = None ) -> str :
+        I:int = 1
+        if root_id is None :
+            root_id = self.get_root_id()
+        v = root_id
+        node:Node = self.get_node(v)
+        visited   = set()
+        json_data_txt,I = self.hprint( node, visited,
+                                       linktype   = linktype,
+                                       bCalcLevel = bCalcLevel )
+        of_ = open(jsonfile,'w')
+        print ( json_data_txt,file=of_ )
+        return( json_data_txt )
+
+
 def add_attributes_to_node_graph ( p_df:type(pd.DataFrame) , tree:NodeGraph ) -> NodeGraph :
     for idx in p_df.index.values :
         for attribute in p_df.columns.values :
@@ -254,17 +313,11 @@ def drop_duplicate_indices( df ):
     df_ = df.loc[~df.index.duplicated(keep='first')]
     return df_
 
-def write_tree( tree , outfile='tree.json' ):
-    import networkx as nx
-    from networkx.readwrite import json_graph
-    import json
-    print ( 'WARNING::LEGACY::WILL BE REMOVED' )
-    root = [ eid for eid,ancestor in tree.in_degree() if ancestor == 0 ][ 0 ]
-    o_json = json_graph.tree_data( tree , root )
-    if not outfile is None:
-        with open(outfile, 'w') as o_file:
-            json.dump(o_json, o_file )
-    return( o_json )
+def write_tree( tree:NodeGraph , outfile='tree.json', bVerbose=True ):
+    if bVerbose:
+        print ( 'YOU CAN CALL THE NodeGraph METHOD tree.write_json() FUNCTION DIRECTLY' )
+    o_json = tree.write_json( outfile )
+    return ( o_json )
 
 def add_attributes_to_tree ( p_df , tree ):
     add_attributes_to_node_graph ( p_df , tree )
@@ -437,6 +490,7 @@ if __name__ == '__main__' :
         print(qdf)
         exit(1)
 
+
     base = '../../../data/'
     convert_file = base + 'naming_and_annotations/conv.txt'
     ens2sym , sym2ens = create_synonyms( convert_file )
@@ -481,13 +535,11 @@ if __name__ == '__main__' :
     RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
     nodeid = "10"; label="1"; v_ids=["",""];
     RichTree.add( Node().assign_all( nodeid,v_ids,label ) )
-    
+
     #RichTree.show()
     print ( "ROOT::", RichTree.get_root_id() )
     route = RichTree.search( root_id='0', order='breadth' )
     print ( "ROUTE:: " , route )
     route = RichTree.search( root_id='0', order='depth' )
-    print ( "ROUTE:: " , route )    
+    print ( "ROUTE:: " , route )
 
-                
-             
