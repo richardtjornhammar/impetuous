@@ -222,8 +222,7 @@ class NodeGraph ( Node ) :
         I = I+1
         if bCalcLevel :
             self.calculate_node_level( node )
-            #level = len( self.search(root_id=node.identification(),linktype='ascendants')['path'] ) - 1
-            #node.set_level( level )
+
         head_string   = "{\"source\": \"" + node.identification() + "\", id: " + str(I)
         head_string   = head_string + ", level: " + str(node.level())
         desc_         = str(node.description())
