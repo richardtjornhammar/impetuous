@@ -223,16 +223,19 @@ class NodeGraph ( Node ) :
         if bCalcLevel :
             self.calculate_node_level( node )
 
-        head_string   = "{\"source\": \"" + node.identification() + "\", id: " + str(I)
-        head_string   = head_string + ", level: " + str(node.level())
+        head_string   = "{\"source\": \"" + node.identification() + "\", \"id\": " + str(I)
+        head_string   = head_string + ", \"level\": " + str(node.level())
         desc_         = str(node.description())
         if len( desc_ ) == 0 :
             desc_ = "\"\""
-        head_string   = head_string + ", description: " + desc_
+        head_string   = head_string + ", \"description\": " + desc_
         dat = node.get_data().items()
         if len( dat )>0 :
             for k,v in dat :
-                head_string   = head_string + "\", " + str(k) + ": " + str(v)
+                sv = str(v)
+                if len(sv) == 0 :
+                    sv = "\"\""
+                head_string   = head_string + ", \"" + str(k) + "\": " + sv
         desc_h_str    = ", \"children\": ["
         desc_t_str    = "]"
         tail_string   = "}"
@@ -288,12 +291,14 @@ def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
             n.set_id(ascendant)
             n.add_label("")
             n.add_description("")
+            n.overwrite_data({'sol':[1,2]})
             n.add_links([descendant],linktype='links'       )
             n.add_links([descendant],linktype='descendants' )
 
             m = Node()
             m.set_id(descendant)
             m.add_label("")
+            n.overwrite_data({'sol':[1,2]})
             m.add_description("")
             m.add_links([ascendant],linktype='links'      )
             m.add_links([ascendant],linktype='ascendants' )
