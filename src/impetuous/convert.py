@@ -235,7 +235,8 @@ class NodeGraph ( Node ) :
          IF THERE ARE SPLITS ONE MUST BREAK THE SEARCH.
          SPLITS SHOULD NOT BE PRESENT IN ASCENDING DAG
          SEARCHES. SPLIT KILLING IS USED IF depth AND
-         stop_at ARE SPECIFIED
+         stop_at ARE SPECIFIED. THIS CORRESPONDS TO 
+         DIRECT LINEAGE INSTEAD OF COMPLETE. 
         """
         level = len( self.search( root_id=node.identification(),
                                   linktype='ascendants')['path'],
