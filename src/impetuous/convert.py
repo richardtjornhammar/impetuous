@@ -176,7 +176,10 @@ class NodeGraph ( Node ) :
         results['path'] = [ idx for idx in results['path'] if not idx==identification ]
         return ( results )
 
-    def search ( self , order:str = 'breadth', root_id:str = None , linktype:str = 'links' ) -> dict :
+
+    def search ( self , order:str = 'breadth', root_id:str = None ,
+                 linktype:str = 'links', stop_at:str = None ) -> dict :
+
         path:list   = list()
         visited:set = set()
         if root_id is None :
@@ -192,6 +195,12 @@ class NodeGraph ( Node ) :
                 ncurrent:Node = self.get_node(v)
                 visited       = visited|set([v])
                 path.append( ncurrent.identification() )
+                #
+                # ADDED STOP CRITERION FOR WHEN THE STOP NODE IS FOUND
+                if not stop_at is None :
+                    if stop_at == v :
+                        S = []
+                        break
                 links         = ncurrent.get_links(linktype)
                 for w in links :
                     if not w in visited and len(w)>0:
@@ -208,12 +217,29 @@ class NodeGraph ( Node ) :
                         if not w in visited and len(w)>0:
                             S = [*[w],*S] # STACK
                     path.append( ncurrent.identification() )
+                    #
+                    # ADDED STOP CRITERION FOR WHEN THE STOP NODE IS FOUND
+                    if not stop_at is None :
+                        if stop_at == v :
+                            S = []
+                            break
+
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
 
 
-    def calculate_node_level( self, node:Node ) -> None :
-        level = len( self.search(root_id=node.identification(),linktype='ascendants')['path'] ) - 1
+    def calculate_node_level( self, node:Node , stop_at:str = None , order:str='depth' ) -> None :
+        note__ = """
+         SEARCHING FOR ASCENDANTS WILL YIELD A
+         DIRECT PATH IF A DEPTH SEARCH IS EMPLOYED.
+         IF THERE ARE SPLITS ONE MUST BREAK THE SEARCH.
+         SPLITS SHOULD NOT BE PRESENT IN ASCENDING DAG
+         SEARCHES. SPLIT KILLING IS USED IF depth AND
+         stop_at ARE SPECIFIED
+        """
+        level = len( self.search( root_id=node.identification(),
+                                  linktype='ascendants')['path'],
+                                  order=order, stop_at=stop_at ) - 1
         node.set_level( level )
 
     def hprint ( self, node:Node, visited:set,
@@ -221,7 +247,7 @@ class NodeGraph ( Node ) :
                  bCalcLevel = True ) -> (str,int) :
         I = I+1
         if bCalcLevel :
-            self.calculate_node_level( node )
+            self.calculate_node_level( node, stop_at = self.get_root_id() )
 
         head_string   = "{\"source\": \"" + node.identification() + "\", \"id\": " + str(I)
         head_string   = head_string + ", \"level\": " + str(node.level())
