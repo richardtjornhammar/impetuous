@@ -1047,35 +1047,14 @@ def p_value_merger ( pvalues_df , p_label=',p' , axis = 0 ) :
     print( " REQUIRED READING: doi: 10.1093/bioinformatics/btw438" )
     print( " ALSO MAKE SURE TO ADD THAT ARTICLE AS ADDITIONAL CITATION" )
     print( " IF THIS METHOD IS EMPLOYED" )
-    #
-    pdf_   = pvalues_df.loc[:,[c for c in pvalues_df.columns.values if p_label in c]]
-    psi_df = pdf_.apply( lambda x:-2.0*np.log10(x) )
-    if axis == 1 :
-        pdf_   = pdf   .T.copy( ) ; psi_df = psi_df.T.copy( )
-
-    covar_matrix = mycov(psi_df.values)
-    m = int(covar_matrix.shape[0]) ; K = 2.*m
-    df_fisher , expectation = K,K
-    for i in range(m) :
-        covar_matrix[ i,i ] = 0
-    covar_2sum = np.sum( covar_matrix )
-
-    var = 4.0*m + covar_2sum
-    c = var / (2.0*expectation)
-    df_brown = expectation/c
-
-    if df_brown > df_fisher :
-        df_brown = df_fisher
-        c = 1.0
-    p_values = pvalues_df
-
-    x = 2.0*np.sum ( p_values.apply(lambda X:-np.log10(X)) , 1 ).values
-    p_brown  = chi2_cdf ( df_brown , 1.0*x/c )
-    p_fisher = chi2_cdf ( df_fisher, 1.0*x   )
-    result_df = pd.DataFrame( np.array([p_brown,p_fisher]) ,
-                              columns = pvalues_df.index   ,
-                              index=['Brown,p','Fisher,p'] ).T
-    return ( result_df )
+    print( " READ ABOVE ! " )
+    print( " YOU CALLED A FUNCTION FOR MERGING P-VALUES" )
+    print( " THIS METHOD IS NO LONGER SUPPORTED " )
+    print( " FOR IMPETUOUS VERSIONS > 0.84.0 " )
+    print( " THE METHOD merge_significance COULD BE EMPLOYED INSTEAD ")
+    print( " BUT IT IS NOT RECOMMENDED " )
+    print( " FATAL : WILL TERMINATE NOW " )
+    exit(1)
 
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
     #
