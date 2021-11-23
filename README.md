@@ -566,7 +566,7 @@ We can also reconstruct the original data by multiplying together the factors of
 ```
 Thats all for now folks!
 
-# Example 11: The [traveling salesman] (https://gist.github.com/richardtjornhammar/8c17b9d639ba700e03d2656898b63cc3)
+# Example 11: The [traveling salesman](https://gist.github.com/richardtjornhammar/8c17b9d639ba700e03d2656898b63cc3)
 
 This classic problem can be solved by first constructing a distance matrix for all the sites/cities that the person must visit. By performing hierarchical clustering and storing the clusters as nodes in a hierarchical DAG one can obtain the solution by doing a breadth first search on that hierarchy. It is demonstrated [here](https://gist.github.com/richardtjornhammar/8c17b9d639ba700e03d2656898b63cc3) and uses the newly developed NodeGraph functionalities as well as the numerical hierarchical clustering routines (in `impetuous.hierarchical` and `impetuous.convert` respectively). This section will be further elaborated.
 
