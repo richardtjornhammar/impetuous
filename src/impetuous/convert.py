@@ -244,7 +244,7 @@ class NodeGraph ( Node ) :
         self.add(m)
 
 
-    def generate_ascendants_descendants_lookup ( self ) -> type(list(str())) :
+    def generate_ascendants_descendants_lookup ( self ) -> (type(list(str())),type(list(str()))) :
         all_names   = self.keys()
         descendants = [ ( idx , set( self.complete_lineage( idx,linktype='descendants')['path'] ) ) for idx in all_names ]
         ancestors   = [ ( idx , set( self.complete_lineage( idx,linktype='ascendants' )['path'] ) ) for idx in all_names ]
@@ -253,7 +253,7 @@ class NodeGraph ( Node ) :
 
     def ascendant_descendant_file_to_dag ( self, relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
-                                  identifier:str = None , sep:str = '\t' ) -> super :
+                                  identifier:str = None , sep:str = '\t' ) -> (type(list(str())),type(list(str()))) :
 
         with open ( relationship_file,'r' ) as input :
             for line in input :
