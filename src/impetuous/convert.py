@@ -33,7 +33,7 @@ class Node ( object ) :
         self.data_        :dict  = dict() # OTHER THINGS SHOULD BE ALL INFORMATION FLOATING IN USERSPACE
 
     def can_it_be_root(self) -> bool :
-        return ( len(self.ascendants) == 0 )
+        return ( len(self.ascendants_) == 0 )
 
     def supplement ( self, n:super ) -> None :
         self.label_       = n.label_
@@ -140,6 +140,13 @@ class NodeGraph ( Node ) :
 
     def items ( self )  -> list :
         return( self.graph_map_.items() )
+
+    def list_roots ( self ) ->  type(list(str())) :
+        roots = [] # BLOODY ROOTS
+        for name,node in self.items():
+            if node.can_it_be_root() :
+                roots.append( name )
+        return ( roots )
 
     def get_node ( self, nid : str ) -> Node :
         return ( self.graph_map_[nid] )
