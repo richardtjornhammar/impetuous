@@ -32,8 +32,8 @@ class Node ( object ) :
         self.descendants_ :list  = list() # OUTWARD LINKS , DIRECT DESCENDENCY ( 1 LEVEL )
         self.data_        :dict  = dict() # OTHER THINGS SHOULD BE ALL INFORMATION FLOATING IN USERSPACE
 
-    def can_it_be_root(self) -> bool :
-        return ( len(self.ascendants_) == 0 )
+    def can_it_be_root(self, n:int=1 ) -> bool :
+        return ( len(self.ascendants_) < n )
 
     def supplement ( self, n:super ) -> None :
         self.label_       = n.label_
