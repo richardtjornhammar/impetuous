@@ -224,8 +224,52 @@ class NodeGraph ( Node ) :
                             S = []
                             break
 
-
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
+
+
+    def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
+        n = Node()
+        n.set_id(ascendant)
+        n.add_label("")
+        n.add_description("")
+        n.add_links([descendant],linktype='links'       )
+        n.add_links([descendant],linktype='descendants' )
+        m = Node()
+        m.set_id(descendant)
+        m.add_label("")
+        m.add_description("")
+        m.add_links([ascendant],linktype='links'      )
+        m.add_links([ascendant],linktype='ascendants' )
+        self.add(n)
+        self.add(m)
+
+
+    def generate_ascendants_descendants_lookup ( self ) -> type(list(str())) :
+        all_names   = self.keys()
+        descendants = [ ( idx , set( self.complete_lineage( idx,linktype='descendants')['path'] ) ) for idx in all_names ]
+        ancestors   = [ ( idx , set( self.complete_lineage( idx,linktype='ascendants' )['path'] ) ) for idx in all_names ]
+        return ( ancestors , descendants )
+
+
+    def ascendant_descendant_file_to_dag ( self, relationship_file:str = './PCLIST.txt' ,
+                                  i_a:int = 0 , i_d:int = 1 ,
+                                  identifier:str = None , sep:str = '\t' ) -> super :
+
+        with open ( relationship_file,'r' ) as input :
+            for line in input :
+                if not identifier is None :
+                    if not identifier in line :
+                        continue
+
+                lsp = line.replace('\n','').split( sep )
+                ascendant  = lsp[i_a].replace('\n','')
+                descendant = lsp[i_d].replace('\n','')
+
+                self.add_ascendant_descendant( ascendant , descendant )
+
+        ancestors , descendants = self.generate_ascendants_descendants_lookup()
+
+        return ( ancestors , descendants )
 
 
     def calculate_node_level( self, node:Node , stop_at:str = None , order:str='depth' ) -> None :
@@ -235,13 +279,12 @@ class NodeGraph ( Node ) :
          IF THERE ARE SPLITS ONE MUST BREAK THE SEARCH.
          SPLITS SHOULD NOT BE PRESENT IN ASCENDING DAG
          SEARCHES. SPLIT KILLING IS USED IF depth AND
-         stop_at ARE SPECIFIED. THIS CORRESPONDS TO 
-         DIRECT LINEAGE INSTEAD OF COMPLETE. 
+         stop_at ARE SPECIFIED. THIS CORRESPONDS TO
+         DIRECT LINEAGE INSTEAD OF COMPLETE.
         """
-        level = len( self.search( root_id=node.identification(),
-                                  linktype='ascendants')['path'],
-                                  order=order, stop_at=stop_at ) - 1
+        level = len( self.search( root_id=node.identification(), linktype='ascendants', order=order, stop_at=stop_at )['path'] ) - 1
         node.set_level( level )
+
 
     def hprint ( self, node:Node, visited:set,
                  I:int = 0, outp:str = "" , linktype:str = "descendants",
@@ -305,35 +348,8 @@ def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
                                   identifier:str = None , sep:str = '\t' ) -> NodeGraph :
     RichTree = NodeGraph()
-    with open(relationship_file,'r') as input :
-        for line in input :
-            if not identifier is None :
-                if not identifier in line :
-                    continue
-            lsp = line.split(sep)
-            ascendant  = lsp[i_a].replace('\n','')
-            descendant = lsp[i_d].replace('\n','')
-
-            n = Node()
-            n.set_id(ascendant)
-            n.add_label("")
-            n.add_description("")
-            n.add_links([descendant],linktype='links'       )
-            n.add_links([descendant],linktype='descendants' )
-
-            m = Node()
-            m.set_id(descendant)
-            m.add_label("")
-            m.add_description("")
-            m.add_links([ascendant],linktype='links'      )
-            m.add_links([ascendant],linktype='ascendants' )
-
-            RichTree.add(n)
-            RichTree.add(m)
-
-    all_names   = RichTree.keys()
-    descendants = [ ( idx , set( RichTree.complete_lineage( idx,linktype='descendants')['path'] ) ) for idx in all_names ]
-    ancestors   = [ ( idx , set( RichTree.complete_lineage( idx,linktype='ascendants' )['path'] ) ) for idx in all_names ]
+    ancestors , descendants = RichTree.ascendant_descendant_file_to_dag( relationship_file = relationship_file ,
+        i_a = i_a , i_d = i_d ,identifier = identifier , sep = sep )
 
     return ( RichTree , ancestors , descendants )
 
@@ -352,10 +368,8 @@ def add_attributes_to_tree ( p_df , tree ):
     add_attributes_to_node_graph ( p_df , tree )
     return ( tree )
 
-def parent_child_to_dag (
-             relationship_file:str = './PCLIST.txt' ,
-             i_p:int = 0 , i_c:int = 1 , identifier:str = None
-           ) :
+def parent_child_to_dag ( relationship_file:str = './PCLIST.txt' ,
+             i_p:int = 0 , i_c:int = 1 , identifier:str = None ) :
 
     return ( ascendant_descendant_to_dag ( relationship_file = relationship_file,
                                       i_a = i_p , i_d = i_c , identifier=identifier ) )
