@@ -1,5 +1,5 @@
 # A Statistical Learning library for Humans
-This toolkit currently offers enrichment analysis, hierarchical enrichment analysis, novel PLS regression, shape alignment, connectivity clustering, clustering and hierarchical clustering as well as factor analysis methods.
+This toolkit currently offers enrichment analysis, hierarchical enrichment analysis, novel PLS regression, shape alignment, connectivity clustering, clustering and hierarchical clustering as well as factor analysis methods. A novel graph construction and graph searching class can be found in src/impetuous/convert.py (GraphNode). It was developed and invented by the author as a faster alternative for hierarchical DAG construction and searching.
 
 The fine grained data can be studied via a statistical tests that relates it to observables in a coarse grained journal file. The final p values can then be rank corrected by employing a novel q-value method.
 
