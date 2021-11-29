@@ -8,7 +8,7 @@ setuptools.setup(
     version = "0.86.1",
     author = "Richard Tjörnhammar",
     author_email = "richard.tjornhammar@gmail.com",
-    description = "Impetuous Quantification, a Statistical Learning library for Humans : Alignments, Clustering, Enrichments and Group Analysis",
+    description = "Impetuous Quantification, a Statistical Learning library for Humans : Alignments, Clustering, Fast NodeGraph Searching, Enrichments and Group Analysis",
     long_description = long_description,
     long_description_content_type = "text/markdown",
     url = "https://github.com/richardtjornhammar/impetuous",
