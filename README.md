@@ -584,3 +584,5 @@ Some of the algorithms rely on the SVD implementation in Numpy. A switch is plan
 GitLab:	https://gitlab.com/richardtjornhammar/impetuous
 
 CSDN:	https://codechina.csdn.net/m0_52121311/impetuous
+
+Bitbucket:	https://bitbucket.org/richardtjornhammar/impetuous
