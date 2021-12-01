@@ -13,7 +13,7 @@ These novel algorithms include but are not limited to:
 * High dimensional algnment code for aligning models to data.
 * An SVD based variant of the Distance Geometry algorithm. For going from relative to absolute coordinates.
 * A numpy implementation of Householder decomposition.
-* A matrix diagonalisation algorithm.
+* A matrix diagonalisation algorithm. (Native SVD algorithm that is slow)
 * A MultiFactorAnalysis class for on-the-fly fast evaluation of matrix to matrix relationships
 * Rank reduction for group expression methods.
 * Visualisation/JS plots via bokeh.
