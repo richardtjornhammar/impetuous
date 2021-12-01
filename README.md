@@ -14,9 +14,10 @@ These novel algorithms include but are not limited to:
 * An SVD based variant of the Distance Geometry algorithm. For going from relative to absolute coordinates.
 * A numpy implementation of Householder decomposition.
 * A matrix diagonalisation algorithm.
+* A MultiFactorAnalysis class for on-the-fly fast evaluation of matrix to matrix relationships
 * Rank reduction for group expression methods.
 * Visualisation/JS plots via bokeh.
-* Fibbonaci sequence relationship
+* Fibonacci sequence relationship
 * Prime number assessment
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit.svg?)](https://opensource.org/licenses/Apache-2.0)
