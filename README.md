@@ -1,7 +1,23 @@
 # A Statistical Learning library for Humans
-This toolkit currently offers enrichment analysis, hierarchical enrichment analysis, novel PLS regression, shape alignment, connectivity clustering, clustering and hierarchical clustering as well as factor analysis methods. A novel graph construction and graph searching class can be found in src/impetuous/convert.py (GraphNode). It was developed and invented by the author as a faster alternative for hierarchical DAG construction and searching.
+This toolkit currently offers enrichment analysis, hierarchical enrichment analysis, novel PLS regression, shape alignment, connectivity clustering, clustering and hierarchical clustering as well as factor analysis methods. The fine grained data can be studied via a statistical tests that relates it to observables in a coarse grained journal file. The final p values can then be rank corrected. 
 
-The fine grained data can be studied via a statistical tests that relates it to observables in a coarse grained journal file. The final p values can then be rank corrected by employing a novel q-value method.
+Several novel algorithms have been invented as of this repository by the [author](https://richardtjornhammar.github.io/). Some of the algorithms rely on old scientific litterature, but still consitutes new/novel code implementations. 
+
+These novel algorithms include but are not limited to:
+* A graph construction and graph searching class can be found in src/impetuous/convert.py (GraphNode). It was developed and invented as a faster alternative for hierarchical DAG construction and searching.
+* A fast DBSCAN method utilizing [my](https://richardtjornhammar.github.io/) connectivity code as invented during my PhD.
+* Hierarchical enrichment routine with conservative or lax extinction of evidence already accounted for.
+* A q-value method for rank correcting p-values. The computation differs from other methods.
+* A NLP pattern matching algorithm useful for sequence alignment clustering
+* An tensor field optimisation code.
+* High dimensional algnment code for aligning models to data.
+* An SVD based variant of the Distance Geometry algorithm. For going from relative to absolute coordinates.
+* A numpy implementation of Householder decomposition.
+* A matrix diagonalisation algorithm.
+* Rank reduction for group expression methods.
+* Visualisation/JS plots via bokeh.
+* Fibbonaci sequence relationship
+* Prime number assessment
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit.svg?)](https://opensource.org/licenses/Apache-2.0)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5109938.svg)](https://doi.org/10.5281/zenodo.5109938)
