@@ -23,8 +23,6 @@ These novel algorithms include but are not limited to:
 [![License](https://img.shields.io/github/license/Qiskit/qiskit.svg?)](https://opensource.org/licenses/Apache-2.0)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5109938.svg)](https://doi.org/10.5281/zenodo.5109938)
 [![Downloads](https://pepy.tech/badge/impetuous-gfa)](https://pepy.tech/project/impetuous-gfa)
-[![Downloads](https://pepy.tech/badge/impetuous-gfa/month)](https://pepy.tech/project/impetuous-gfa)
-[![Downloads](https://pepy.tech/badge/impetuous-gfa/week)](https://pepy.tech/project/impetuous-gfa)
 
 Visit the active code via :
 https://github.com/richardtjornhammar/impetuous
