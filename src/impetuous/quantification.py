@@ -692,6 +692,79 @@ def qvalues ( p_values_in , pi0 = None ) :
         qs_ = q
     return qs_
 
+
+
+class Qvalues ( object ) :
+    def __init__( self, pvalues:np.array , method:str = "UNIQUE" , pi0:np.array = None ) :
+        from scipy.stats import rankdata
+        self.rankdata = rankdata
+        self.method   : str      = method
+        self.pvalues  : np.array = pvalues
+        self.qvalues  : np.array = None
+        self.qpres    : np.array = None
+        if method == "FDR-BH" :
+            self.qpres = self.qvaluesFDRBH  ( self.pvalues )
+        if method == "QVALS"  :
+            self.qpres = self.qvaluesFDRBH  ( self.pvalues , pi0 )
+        if method == "UNIQUE" :
+            self.qpres = self.qvaluesUNIQUE ( self.pvalues , pi0 )
+
+    def __str__ ( self ) :
+        return ( self.info() )
+
+    def __repr__( self ) :
+        return ( self.info() )
+
+    def help ( self ) :
+        desc__ = "\n\nRANK CORRECTION FOR P-VALUES\nVIABLE METHODS ARE method = FDR-BH , QVALS , UNIQUE\n\n EMPLOYED METHOD: " + self.method
+        return ( desc__ )
+
+    def info ( self ) :
+        desc__ = "\nMETHOD:"+self.method+"\n   q-values       \t     p-values\n"
+        return ( desc__+'\n'.join( [ ' \t '.join(["%10.10e"%z for z in s]) for s in self.qpres ] ) )
+
+    def get ( self ) :
+        return ( self.qpres )
+
+    def qvaluesFDRBH ( self , p_values_in:np.array = None , pi0:np.array = None ) :
+        p_s = p_values_in
+        if p_s is None :
+            p_s = self.pvalues
+        m = int(len(p_s))
+        if pi0 is None :
+            pi0 = np.array([1. for i in range(m)])
+        qs_ = []
+        ps = p_s
+        frp_ = (self.rankdata( ps,method='ordinal' )-0.5)/m
+        ifrp_ = [ ( (p<=f)*f + p*(p>f) ) for p,f in zip(ps,frp_) ]
+        for ip,p0 in zip(range(m),pi0) :
+            p_ = ps[ ip ] ; f_ = frp_[ip]
+            q_ = p0 * p_ / ifrp_[ip]
+            qs_.append( (q_,p_) )
+        self.qvalues = np.array([q[0] for q in qs_])
+        return np.array(qs_)
+
+    def qvaluesUNIQUE ( self , p_values_in = None , pi0 = None ) :
+        p_s = p_values_in
+        if p_s is None :
+            p_s = self.pvalues
+        m = int(len(set(p_s)))
+        n = int(len(p_s))
+        if pi0 is None :
+            pi0 = np.array([1. for i in range(n)])
+        qs_ = []
+        ps  = p_s
+        frp_  = (self.rankdata( ps,method='average' )-0.5)/m
+        ifrp_ = [ ( (p<=f)*f + p*(p>f) ) for p,f in zip(ps,frp_) ]
+        for ip,p0 in zip( range(n),pi0 ) :
+            p_ = ps[ ip ] ; f_ = frp_[ip]
+            q_ = p0 * p_ / ifrp_[ip]
+            qs_.append( (q_,p_) )
+        self.qvalues = np.array([q[0] for q in qs_])
+        return np.array(qs_)
+
+
+
 class MultiFactorAnalysis ( object ) :
     def __init__( self, analyte_df, journal_df, formula ) :
         #super(MultiFactorAnalysis,self).__init__()
