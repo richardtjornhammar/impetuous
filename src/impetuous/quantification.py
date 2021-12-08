@@ -1605,15 +1605,16 @@ def quality_metrics ( TP:int , TN:int , FN:int , FP:int ) -> dict :
                 'negation'    : TN / ( TN+FN ) , # FNR
                 'FPR:'        : FP / ( FP+TN ) , # False positive rate
                 'FDR'         : FP / ( FP+TP ) , # False discovery rate
-                'F1'          : 2 * TP / ( TP + FP + TP + FN ) # 2 , * GEOMMEAN(recall,precision)
+                'F1'          : 2 * TP / ( TP + FP + TP + FN ) , # 2 * GEOMMEAN(recall,precision)
                 'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) # MATTHEWS CORR COEF
         }
     return ( results_lookup )
 
-def calculate_rates( journal_df , inferred_df ,
-                     formula , inference_label = 'owner',
-                     bVerbose = False ,
-                     strictness = 'intersect' ) :
+
+def calculate_rates( journal_df:pd.DataFrame , inferred_df:pd.DataFrame ,
+                     formula:str , inference_label:str = 'owner',
+                     bVerbose:bool = False ,
+                     strictness:str = 'intersect' ) -> dict :
 
     strictness_function = { 'any':any,'intersect':lambda x:x }
 
@@ -1669,7 +1670,7 @@ def calculate_rates( journal_df , inferred_df ,
                 'negation'    : TN / ( TN+FN ) , # FNR
                 'FPR:'        : FP / ( FP+TN ) , # False positive rate
                 'FDR'         : FP / ( FP+TP ) , # False discovery rate
-                'F1'          : 2 * TP / ( TP + FP + TP + FN ) # 2 , * GEOMMEAN(recall,precision)
+                'F1'          : 2 * TP / ( TP + FP + TP + FN ) , # 2 * GEOM MEAN OF recall AND precision 
                 'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) # MATTHEWS CORR COEF
         }
     """
