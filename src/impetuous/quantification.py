@@ -1593,6 +1593,23 @@ def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = 
     return ( analyte_results_df )
 
 
+def quality_metrics ( TP:int , TN:int , FN:int , FP:int ) -> dict :
+    results_lookup = { 'TP':TP , 'TN':TN ,
+                'FN':FN ,'FP':FP ,
+                'causality'   : ( TP+TN ) / ( FP+FN ) ,
+                'sensitivity' : TP / ( TP+FN ) ,
+                'specificity' : TN / ( TN+FP ) ,
+                'precision'   : TP / ( TP+FP ) ,
+                'recall'      : TP / ( TP+FN ) ,
+                'accuracy'    : ( TP+TN ) / ( TP+TN+FP+FN ) ,
+                'negation'    : TN / ( TN+FN ) , # FNR
+                'FPR:'        : FP / ( FP+TN ) , # False positive rate
+                'FDR'         : FP / ( FP+TP ) , # False discovery rate
+                'F1'          : 2 * TP / ( TP + FP + TP + FN ) # 2 , * GEOMMEAN(recall,precision)
+                'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) # MATTHEWS CORR COEF
+        }
+    return ( results_lookup )
+
 def calculate_rates( journal_df , inferred_df ,
                      formula , inference_label = 'owner',
                      bVerbose = False ,
@@ -1639,6 +1656,8 @@ def calculate_rates( journal_df , inferred_df ,
     TN = np.sum( np.sum( ( not_inferred_OH * not_known_OH ).apply(strictness_function[strictness]) ) )
     FN = np.sum( np.sum( ( not_inferred_OH * known_OH     ).apply(strictness_function[strictness]) ) )
 
+    results_lookup = quality_metrics ( TP , TN , FN , FP )
+    """
     results_lookup = { 'TP':TP , 'TN':TN ,
                 'FN':FN ,'FP':FP ,
                 'causality'   : ( TP+TN ) / ( FP+FN ) ,
@@ -1649,8 +1668,11 @@ def calculate_rates( journal_df , inferred_df ,
                 'accuracy'    : ( TP+TN ) / ( TP+TN+FP+FN ) ,
                 'negation'    : TN / ( TN+FN ) , # FNR
                 'FPR:'        : FP / ( FP+TN ) , # False positive rate
-                'FDR'         : FP / ( FP+TP )   # False discovery rate
-    }
+                'FDR'         : FP / ( FP+TP ) , # False discovery rate
+                'F1'          : 2 * TP / ( TP + FP + TP + FN ) # 2 , * GEOMMEAN(recall,precision)
+                'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) # MATTHEWS CORR COEF
+        }
+    """
     return ( results_lookup )
 
 
