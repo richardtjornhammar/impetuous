@@ -156,6 +156,10 @@ def coserr ( Fe , Fs ) :
     return ( np.dot( Fe,Fs )/np.sqrt(np.dot( Fe,Fe ))/np.sqrt(np.dot( Fs,Fs )) )
 
 def z2error ( model_data , evidence_data , evidence_uncertainties = None ) :
+    # FOR A DESCRIPTION READ PAGE 71 (57 INTERNAL NUMBERING) of:
+    # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+    # EQUATIONS 6.3 AND 6.4
+    #
     Fe = evidence_data
     Fs = model_data
     N  = np.min( [ len(evidence_data) , len(model_data) ] )
@@ -169,7 +173,7 @@ def z2error ( model_data , evidence_data , evidence_uncertainties = None ) :
         if len(evidence_uncertainties)==N :
             dFe = evidence_uncertainties
         else :
-            error ( " DATA UNCERTANTIES MUST CORRESPOND TO THE TARGET DATA " , 0 )
+            error ( " DATA UNCERTAINTIES MUST CORRESPOND TO THE TARGET DATA " , 0 )
 
     def K ( Fs , Fe , dFe ) :
         return ( np.sum( np.abs(Fs)*np.abs(Fe)/dFe**2 ) / np.sum( (Fe/dFe)**2 ) )
@@ -206,7 +210,7 @@ def Fibonacci(n):
     if n>0:
        return ( n )
 
-def F_truth(i):
+def F_truth(i): # THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2i+1
     return ( Fibonacci(i)**2+Fibonacci(i+1)**2 == Fibonacci(2*i+1))
 
 if __name__ == '__main__' :
