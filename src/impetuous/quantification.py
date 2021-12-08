@@ -1593,7 +1593,8 @@ def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = 
     return ( analyte_results_df )
 
 
-def quality_metrics ( TP:int , TN:int , FN:int , FP:int ) -> dict :
+def quality_metrics ( TP:int , TN:int , FN:int , FP:int , alternative:str='two-sided') -> dict :
+    oddsratio , pval = stats.fisher_exact([[TP, FP], [FN, TN]], alternative=alternative )
     results_lookup = { 'TP':TP , 'TN':TN ,
                 'FN':FN ,'FP':FP ,
                 'causality'   : ( TP+TN ) / ( FP+FN ) ,
@@ -1606,7 +1607,9 @@ def quality_metrics ( TP:int , TN:int , FN:int , FP:int ) -> dict :
                 'FPR:'        : FP / ( FP+TN ) , # False positive rate
                 'FDR'         : FP / ( FP+TP ) , # False discovery rate
                 'F1'          : 2 * TP / ( TP + FP + TP + FN ) , # 2 * GEOMMEAN(recall,precision)
-                'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) # MATTHEWS CORR COEF
+                'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) , # MATTHEWS CORR COEF
+                'Fishers odds ratio' : oddsratio ,
+                'Fishers p-value'    : pval
         }
     return ( results_lookup )
 
