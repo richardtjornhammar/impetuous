@@ -1610,10 +1610,10 @@ def quality_metrics ( TP:int , TN:int , FN:int , FP:int , alternative:str='two-s
                 'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) , # MATTHEWS CORR COEF
                 'Fishers odds ratio' : oddsratio ,
                 'Fishers p-value'    : pval ,
-                'Odds correct'  : ( TP / FP )
-                'Odds incorrect': ( FN / TN )                      
+                'Odds correct'  : ( TP / FP ) ,
+                'Odds incorrect': ( FN / TN ) ,
                 'PLR'         : ( TP / FP ) * ( FP + TN ) / ( TP + FN ) , # POSITIVE LIKELIHOOD RATIO
-                'NLR'         : ( FN / TN ) * ( FP + TN ) / ( TP + FN ) , # NEGATIVE LIKELIHOOD RATIO
+                'NLR'         : ( FN / TN ) * ( FP + TN ) / ( TP + FN )   # NEGATIVE LIKELIHOOD RATIO
         }
     return ( results_lookup )
 
