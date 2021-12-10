@@ -23,16 +23,16 @@ from sklearn.decomposition import PCA
 import itertools
 import typing
 
-def SubArraysOf ( Array,Array_=None ) :
+def subArraysOf ( Array:list,Array_:list=None ) -> list :
     if Array_ == None :
         Array_ = Array[:-1]
     if Array == [] :
         if Array_ == [] :
             return ( [] )
-        return( SubArraysOf(Array_,Array_[:-1]) )
-    return([Array]+SubArraysOf(Array[1:],Array_))
+        return( subArraysOf(Array_,Array_[:-1]) )
+    return([Array]+subArraysOf(Array[1:],Array_))
 
-def permuter( inputs , n ) :
+def permuter( inputs:list , n:int ) -> list :
     # permuter( inputs = ['T2D','NGT','Female','Male'] , n = 2 )
     return( [p[0] for p in zip(itertools.permutations(inputs,n))] )
 
@@ -1697,16 +1697,16 @@ def isItPrime( N , M=None,p=None,lM05=None ) :
 
 # FIRST APPEARENCE:
 # https://gist.github.com/richardtjornhammar/ef1719ab0dc683c69d5a864cb05c5a90
-def Fibonacci(n):
+def fibonacci(n:int) -> int :
     if n-2>0:
-        return ( Fibonacci(n-1)+Fibonacci(n-2) )
+        return ( fibonacci(n-1)+fibonacci(n-2) )
     if n-1>0:
-        return ( Fibonacci(n-1) )
+        return ( fibonacci(n-1) )
     if n>0:
        return ( n )
 
-def F_truth(i):
-    return ( Fibonacci(i)**2+Fibonacci(i+1)**2 == Fibonacci(2*i+1))
+def f_truth(i:int) -> bool :  THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2I+1
+    return ( fibonacci(i)**2+fibonacci(i+1)**2 == fibonacci(2*i+1))
 
 if __name__ == '__main__' :
 
