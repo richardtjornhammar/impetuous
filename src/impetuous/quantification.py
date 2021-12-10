@@ -1609,7 +1609,11 @@ def quality_metrics ( TP:int , TN:int , FN:int , FP:int , alternative:str='two-s
                 'F1'          : 2 * TP / ( TP + FP + TP + FN ) , # 2 * GEOMMEAN(recall,precision)
                 'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) , # MATTHEWS CORR COEF
                 'Fishers odds ratio' : oddsratio ,
-                'Fishers p-value'    : pval
+                'Fishers p-value'    : pval ,
+                'Odds correct'  : ( TP / FP )
+                'Odds incorrect': ( FN / TN )                      
+                'PLR'         : ( TP / FP ) * ( FP + TN ) / ( TP + FN ) , # POSITIVE LIKELIHOOD RATIO
+                'NLR'         : ( FN / TN ) * ( FP + TN ) / ( TP + FN ) , # NEGATIVE LIKELIHOOD RATIO
         }
     return ( results_lookup )
 
@@ -1661,22 +1665,7 @@ def calculate_rates( journal_df:pd.DataFrame , inferred_df:pd.DataFrame ,
     FN = np.sum( np.sum( ( not_inferred_OH * known_OH     ).apply(strictness_function[strictness]) ) )
 
     results_lookup = quality_metrics ( TP , TN , FN , FP )
-    """
-    results_lookup = { 'TP':TP , 'TN':TN ,
-                'FN':FN ,'FP':FP ,
-                'causality'   : ( TP+TN ) / ( FP+FN ) ,
-                'sensitivity' : TP / ( TP+FN ) ,
-                'specificity' : TN / ( TN+FP ) ,
-                'precision'   : TP / ( TP+FP ) ,
-                'recall'      : TP / ( TP+FN ) ,
-                'accuracy'    : ( TP+TN ) / ( TP+TN+FP+FN ) ,
-                'negation'    : TN / ( TN+FN ) , # FNR
-                'FPR:'        : FP / ( FP+TN ) , # False positive rate
-                'FDR'         : FP / ( FP+TP ) , # False discovery rate
-                'F1'          : 2 * TP / ( TP + FP + TP + FN ) , # 2 * GEOM MEAN OF recall AND precision 
-                'MCC'         : (TP*TN-FP*FN) / np.sqrt( (TP+FP)*(TP+FN)*(TN+FP)*(TN+FN) ) # MATTHEWS CORR COEF
-        }
-    """
+
     return ( results_lookup )
 
 
