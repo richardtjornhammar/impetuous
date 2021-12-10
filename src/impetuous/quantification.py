@@ -1597,7 +1597,7 @@ def quality_metrics ( TP:int , TN:int , FN:int , FP:int , alternative:str='two-s
     oddsratio , pval = stats.fisher_exact([[TP, FP], [FN, TN]], alternative=alternative )
     results_lookup = { 'TP':TP , 'TN':TN ,
                 'FN':FN ,'FP':FP ,
-                'causality'   : ( TP+TN ) / ( FP+FN ) ,
+                'causality'   : ( TP+TN+1 ) / ( FP+FN+1 ) ,
                 'sensitivity' : TP / ( TP+FN ) ,
                 'specificity' : TN / ( TN+FP ) ,
                 'precision'   : TP / ( TP+FP ) ,
