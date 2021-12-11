@@ -233,7 +233,48 @@ class NodeGraph ( Node ) :
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
 
+    def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 ) -> list :
+        #
+        # AN ALTERNATIVE SAIGA METHOD
+        # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
+        # CLUSTERING ROUTINE
+        # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
+        # OF WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
+        #
+        def b2i ( a:list ) -> list :
+            return ( [ i for b,i in zip(a,range(len(a))) if b ] )
+        def f2i ( a:list,alf:float ) -> list :
+            return ( b2i( a<=alf ) )
+        L = []
+        for a in A :
+            bAdd = True
+            ids = set( f2i(a,alpha) )
+            for i in range(len(L)) :
+                if len( L[i]&ids ) >=  n_connections :
+                    L[i] = L[i] | ids
+                    bAdd = False
+                    break
+            if bAdd and len(ids) >= n_connections :
+                L.append( ids )
+        return ( L )
 
+    def distance_matrix_to_pclist ( self , distm:np.array , cluster_connections:int = 1 , hierarchy_connections:int = 1  ) -> list :
+        #
+        # FASTER SAIGA CONSTRUCTION ROUTINE
+        # RETURNS LIST USEFUL FOR RICE HIERARCHY GENERATION
+        # SHOULD BE EASIER TO PARALLELIZE WITH JIT
+        #
+        R = sorted( list(set( distm.reshape(-1) ) ) )
+        prev_clusters = []
+        PClist = []
+        for r in R :
+            present_clusters = self.connectivity ( distm , r , cluster_connections )
+            parent_child  = [ (p,c,r) for c in prev_clusters for p in present_clusters \
+                          if len(p&c) >= hierarchy_connections and len(p^c)>0  ]
+            prev_clusters = present_clusters
+            PClist = [ *PClist, *parent_child ]
+        return ( PClist )
+    
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
         n = Node()
         n.set_id(ascendant)
