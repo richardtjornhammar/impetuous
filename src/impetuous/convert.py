@@ -235,11 +235,11 @@ class NodeGraph ( Node ) :
 
     def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 ) -> list :
         #
-        # AN ALTERNATIVE SAIGA METHOD
+        # AN ALTERNATIVE METHOD
         # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
-        # CLUSTERING ROUTINE
+        # CLUSTERING ROUTINE (in src/impetuous/clustering.py )
         # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
-        # OF WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
+        # WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
         #
         def b2i ( a:list ) -> list :
             return ( [ i for b,i in zip(a,range(len(a))) if b ] )
@@ -260,8 +260,8 @@ class NodeGraph ( Node ) :
 
     def distance_matrix_to_pclist ( self , distm:np.array , cluster_connections:int = 1 , hierarchy_connections:int = 1  ) -> list :
         #
-        # FASTER SAIGA CONSTRUCTION ROUTINE
-        # RETURNS LIST USEFUL FOR RICE HIERARCHY GENERATION
+        # FASTER PCLIST CONSTRUCTION ROUTINE
+        # RETURNS LIST USEFUL FOR HIERARCHY GENERATION
         # SHOULD BE EASIER TO PARALLELIZE WITH JIT
         #
         R = sorted( list(set( distm.reshape(-1) ) ) )
@@ -274,7 +274,7 @@ class NodeGraph ( Node ) :
             prev_clusters = present_clusters
             PClist = [ *PClist, *parent_child ]
         return ( PClist )
-    
+
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
         n = Node()
         n.set_id(ascendant)
