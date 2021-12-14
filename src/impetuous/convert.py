@@ -32,7 +32,7 @@ class Node ( object ) :
         self.descendants_ :list  = list() # OUTWARD LINKS , DIRECT DESCENDENCY ( 1 LEVEL )
         self.data_        :dict  = dict() # OTHER THINGS SHOULD BE ALL INFORMATION FLOATING IN USERSPACE
 
-    def can_it_be_root(self, n:int=1 ) -> bool :
+    def can_it_be_root ( self, n:int=1 ) -> bool :
         return ( len(self.ascendants_) < n )
 
     def supplement ( self, n:super ) -> None :
@@ -55,8 +55,11 @@ class Node ( object ) :
         self.add_links( links , bClear=True )
         return ( self )
 
-    def set_level ( self,level ) :
+    def set_level ( self,level:int ) -> None :
         self.level_ = level
+
+    def set_metrics ( self , metrics:list ) :
+        self.metrics_ = [ *self.metrics_ , *metrics ]
 
     def level ( self ) :
         return ( self.level_ )
@@ -168,6 +171,9 @@ class NodeGraph ( Node ) :
     def get_dag ( self ) -> dict() :
         return ( self.graph_map_ )
 
+    def get_graph ( self ) -> dict() :
+        return ( self.graph_map_ )
+
     def show ( self ) -> None :
         print ( self.desc_ )
         for item in self.get_dag().items() :
@@ -241,12 +247,15 @@ class NodeGraph ( Node ) :
         # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
         # WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
         #
+        if len ( distm.shape ) < 2 :
+            print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
+            exit(1)
         def b2i ( a:list ) -> list :
             return ( [ i for b,i in zip(a,range(len(a))) if b ] )
         def f2i ( a:list,alf:float ) -> list :
             return ( b2i( a<=alf ) )
         L = []
-        for a in A :
+        for a in distm :
             bAdd = True
             ids = set( f2i(a,alpha) )
             for i in range(len(L)) :
@@ -255,7 +264,7 @@ class NodeGraph ( Node ) :
                     bAdd = False
                     break
             if bAdd and len(ids) >= n_connections :
-                L.append( ids )
+                L .append( ids )
         return ( L )
 
     def distance_matrix_to_pclist ( self , distm:np.array , cluster_connections:int = 1 , hierarchy_connections:int = 1  ) -> list :
@@ -275,6 +284,27 @@ class NodeGraph ( Node ) :
             PClist = [ *PClist, *parent_child ]
         return ( PClist )
 
+    def distance_matrix_to_absolute_coordinates ( self , D , bSquared = False, n_dimensions=2 ):
+        #
+        # SAME AS IN THE IMPETUOUS cluster.py EXCEPT THE RETURN IS TRANSPOSED
+        # AND disgm.m IN THE RICHTOOLS REPO
+        #
+        if not bSquared :
+            D = D**2.
+        DIM = n_dimensions
+        DIJ = D*0.
+        M = len(D)
+        for i in range(M) :
+            for j in range(M) :
+                DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
+        D = DIJ
+        U,S,Vt = np.linalg.svd ( D , full_matrices = True )
+        S[DIM:] *= 0.
+        Z = np.diag(S**0.5)[:,:DIM]
+        xr = np.dot( Z.T,Vt )
+        return ( xr.T )
+
+
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
         n = Node()
         n.set_id(ascendant)
@@ -290,6 +320,29 @@ class NodeGraph ( Node ) :
         m.add_links([ascendant],linktype='ascendants' )
         self.add(n)
         self.add(m)
+
+    def build_graph_dag_from_distance_matrix ( self , distm:np.array , n_:int=1 , bVerbose:bool=False ) :
+        #
+        # CONSTRUCTS THE HIERACHY FROM A DISTANCE MATRIX
+        # SIMILAR TO THE ROUTINES IN hierarchical.py IN THIS IMPETUOUS REPO
+        #
+        if len ( distm.shape ) < 2 :
+            print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
+            exit(1)
+        pclist = self.distance_matrix_to_pclist( distm )
+        for pc_ in pclist :
+            asc = str(list(pc_[0]))
+            des = str(list(pc_[1]))
+            asc_met = pc_[2]
+            self.add_ascendant_descendant(asc,des)
+            self.get_graph()[asc].set_metrics([asc_met])
+        for key in self.keys() :
+            if self.get_graph()[key].can_it_be_root(n_):
+                self.set_root_id ( key )
+        if bVerbose :
+            self.show()
+            print ( self.get_root_id() )
+            self.get_graph()[self.get_root_id()].show()
 
 
     def generate_ascendants_descendants_lookup ( self ) -> (type(list(str())),type(list(str()))) :
@@ -548,12 +601,15 @@ def convert_rdata_to_dataframe ( filename ) :
     pandas2ri.deactivate()
     return ( full_df_dict )
 
-def read_xyz(fname='argon.xyz') :
-    df_ = pd.read_csv('./argon.xyz',header=2,sep=' ')
-    vals = df_.columns.values
-    df_.loc[len(df_)] = vals
-    df_.columns = ['A','X','Y','Z']
-    return ( df_.apply(pd.to_numeric) )
+def read_xyz(fname='argon.xyz',sep=' ') :
+    coords = []
+    with open(fname,'r') as input:
+        for line in input:
+            lsp = [u for u in line.replace('\n','').split(sep) if len(u)>0 ]
+            print(lsp,len(lsp))
+            if len(lsp) == 4:
+                coords.append( ( lsp[0],[ float(c) for c in lsp[1:]] ) )
+    return ( coords )
 
 
 import os
