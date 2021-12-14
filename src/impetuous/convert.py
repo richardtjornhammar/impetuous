@@ -321,7 +321,7 @@ class NodeGraph ( Node ) :
         self.add(n)
         self.add(m)
 
-    def build_graph_dag_from_distance_matrix ( self , distm:np.array , n_:int=1 , bVerbose:bool=False ) :
+    def distance_matrix_to_graph_dag ( self , distm:np.array , n_:int=1 , bVerbose:bool=False ) :
         #
         # CONSTRUCTS THE HIERACHY FROM A DISTANCE MATRIX
         # SIMILAR TO THE ROUTINES IN hierarchical.py IN THIS IMPETUOUS REPO
