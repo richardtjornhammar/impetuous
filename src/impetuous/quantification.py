@@ -1592,8 +1592,8 @@ def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = 
         analyte_results_df['KendallTau'] = K
     return ( analyte_results_df )
 
-
-def quality_metrics ( TP:int , TN:int , FN:int , FP:int , alternative:str='two-sided') -> dict :
+# TP FP FN TN
+def quality_metrics ( TP:int , FP:int , FN:int , TN:int , alternative:str='two-sided') -> dict :
     oddsratio , pval = stats.fisher_exact([[TP, FP], [FN, TN]], alternative=alternative )
     results_lookup = { 'TP':TP , 'TN':TN ,
                 'FN':FN ,'FP':FP ,
@@ -1664,7 +1664,7 @@ def calculate_rates( journal_df:pd.DataFrame , inferred_df:pd.DataFrame ,
     TN = np.sum( np.sum( ( not_inferred_OH * not_known_OH ).apply(strictness_function[strictness]) ) )
     FN = np.sum( np.sum( ( not_inferred_OH * known_OH     ).apply(strictness_function[strictness]) ) )
 
-    results_lookup = quality_metrics ( TP , TN , FN , FP )
+    results_lookup = quality_metrics ( TP , FP , FN , TN )
 
     return ( results_lookup )
 
