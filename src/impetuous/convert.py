@@ -49,6 +49,7 @@ class Node ( object ) :
                            links : type(list(str())) ,
                            label : str = "" ,
                            description : str = "" ) -> object :
+        # ASSIGNS ALL META DATA AND BIPOLAR LINKS
         self.set_id( identification )
         self.add_label( label )
         self.add_description( description )
@@ -58,10 +59,10 @@ class Node ( object ) :
     def set_level ( self,level:int ) -> None :
         self.level_ = level
 
-    def set_metrics ( self , metrics:list ) :
+    def set_metrics ( self , metrics:list ) -> None :
         self.metrics_ = [ *self.metrics_ , *metrics ]
 
-    def level ( self ) :
+    def level ( self ) -> None :
         return ( self.level_ )
 
     def get_data ( self ) -> dict :
@@ -115,7 +116,7 @@ class Node ( object ) :
             return ( self.ascendants_  )
         if linktype == 'descendants' :
             return ( self.descendants_ )
-        
+
     def show ( self ) -> None :
         s_inf = "NODE [" + self.identification() \
                    + "," + self.label() + "] - " \
@@ -191,10 +192,9 @@ class NodeGraph ( Node ) :
         results['path'] = [ idx for idx in results['path'] if not idx==identification ]
         return ( results )
 
-
     def search ( self , order:str = 'breadth', root_id:str = None ,
                  linktype:str = 'links', stop_at:str = None ) -> dict :
-
+        #
         path:list   = list()
         visited:set = set()
         if root_id is None :
@@ -245,7 +245,11 @@ class NodeGraph ( Node ) :
         #
         # AN ALTERNATIVE METHOD
         # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
-        # CLUSTERING ROUTINE (in src/impetuous/clustering.py )
+        # CLUSTERING MODULE (in src/impetuous/clustering.py )
+        # OR IN https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+        # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+        # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
+        #
         # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
         # WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
         #
@@ -269,11 +273,18 @@ class NodeGraph ( Node ) :
                 L .append( ids )
         return ( L )
 
-    def distance_matrix_to_pclist ( self , distm:np.array , cluster_connections:int = 1 , hierarchy_connections:int = 1  ) -> list :
+    def distance_matrix_to_pclist ( self , distm:np.array ,
+                                    cluster_connections:int = 1 ,
+                                    hierarchy_connections:int = 1 ,
+                                    bNonRedundant:bool = True  ) -> list :
         #
         # FASTER PCLIST CONSTRUCTION ROUTINE
         # RETURNS LIST USEFUL FOR HIERARCHY GENERATION
         # SHOULD BE EASIER TO PARALLELIZE WITH JIT
+        # lambda p:set -> bool INVALID SYNTAX #
+        logic = lambda p,c : len(p&c) >= hierarchy_connections and len(p^c)>0
+        if not bNonRedundant :
+            logic = lambda p,c : len(p&c) >= hierarchy_connections
         #
         R = sorted( list(set( distm.reshape(-1) ) ) )
         prev_clusters = []
@@ -281,16 +292,16 @@ class NodeGraph ( Node ) :
         for r in R :
             present_clusters = self.connectivity ( distm , r , cluster_connections )
             parent_child  = [ (p,c,r) for c in prev_clusters for p in present_clusters \
-                          if len(p&c) >= hierarchy_connections and len(p^c)>0  ]
+                          if logic(p,c)  ]
             prev_clusters = present_clusters
             PClist = [ *PClist, *parent_child ]
         return ( PClist )
 
-    def distance_matrix_to_absolute_coordinates ( self , D:np.array , bSquared:bool = False, n_dimensions:int=2 ):
+    def distance_matrix_to_absolute_coordinates ( self , D:np.array , bSquared:bool = False, n_dimensions:int=2 ) -> np.array :
         #
         # SAME AS IN THE IMPETUOUS cluster.py EXCEPT THE RETURN IS TRANSPOSED
-        # AND disgm.m IN THE RICHTOOLS REPO
-        # https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
+        # AND distg.m IN THE RICHTOOLS REPO
+        # C++ VERSION HERE https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
         #
         if not bSquared :
             D = D**2.
@@ -341,11 +352,13 @@ class NodeGraph ( Node ) :
             self.show()
             print ( self.get_root_id() )
             self.get_graph()[self.get_root_id()].show()
-            
+
     def graph_analytes_to_approximate_distance_matrix ( self ,
              analyte_identifier:str = 'analyte ids',
              alpha:float = 1. ) -> np.array :
+
         root_data    = self.get_graph()[ self.get_root_id() ].get_data()
+
         if analyte_identifier in root_data:
             all_analytes = root_data[ analyte_identifier ]
         else:
@@ -354,8 +367,10 @@ class NodeGraph ( Node ) :
         m_ = len( all_analytes )
         lookup = { a:i for a,i in zip(all_analytes,range(m_)) }
         CM = np.ones(m_*m_).reshape(m_,m_)
-        for item in self.get_graph().items():
+        for item in self.get_graph().items() :
+
             item_data = item[1].get_data()
+
             if analyte_identifier in item_data : # IMPROVE SPEED HERE
                 for q in item_data[analyte_identifier] :
                     for p in item_data[analyte_identifier] : # STOP
@@ -363,10 +378,10 @@ class NodeGraph ( Node ) :
         #
         # CONSTRUCT APPROXIMATION
         # LEVELS MISSING EVEN VIA DEFAULT
-        approximate_distm = 1./CM - np.mean(np.diag(1./CM))
+        approximate_distm  = 1./CM - np.mean(np.diag(1./CM))
         approximate_distm *= 1-np.eye(m_)
         return ( np.abs(approximate_distm) , lookup )
-    
+
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
         n = Node()
         n.set_id(ascendant)
@@ -383,36 +398,11 @@ class NodeGraph ( Node ) :
         self.add(n)
         self.add(m)
 
-    def distance_matrix_to_graph_dag ( self , distm:np.array , n_:int=1 , bVerbose:bool=False ) :
-        #
-        # CONSTRUCTS THE HIERACHY FROM A DISTANCE MATRIX
-        # SIMILAR TO THE ROUTINES IN hierarchical.py IN THIS IMPETUOUS REPO
-        #
-        if len ( distm.shape ) < 2 :
-            print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
-            exit(1)
-        pclist = self.distance_matrix_to_pclist( distm )
-        for pc_ in pclist :
-            asc = str(list(pc_[0]))
-            des = str(list(pc_[1]))
-            asc_met = pc_[2]
-            self.add_ascendant_descendant(asc,des)
-            self.get_graph()[asc].set_metrics([asc_met])
-        for key in self.keys() :
-            if self.get_graph()[key].can_it_be_root(n_):
-                self.set_root_id ( key )
-        if bVerbose :
-            self.show()
-            print ( self.get_root_id() )
-            self.get_graph()[self.get_root_id()].show()
-
-
     def generate_ascendants_descendants_lookup ( self ) -> (type(list(str())),type(list(str()))) :
         all_names   = self.keys()
         descendants = [ ( idx , set( self.complete_lineage( idx,linktype='descendants')['path'] ) ) for idx in all_names ]
         ancestors   = [ ( idx , set( self.complete_lineage( idx,linktype='ascendants' )['path'] ) ) for idx in all_names ]
         return ( ancestors , descendants )
-
 
     def ascendant_descendant_file_to_dag ( self, relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
