@@ -115,6 +115,7 @@ class Node ( object ) :
             return ( self.ascendants_  )
         if linktype == 'descendants' :
             return ( self.descendants_ )
+        
     def show ( self ) -> None :
         s_inf = "NODE [" + self.identification() \
                    + "," + self.label() + "] - " \
