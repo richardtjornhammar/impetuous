@@ -171,7 +171,7 @@ if bUseNumba :
                 # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
                 #
                 # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
-                # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+                # ADDED TO RICHTOOLS HERE: https://github.com/richardtjornhammar/RichTools/commit/74b35df9c623bf03570707a24eafe828f461ed90#diff-25a6634263c1b1f6fc4697a04e2b9904ea4b042a89af59dc93ec1f5d44848a26
                 # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY 
                 #
                 nr_sq,mr_sq = np.shape(B)
@@ -725,14 +725,11 @@ if __name__ == '__main__' :
                         [9.00, 9.00, 9.00, 0.00, 0.10, 0.10],
                         [9.10, 9.00, 9.00, 0.10, 0.00, 0.15],
                         [9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
-        print ( connectivity(A,0.11) )
+        print ( connectivity(A,0.11) ) # 
         print ( dbscan(distance_matrix=pd.DataFrame(A).values,eps=0.11,minPts=2) )
 
         
-import time
-
-if __name__ == '__main__' :
-
+    import time
     print ( 'HERE' )
 
     coord_fn = 'NAJ-buckle.xyz'
