@@ -115,7 +115,6 @@ class Node ( object ) :
             return ( self.ascendants_  )
         if linktype == 'descendants' :
             return ( self.descendants_ )
-
     def show ( self ) -> None :
         s_inf = "NODE [" + self.identification() \
                    + "," + self.label() + "] - " \
@@ -124,6 +123,8 @@ class Node ( object ) :
             s_inf += '\n['+linktype+'] : '
             for l in self.get_links(linktype=linktype) :
                 s_inf += l + '\t'
+        for item in self.get_data().items() :
+            s_inf += '\n'+str(item[0])+'\t'+str(item[1])
         print ( s_inf )
 
 class NodeGraph ( Node ) :
@@ -284,10 +285,11 @@ class NodeGraph ( Node ) :
             PClist = [ *PClist, *parent_child ]
         return ( PClist )
 
-    def distance_matrix_to_absolute_coordinates ( self , D , bSquared = False, n_dimensions=2 ):
+    def distance_matrix_to_absolute_coordinates ( self , D:np.array , bSquared:bool = False, n_dimensions:int=2 ):
         #
         # SAME AS IN THE IMPETUOUS cluster.py EXCEPT THE RETURN IS TRANSPOSED
         # AND disgm.m IN THE RICHTOOLS REPO
+        # https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
         #
         if not bSquared :
             D = D**2.
@@ -304,7 +306,66 @@ class NodeGraph ( Node ) :
         xr = np.dot( Z.T,Vt )
         return ( xr.T )
 
-
+    def distance_matrix_to_graph_dag ( self , distm:np.array , n_:int=1 , bVerbose:bool=False , names:list=None ) -> None :
+        #
+        # CONSTRUCTS THE HIERACHY FROM A DISTANCE MATRIX
+        # SIMILAR TO THE ROUTINES IN hierarchical.py IN THIS IMPETUOUS REPO
+        #
+        if len ( distm.shape ) < 2 :
+            print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
+            exit(1)
+        lookup = dict()
+        m_ = len(distm)
+        for I in range(m_) :
+            lookup[I] = I
+        if not names is None :
+            if len ( names ) == m_ :
+                for I,N in zip(range(len(names)),names):
+                    lookup[I] = N
+        pclist = self.distance_matrix_to_pclist( distm )
+        for pc_ in pclist :
+            lpc0 = [ lookup[l] for l in list(pc_[0]) ]
+            lpc1 = [ lookup[l] for l in list(pc_[1]) ]
+            asc = str(lpc0)
+            des = str(lpc1)
+            asc_met = pc_[2]
+            self.add_ascendant_descendant(asc,des)
+            self.get_graph()[asc].set_metrics([asc_met])
+            self.get_graph()[asc].get_data()['analyte ids'] = lpc0
+            self.get_graph()[des].get_data()['analyte ids'] = lpc1
+        for key in self.keys() :
+            if self.get_graph()[key].can_it_be_root(n_):
+                self.set_root_id ( key )
+        if bVerbose :
+            self.show()
+            print ( self.get_root_id() )
+            self.get_graph()[self.get_root_id()].show()
+            
+    def graph_analytes_to_approximate_distance_matrix ( self ,
+             analyte_identifier:str = 'analyte ids',
+             alpha:float = 1. ) -> np.array :
+        root_data    = self.get_graph()[ self.get_root_id() ].get_data()
+        if analyte_identifier in root_data:
+            all_analytes = root_data[ analyte_identifier ]
+        else:
+            print ( 'ERROR COULD NOT FIND GLOBAL IDENTIFIER INFORMATION:' , analyte_identifier )
+            exit (1)
+        m_ = len( all_analytes )
+        lookup = { a:i for a,i in zip(all_analytes,range(m_)) }
+        CM = np.ones(m_*m_).reshape(m_,m_)
+        for item in self.get_graph().items():
+            item_data = item[1].get_data()
+            if analyte_identifier in item_data : # IMPROVE SPEED HERE
+                for q in item_data[analyte_identifier] :
+                    for p in item_data[analyte_identifier] : # STOP
+                        CM[lookup[p],lookup[q]]+=1
+        #
+        # CONSTRUCT APPROXIMATION
+        # LEVELS MISSING EVEN VIA DEFAULT
+        approximate_distm = 1./CM - np.mean(np.diag(1./CM))
+        approximate_distm *= 1-np.eye(m_)
+        return ( np.abs(approximate_distm) , lookup )
+    
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
         n = Node()
         n.set_id(ascendant)
