@@ -247,11 +247,15 @@ class NodeGraph ( Node ) :
         # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
         # CLUSTERING MODULE (in src/impetuous/clustering.py )
         # OR IN https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
-        # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+        # ADDED TO RICHTOOLS HERE: https://github.com/richardtjornhammar/RichTools/commit/74b35df9c623bf03570707a24eafe828f461ed90#diff-25a6634263c1b1f6fc4697a04e2b9904ea4b042a89af59dc93ec1f5d44848a26
         # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
         #
         # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
         # WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
+        # THIS METHOD IS NOW ALSO IN THE clustering.py MODULE
+        # AND IS CALLED connectedness
+        # THIS CLASS WILL EMPLOY THE JIT connectivity IMPLEMENTATION
+        # IN THE FUTURE BECAUSE IT IS SUPERIOR
         #
         if len ( distm.shape ) < 2 :
             print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
