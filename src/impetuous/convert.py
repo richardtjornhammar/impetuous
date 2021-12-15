@@ -171,10 +171,10 @@ class NodeGraph ( Node ) :
             if len ( self.graph_map_ ) == 1 :
                 self.set_root_id( n.identification() )
 
-    def get_dag ( self ) -> dict() :
+    def get_dag ( self ) -> dict :
         return ( self.graph_map_ )
 
-    def get_graph ( self ) -> dict() :
+    def get_graph ( self ) -> dict :
         return ( self.graph_map_ )
 
     def show ( self ) -> None :
@@ -537,9 +537,9 @@ def make_pathway_ancestor_data_frame(ancestors):
             p_df = pd.concat([p_df,t_df])
     return( p_df )
 
-def normalise_for_apples_and_oranges_stats( X , method='ordinal' ):
-    X_ = rankdata( X , method=method )/len(X)
-    return(X_)
+def normalise_for_apples_and_oranges_stats( X:np.array , method:str='average' ) -> np.array :
+    X_ = (rankdata( X , method=method )-0.5)/len(set(X))
+    return ( X_ )
 
 def make_group_analytes_unique( grouping_file , delimiter='\t' ):
     uniqe_grouping_file = '/'.join(grouping_file.split('/')[:-1]) + '/unique_'+grouping_file.split('/')[-1]
