@@ -275,7 +275,74 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
                                 print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
                 return ( Nc , np.array(res[:-1]).reshape(-1,2) )
 
+if bUseNumba :
+        @jit(nopython=True)
+        def connectedness ( distm:np.array , alpha:float , n_connections:int=1 ) -> list :
+            #
+            # AN ALTERNATIVE METHOD
+            # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
+            # CLUSTERING MODULE (in src/impetuous/clustering.py )
+            # OR IN https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+            # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+            # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
+            #
+            # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
+            # WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
+            #
+            if len ( distm.shape ) < 2 :
+                print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
 
+            def b2i ( a:list ) -> list :
+                return ( [ i for b,i in zip(a,range(len(a))) if b ] )
+            def f2i ( a:list,alf:float ) -> list :
+                return ( b2i( a<=alf ) )
+
+            L = []
+            for a in distm :
+                bAdd = True
+                ids = set( f2i(a,alpha) )
+                for i in range(len(L)) :
+                    if len( L[i]&ids ) >=  n_connections :
+                        L[i] = L[i] | ids
+                        bAdd = False
+                        break
+                if bAdd and len(ids) >= n_connections :
+                    L .append( ids )
+            return ( L )
+else :
+        def connectedness ( distm:np.array , alpha:float , n_connections:int=1 ) -> list :
+            #
+            # AN ALTERNATIVE METHOD
+            # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
+            # CLUSTERING MODULE (in src/impetuous/clustering.py )
+            # OR IN https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+            # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+            # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
+            #
+            # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
+            # WITH THE SET OF INDICES THAT MAPS TO THE CLUSTER
+            #
+            if len ( distm.shape ) < 2 :
+                print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
+
+            def b2i ( a:list ) -> list :
+                return ( [ i for b,i in zip(a,range(len(a))) if b ] )
+            def f2i ( a:list,alf:float ) -> list :
+                return ( b2i( a<=alf ) )
+
+            L = []
+            for a in distm :
+                bAdd = True
+                ids = set( f2i(a,alpha) )
+                for i in range(len(L)) :
+                    if len( L[i]&ids ) >=  n_connections :
+                        L[i] = L[i] | ids
+                        bAdd = False
+                        break
+                if bAdd and len(ids) >= n_connections :
+                    L .append( ids )
+            return ( L )
+            
 def connectivity_legacy001 ( B , val, bVerbose=False ) :
         print('REMOVED AS OF 0.77.2')
         exit(1)
@@ -660,3 +727,97 @@ if __name__ == '__main__' :
                         [9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
         print ( connectivity(A,0.11) )
         print ( dbscan(distance_matrix=pd.DataFrame(A).values,eps=0.11,minPts=2) )
+
+        
+import time
+
+if __name__ == '__main__' :
+
+    print ( 'HERE' )
+
+    coord_fn = 'NAJ-buckle.xyz'
+    coords = read_xyz ( fname=coord_fn,sep=' ' )
+
+    crds = [ c[1] for c in coords ]
+    distm = np.array([ np.sqrt(np.sum((np.array(p)-np.array(q))**2)) for p in crds for q in crds ] ).reshape(len(crds),len(crds))
+    Self = NodeGraph()
+
+    for a in range( 100 , 165 ) :
+        T = []
+        alpha = a/100.
+        T.append( time.time() )
+        R = Self.connectivity( distm , alpha )
+        T.append( time.time() )
+        P = connectivity  ( distm , alpha )
+        T.append( time.time() )
+        Q = connectedness ( distm , alpha )
+        T.append( time.time() )
+        print ( len(R) , len( P[0] ) , len(Q) , np.diff(T) , alpha )
+
+    """
+N   M  K   EDNESS LINEAR    IVITY JIT     EDNESS-JIT
+67 67 67 [7.61270523e-04 5.55515289e-05 2.30550766e-04] 1.01
+63 63 63 [7.44342804e-04 4.60147858e-05 2.15530396e-04] 1.02
+63 63 63 [7.4672699e-04 4.5299530e-05 2.1481514e-04] 1.03
+63 63 63 [7.39812851e-04 4.55379486e-05 2.14338303e-04] 1.04
+62 62 62 [7.46965408e-04 4.62532043e-05 2.13384628e-04] 1.05
+62 62 62 [7.49349594e-04 4.50611115e-05 2.13384628e-04] 1.06
+62 62 62 [7.44104385e-04 4.52995300e-05 2.13384628e-04] 1.07
+62 62 62 [7.45058060e-04 4.52995300e-05 2.12907791e-04] 1.08
+56 56 56 [7.20024109e-04 4.86373901e-05 1.94549561e-04] 1.09
+44 44 44 [6.73055649e-04 5.17368317e-05 1.59502029e-04] 1.1
+44 44 44 [6.67810440e-04 5.07831573e-05 1.58548355e-04] 1.11
+44 44 44 [6.70433044e-04 5.05447388e-05 1.59740448e-04] 1.12
+44 44 44 [6.73770905e-04 5.10215759e-05 1.58309937e-04] 1.13
+44 44 44 [6.69479370e-04 5.05447388e-05 1.58309937e-04] 1.14
+44 44 44 [6.61611557e-04 5.00679016e-05 1.58071518e-04] 1.15
+44 44 44 [6.54459000e-04 5.03063202e-05 1.58309937e-04] 1.16
+44 44 44 [6.59942627e-04 5.07831573e-05 1.58071518e-04] 1.17
+44 44 44 [6.54697418e-04 5.03063202e-05 1.58071518e-04] 1.18
+44 44 44 [6.56127930e-04 4.98294830e-05 1.58786774e-04] 1.19
+44 44 44 [6.54697418e-04 5.00679016e-05 1.57833099e-04] 1.2
+44 44 44 [6.57558441e-04 5.07831573e-05 1.57833099e-04] 1.21
+43 43 43 [6.46114349e-04 5.07831573e-05 1.55925751e-04] 1.22
+43 43 43 [6.56843185e-04 5.10215759e-05 1.53303146e-04] 1.23
+43 43 43 [6.49929047e-04 5.10215759e-05 1.53064728e-04] 1.24
+43 43 43 [6.58512115e-04 5.12599945e-05 1.54018402e-04] 1.25
+43 43 43 [6.58512115e-04 5.07831573e-05 1.53064728e-04] 1.26
+43 43 43 [6.51597977e-04 5.05447388e-05 1.52349472e-04] 1.27
+43 43 43 [6.55651093e-04 5.07831573e-05 1.52826309e-04] 1.28
+43 43 43 [6.47783279e-04 5.05447388e-05 1.56879425e-04] 1.29
+43 43 43 [6.46829605e-04 5.05447388e-05 1.52349472e-04] 1.3
+42 42 42 [6.49929047e-04 5.10215759e-05 1.51872635e-04] 1.31
+40 40 40 [6.52074814e-04 5.10215759e-05 1.48057938e-04] 1.32
+36 36 36 [6.57796860e-04 5.29289246e-05 1.45435333e-04] 1.33
+36 36 36 [6.46829605e-04 5.22136688e-05 1.44720078e-04] 1.34
+35 35 35 [6.37769699e-04 5.14984131e-05 1.37805939e-04] 1.35
+34 34 34 [6.27517700e-04 5.17368317e-05 1.38044357e-04] 1.36
+34 33 34 [6.24418259e-04 5.34057617e-05 1.39951706e-04] 1.37
+33 32 33 [6.37531281e-04 5.38825989e-05 1.43051147e-04] 1.38
+31 29 31 [6.30378723e-04 5.10215759e-05 1.36613846e-04] 1.39
+30 28 30 [6.11305237e-04 5.10215759e-05 1.29461288e-04] 1.4
+28 28 28 [6.01291656e-04 5.22136688e-05 1.32083893e-04] 1.41
+28 28 28 [5.98907471e-04 5.24520874e-05 1.33991241e-04] 1.42
+23 23 23 [5.91039658e-04 5.26905060e-05 1.19209290e-04] 1.43
+20 20 20 [5.77926636e-04 5.24520874e-05 1.17063522e-04] 1.44
+18 18 18 [5.57899475e-04 5.17368317e-05 1.04665756e-04] 1.45
+18 18 18 [5.56707382e-04 5.14984131e-05 1.06573105e-04] 1.46
+16 16 16 [5.44548035e-04 5.05447388e-05 9.01222229e-05] 1.47
+15 15 15 [5.30004501e-04 4.98294830e-05 8.63075256e-05] 1.48
+11 11 11 [5.12361526e-04 5.07831573e-05 6.98566437e-05] 1.49
+11 11 11 [5.13076782e-04 5.05447388e-05 7.00950623e-05] 1.5
+11 11 11 [5.07593155e-04 5.07831573e-05 6.98566437e-05] 1.51
+11 11 11 [5.08546829e-04 5.05447388e-05 7.03334808e-05] 1.52
+11 11 11 [5.11646271e-04 5.05447388e-05 7.12871552e-05] 1.53
+9 9 9 [4.99248505e-04 4.93526459e-05 6.41345978e-05] 1.54
+6 5 6 [4.94241714e-04 4.86373901e-05 5.86509705e-05] 1.55
+5 5 5 [4.85181808e-04 4.88758087e-05 6.07967377e-05] 1.56
+5 5 5 [4.85181808e-04 4.88758087e-05 6.03199005e-05] 1.57
+5 5 5 [4.80413437e-04 4.88758087e-05 6.34193420e-05] 1.58
+5 5 5 [4.87327576e-04 4.86373901e-05 6.00814819e-05] 1.59
+5 5 5 [4.86612320e-04 4.86373901e-05 6.67572021e-05] 1.6
+3 3 3 [4.74214554e-04 4.86373901e-05 5.53131104e-05] 1.61
+1 1 1 [4.72545624e-04 4.83989716e-05 4.72068787e-05] 1.62
+1 1 1 [4.73499298e-04 4.81605530e-05 4.67300415e-05] 1.63
+1 1 1 [4.74929810e-04 5.17368317e-05 4.64916229e-05] 1.64
+    """
