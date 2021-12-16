@@ -125,6 +125,7 @@ distance_matrix_to_geometry_conversion_notes = """
 if bUseNumba :
         @jit(nopython=True)
         def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+                # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**2.
                 DIM = n_dimensions
@@ -141,6 +142,7 @@ if bUseNumba :
                 return ( xr )
 else :
         def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+                # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**2.
                 DIM = n_dimensions
@@ -283,7 +285,7 @@ if bUseNumba :
             # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
             # CLUSTERING MODULE (in src/impetuous/clustering.py )
             # OR IN https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
-            # as of commit https://github.com/richardtjornhammar/RichTools/commit/76201bb07687017ae16a4e57cb1ed9fd8c394f18 2016
+            # https://github.com/richardtjornhammar/RichTools/commit/74b35df9c623bf03570707a24eafe828f461ed90#diff-25a6634263c1b1f6fc4697a04e2b9904ea4b042a89af59dc93ec1f5d44848a26
             # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
             #
             # THIS ROUTINE RETURNS A LIST BELONGING TO THE CLUSTERS
@@ -751,8 +753,8 @@ if __name__ == '__main__' :
         T.append( time.time() )
         print ( len(R) , len( P[0] ) , len(Q) , np.diff(T) , alpha )
 
-    """
-N   M  K   EDNESS LINEAR    IVITY JIT     EDNESS-JIT
+    """    CONNECT +
+ N  M  K   EDNESS LINEAR    IVITY JIT     EDNESS-JIT
 67 67 67 [7.61270523e-04 5.55515289e-05 2.30550766e-04] 1.01
 63 63 63 [7.44342804e-04 4.60147858e-05 2.15530396e-04] 1.02
 63 63 63 [7.4672699e-04 4.5299530e-05 2.1481514e-04] 1.03

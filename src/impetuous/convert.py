@@ -241,7 +241,7 @@ class NodeGraph ( Node ) :
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
 
-    def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld=True ) -> list :
+    def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld:bool=True ) -> list :
         #
         # AN ALTERNATIVE METHOD
         # DOES THE SAME THING AS THE CONNECTIVITY CODE IN MY
@@ -257,6 +257,10 @@ class NodeGraph ( Node ) :
         # THIS CLASS WILL EMPLOY THE JIT connectivity IMPLEMENTATION
         # IN THE FUTURE BECAUSE IT IS SUPERIOR
         #
+        if len ( distm.shape ) < 2 :
+            print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
+            exit(1)
+        #
         if bOld : # WATER CLUSTERING ALGO FROM 2009
             from impetuous.clustering import connectivity as connections
             results = connections ( distm , alpha )
@@ -264,10 +268,7 @@ class NodeGraph ( Node ) :
             for c in results[1]:
                 L[c[0]] = L[c[0]]|set([c[1]])
             return ( L )
-
-        if len ( distm.shape ) < 2 :
-            print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
-            exit(1)
+        #
         def b2i ( a:list ) -> list :
             return ( [ i for b,i in zip(a,range(len(a))) if b ] )
         def f2i ( a:list,alf:float ) -> list :
