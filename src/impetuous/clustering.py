@@ -344,10 +344,6 @@ else :
                 if bAdd and len(ids) >= n_connections :
                     L .append( ids )
             return ( L )
-            
-def connectivity_legacy001 ( B , val, bVerbose=False ) :
-        print('REMOVED AS OF 0.77.2')
-        exit(1)
 
 
 clustering_algorithm = None
@@ -730,7 +726,7 @@ if __name__ == '__main__' :
         print ( connectivity(A,0.11) ) # 
         print ( dbscan(distance_matrix=pd.DataFrame(A).values,eps=0.11,minPts=2) )
 
-        
+
     import time
     print ( 'HERE' )
 
