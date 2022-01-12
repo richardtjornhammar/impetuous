@@ -32,13 +32,22 @@ def get_coordinates ( values , length_scales=None ) :
     coordinates = np.array([ r/l for (r,l) in zip(coordinates,L)])
     return ( coordinates )
 
+def fieldform ( values , length_scales=None ) :
+    coordinates = get_coordinates( values , length_scales=length_scales )
+    R = [ coordinates , values ]
+    return ( R )
+
 def convolve ( xi,R,bFlat = True ) :
     fval = np.fft.fft2( R[1])
-    G    = np.exp( -( np.sum( np.array( R[0] )**2 ,0) )*( xi ) )    
+    G    = np.exp( -( np.sum( np.array( R[0] )**2 ,0) )*( xi ) )
     conn = np.fft.ifft2(np.fft.fftshift((np.fft.fftshift(fval)*G))).real
     if bFlat :
         conn = conn.reshape(-1)
     return ( conn )
+
+def field_convolve( values, mask_value=0, convolution = lambda xi,R:convolve(xi,R,False) ) :
+    R = fieldform ( values )
+    return ( convolution ( mask_value , R ) )
 
 def golden_ration_phasetransition_search ( values , coordinates = None ,
                            unimodal_function = lambda x:kurtosis(x) ,
