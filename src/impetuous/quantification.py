@@ -1705,7 +1705,7 @@ def fibonacci(n:int) -> int :
     if n>0:
        return ( n )
 
-def f_truth(i:int) -> bool :  THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2I+1
+def f_truth(i:int) -> bool : #  THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2I+1
     return ( fibonacci(i)**2+fibonacci(i+1)**2 == fibonacci(2*i+1))
 
 if __name__ == '__main__' :
