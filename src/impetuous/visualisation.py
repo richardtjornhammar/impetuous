@@ -34,9 +34,19 @@ from bokeh.plotting import figure, output_file, show, save
 #
 import warnings
 
-run_in_notebook="""
+run_in_notebook = """
     from bokeh.plotting import output_notebook, show
     output_notebook()"""
+
+run_mplot_on_broken_qt = """
+from pylab import figure, show, rand
+import matplotlib
+matplotlib.use('TkAgg',force=True)
+
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import matplotlib.cm as cm
+"""
 
 typecheck = lambda x,typ: typ in str(type(x))
 list_typecheck = lambda xl,typ, func: func( [ typecheck(x,typ) for x in xl ] )
