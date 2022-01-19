@@ -57,22 +57,32 @@ def convolve ( xi,R,bFlat = True ) :
 
 def best_neighbor_assignment ( noisy , nnL = 1 ) :
     # SLOW METHOD FOR DIRECTIONAL BLURRING USING THE BEST NEIGHBOR VALUE
+    # SAME ENTROPY
     res = noisy.copy()
-    nn = lambda i,nnL,L : set( np.array([  [((i-j)*int(i-j>=0)),((i+j)*int(i+j<=L-1))] for j in range(1,nnL+1) ]).reshape(-1) )
+    def nn ( i:int , j:int , nnL:int , L:int , P:int) :
+        NN = []
+        for k in range(i-nnL,i+nnL+1):
+            if k<0 or k>L-1:
+                continue
+            for l in range(j-nnL,j+nnL+1):
+                if l<0 or l>P-1:
+                    continue
+                if k==i and l==j:
+                    continue
+                NN.append( (k,l) )
+        return ( NN )
+
     IDX = [ (ic,jc) for ic in range(res.shape[0]) for jc in range(res.shape[1]) ]
     for idxpair in IDX :
             ic = idxpair[0]
             jc = idxpair[1]
-            xc = nn ( ic,nnL,res.shape[0] )
-            yc = nn ( jc,nnL,res.shape[1] )
-            idxs   = [(x,y) for x in xc for y in yc ]
+            idxs = nn ( ic , jc , nnL , res.shape[0] , res.shape[1] )
             nnvals = [ noisy[rp] for rp in idxs ]
             armin  = np.argmin( (nnvals - noisy[ic,jc])**2 )
             repval = 0.5*( nnvals[armin] + noisy[ic,jc] )
             for rp in idxs :
-                res[rp] += repval/len(idxs)
+                res[rp] += repval / len(idxs)
     return ( res )
-
 
 def field_convolve( values, mask_value=0, convolution = lambda xi,R:convolve(xi,R,False) ) :
     R = fieldform ( values )
