@@ -55,23 +55,25 @@ def convolve ( xi,R,bFlat = True ) :
         conn = conn.reshape(-1)
     return ( conn )
 
+
+def nn ( i:int , j:int , nnL:int , L:int , P:int) :
+    NN = []
+    for k in range(i-nnL,i+nnL+1):
+        if k<0 or k>L-1:
+            continue
+        for l in range(j-nnL,j+nnL+1):
+            if l<0 or l>P-1:
+                continue
+            if k==i and l==j:
+                continue
+            NN.append( (k,l) )
+    return ( NN )
+
+
 def best_neighbor_assignment ( noisy , nnL = 1 ) :
     # SLOW METHOD FOR DIRECTIONAL BLURRING USING THE BEST NEIGHBOR VALUE
     # SAME ENTROPY
     res = noisy.copy()
-    def nn ( i:int , j:int , nnL:int , L:int , P:int) :
-        NN = []
-        for k in range(i-nnL,i+nnL+1):
-            if k<0 or k>L-1:
-                continue
-            for l in range(j-nnL,j+nnL+1):
-                if l<0 or l>P-1:
-                    continue
-                if k==i and l==j:
-                    continue
-                NN.append( (k,l) )
-        return ( NN )
-
     IDX = [ (ic,jc) for ic in range(res.shape[0]) for jc in range(res.shape[1]) ]
     for idxpair in IDX :
             ic = idxpair[0]
