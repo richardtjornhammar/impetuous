@@ -16,6 +16,7 @@ limitations under the License.
 import pandas as pd
 import numpy as np
 from scipy.stats import kurtosis
+from scipy.stats import rankdata
 
 def get_coordinates ( values , length_scales=None ) :
     n , m = np.shape( values )
