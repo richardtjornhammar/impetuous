@@ -109,6 +109,28 @@ def fd001 ( I , npix=3 ) :
     RAJ = PAJ[npix:-npix,npix:-npix]
     return ( RAJ )
 
+def fdz ( I , npix=5 , cval=50 ) :
+    # NOT DIAGNOSED
+    AI      = accentuate_field ( I )
+    N,M     = np.shape(AI)
+    PAJ     = np.pad ( AI , npix ) * 0.0
+    for i in range ( -npix , npix ) :
+        for j in range ( -npix , npix ) :
+            AJ  = AI
+            D2  = 0
+            if i == 0 and j == 0 :
+                continue
+            AJ  = np.roll( AJ , i , axis=0 )
+            AJ  = np.roll( AJ , j , axis=1 )
+            I2  = ( AJ - AI )**2  / np.std(AI)**2
+            D2  = ( i**2 + j**2 ) / npix**2
+            mX  = 0.5 * ( I2 + D2 )
+            mlX = 0.5 * ( np.log(I2) + np.log(D2) )
+            X2  = ( np.exp( mlX ) ) / ( mX )
+            PAJ [ (npix+i):(N+npix+i),(npix+j):(M+npix+j) ] += X2
+    RAJ = PAJ[npix:-npix,npix:-npix]
+    return ( field_convolve(RAJ*AI,cval)  )
+
 
 def field_convolve( values, mask_value=0, convolution = lambda xi,R:convolve(xi,R,False) ) :
     R = fieldform ( values )
