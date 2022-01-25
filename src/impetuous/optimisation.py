@@ -110,9 +110,11 @@ def fd001 ( I , npix=3 ) :
     RAJ = PAJ[npix:-npix,npix:-npix]
     return ( RAJ )
 
-def fdz ( I , npix=5 , cval=50 ) :
+def fdz ( I , npix=5 , cval=50 , bEqualized=True ) :
     # NOT DIAGNOSED
-    AI      = accentuate_field ( I )
+    AI = I.copy()
+    if bEqualized :
+        AI      = accentuate_field ( I , False )
     N,M     = np.shape(AI)
     PAJ     = np.pad ( AI , npix ) * 0.0
     for i in range ( -npix , npix ) :
