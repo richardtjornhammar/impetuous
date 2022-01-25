@@ -15,10 +15,11 @@ limitations under the License.
 """
 import pandas as pd
 import numpy as np
+import typing
 from scipy.stats import kurtosis
 from scipy.stats import rankdata
 
-def get_coordinates ( values , length_scales=None ) :
+def get_coordinates ( values:np.array , length_scales:list=None ) -> np.array :
     n , m = np.shape( values )
     if length_scales is None :
         L = [ n,m ]
@@ -33,12 +34,16 @@ def get_coordinates ( values , length_scales=None ) :
     coordinates = np.array([ r/l for (r,l) in zip(coordinates,L)])
     return ( coordinates )
 
-def fieldform ( values , length_scales=None ) :
+def fieldform ( values:np.array , length_scales:list=None ) :
     coordinates = get_coordinates( values , length_scales=length_scales )
     R = [ coordinates , values ]
     return ( R )
 
-def accentuate_field ( noisy , bExp = True ) :
+def equalise_field ( noisy:np.array ) -> np.array :
+    # HISTOGRAM EQUALISATION
+    return ( accentuate_field ( noisy , False ) )
+
+def accentuate_field ( noisy:np.array , bExp:bool = True ) -> np.array :
     # NOISY IS A TENSOR CONTAINING VALUES DESCRIBING SOME INTERNALLY SIMILAR TYPED OBJECT
     accf  = rankdata(noisy.reshape(-1),'average').reshape(np.shape(noisy))
     accf /= (np.max(accf)+0.5)
@@ -57,7 +62,7 @@ def convolve ( xi,R,bFlat = True ) :
     return ( conn )
 
 
-def nn ( i:int , j:int , nnL:int , L:int , P:int) :
+def nn ( i:int , j:int , nnL:int , L:int , P:int) -> list :
     NN = []
     for k in range(i-nnL,i+nnL+1):
         if k<0 or k>L-1:
@@ -71,7 +76,7 @@ def nn ( i:int , j:int , nnL:int , L:int , P:int) :
     return ( NN )
 
 
-def best_neighbor_assignment ( noisy , nnL = 1 ) :
+def best_neighbor_assignment ( noisy:np.array , nnL:int = 1 ) -> np.array :
     # SLOW METHOD FOR DIRECTIONAL BLURRING USING THE BEST NEIGHBOR VALUE
     # SAME ENTROPY
     res = noisy.copy()
@@ -87,7 +92,7 @@ def best_neighbor_assignment ( noisy , nnL = 1 ) :
                 res[rp] += repval / len(idxs)
     return ( res )
 
-def fd001 ( I , npix=3 ) :
+def fd001 ( I:np.array , npix:int=3 ) -> np.array :
     # INCREASES ENTROPY
     AI      = accentuate_field ( I )
     N,M     = np.shape(AI)
@@ -110,7 +115,7 @@ def fd001 ( I , npix=3 ) :
     RAJ = PAJ[npix:-npix,npix:-npix]
     return ( RAJ )
 
-def fdz ( I , npix=5 , cval=50 , bEqualized=True ) :
+def fdz ( I:np.array , npix:int=5 , cval:float=50 , bEqualized:bool=True ) -> np.array :
     # NOT DIAGNOSED
     AI = I.copy()
     if bEqualized :
@@ -135,14 +140,14 @@ def fdz ( I , npix=5 , cval=50 , bEqualized=True ) :
     return ( field_convolve(RAJ*AI,cval)  )
 
 
-def field_convolve( values, mask_value=0, convolution = lambda xi,R:convolve(xi,R,False) ) :
+def field_convolve( values:np.array, mask_value:float=0, convolution = lambda xi,R:convolve(xi,R,False) ) : # LEAVE LAMBDAS UNTYPED FOR NOW
     R = fieldform ( values )
     return ( convolution ( mask_value , R ) )
 
-def golden_ration_phasetransition_search ( values , coordinates = None ,
+def golden_ration_phasetransition_search ( values:np.array , coordinates:np.array = None ,
                            unimodal_function = lambda x:kurtosis(x) ,
                            convolution = lambda xi,R:convolve(xi,R) ,
-                           length_scales = None , extreme = 1000.0, tol=1e-6 ):
+                           length_scales:list = None , extreme:float = 1000.0, tol:float=1e-6 ):
     saiga__ = """
 see my github.com/richardtjornhammar/MapTool repo i.e. file
 maptool.cc  around line 845 or
