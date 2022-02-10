@@ -4,7 +4,7 @@ This toolkit currently offers enrichment analysis, hierarchical enrichment analy
 Several novel algorithms have been invented as of this repository by the [author](https://richardtjornhammar.github.io/). Some of the algorithms rely on old scientific litterature, but still consitutes new/novel code implementations. 
 
 These novel algorithms include but are not limited to:
-* A graph construction and graph searching class can be found in src/impetuous/convert.py (GraphNode). It was developed and invented as a faster alternative for hierarchical DAG construction and searching.
+* A graph construction and graph searching class can be found in src/impetuous/convert.py (NodeGraph). It was developed and invented as a faster alternative for hierarchical DAG construction and searching.
 * A fast DBSCAN method utilizing [my](https://richardtjornhammar.github.io/) connectivity code as invented during my PhD.
 * Hierarchical enrichment routine with conservative or lax extinction of evidence already accounted for. Used for multiple hypothesis testing.
 * A q-value method for rank correcting p-values. The computation differs from other methods.
