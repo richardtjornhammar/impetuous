@@ -754,14 +754,13 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
             lidx = sidx[l]
             lp [ lidx ] = l
 
-        cidx = [ s.split('-') for s in sidx ]
-        cidx = set([ c for c in unpack(cidx) ] )
+        cidx = set( unpack( [ s.split('-') for s in sidx ] ) )
         found = {}
         for k in cidx :
             pij = sidx[nar].split('-')
             i   = pij[0]
             j   = pij[1]
-            if k == j or k == i :
+            if k == j or k == i or k in cleared or i in cleared or j in cleared :
                 continue
             h1  = lp[ label_order(i,k) ]
             h2  = lp[ label_order(j,k) ]
