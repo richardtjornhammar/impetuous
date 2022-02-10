@@ -15,6 +15,7 @@ limitations under the License.
 """
 import pandas as pd
 import numpy as np
+import typing
 import sys
 import sklearn.cluster as sc
 
@@ -700,11 +701,6 @@ def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
                     bRemoveZeros = False )""")
         exit ( 1 )
 
-
-        
-import numpy as np
-import typing
-import numpy as np
 
 def unpack ( seq ) : # seq:Union -> Union
     if isinstance ( seq,(list,tuple,set)) :
