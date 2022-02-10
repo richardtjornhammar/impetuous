@@ -701,8 +701,97 @@ def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
         exit ( 1 )
 
 
-if __name__ == '__main__' :
+        
+import numpy as np
+import typing
+import numpy as np
 
+def unpack ( seq ) : # seq:Union -> Union
+    if isinstance ( seq,(list,tuple,set)) :
+        yield from ( x for y in seq for x in unpack(y) )
+    elif isinstance ( seq , dict ):
+        yield from ( x for item in seq.items() for y in item for x in unpack(y) )
+    else :
+        yield seq
+
+def rem ( a:list , H:list ) -> list :
+    h0 = []
+    for h in H:
+        hp = h - np.sum(h>np.array(h0))
+        h0 .append(h)
+        a .pop(hp)
+    return(a)
+
+def linkage ( distm:np.array , command:str = 'max' ) -> dict :
+    #
+    # CALUCULATES WHEN SAIGAS ARE LINKED
+    # MAX CORRESPONDS TO COMPLETE LINKAGE
+    # MIN CORRESPONDS TO SINGLE LINKAGE
+    #
+    D = distm
+    N = len(D)
+
+    sidx = [ str(i)+'-'+str(j) for i in range(N) for j in range(N) if i<j ]
+    pidx = [ [i,j] for i in range(N) for j in range(N) if i<j ]
+    R = [ D[idx[0]][idx[1]] for idx in pidx ]
+
+    label_order = lambda i,k: i+'-'+k if '.' in i else k+'-'+i if '.' in k else  i+'-'+k if int(i)<int(k) else k+'-'+i
+
+    if command == 'max':
+        func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]>R[j] else [(R[j],j),(R[i],i)]
+    if command == 'min':
+        func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]<R[j] else [(R[j],j),(R[i],i)]
+
+    LINKS = {}
+    cleared = set()
+
+    for I in range(N**2) : # WORST CASE SCENARIO
+        clear = []
+        if len(R) == 0 :
+            break
+        nar   = np.argmin( R )
+        clu_idx = sidx[nar].replace('-','.')
+        clear .append(nar)
+        LINKS = { **{ clu_idx : R[nar] } , **LINKS }
+        lp    = {}
+        for l in range(len(sidx)) :
+            lidx = sidx[l]
+            lp [ lidx ] = l
+
+        cidx = [ s.split('-') for s in sidx ]
+        cidx = set([ c for c in unpack(cidx) ] )
+        found = {}
+        for k in cidx :
+            pij = sidx[nar].split('-')
+            i   = pij[0]
+            j   = pij[1]
+            if k == j or k == i :
+                continue
+            h1  = lp[ label_order(i,k) ]
+            h2  = lp[ label_order(j,k) ]
+            Dijk = func(R,h1,h2)
+            nidx = [ s for s in sidx[Dijk[0][1]].split('-') if not s in clu_idx ][0]
+            nclu_idx = clu_idx+'-'+nidx
+            found[ nclu_idx ] = Dijk[0][0]
+            clear.append(h1)
+            clear.append(h2)
+
+        R = rem(R,clear)
+        sidx = rem(sidx,clear)
+        cleared = cleared|set(clear)
+
+        for label,d in found.items() :
+            R.append(d)
+            sidx.append(label)
+    return ( LINKS )
+
+if __name__=='__main__' :
+
+    D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
+    print ( np.array(D) )
+    print ( linkage( D, command='min') )
+    print ( linkage( D, command='max') )
+    
     if False :
         #
         # TEST DEPENDS ON THE DIABETES DATA FROM BROAD INSTITUTE
