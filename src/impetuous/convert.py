@@ -286,6 +286,25 @@ class NodeGraph ( Node ) :
                 L .append( ids )
         return ( L )
 
+    def linkages_to_pclist ( self , links:dict ) -> list :
+        bottoms_up = sorted([ (v,k) for k,v in links.items()])
+        PClist = []
+        while ( len(bottoms_up)>1 ) :
+            child = bottoms_up[0]
+            for parent in bottoms_up[1:] :
+                if child[1] in parent[1] :
+                    parent_child = [ (parent[1], child[1]) ]
+                    PClist = [ *PClist, *parent_child ]
+                    bottoms_up.remove( child )
+                    break
+        return ( PClist )
+
+    def linkages_to_graph_dag( self, links:dict ) -> None :
+        PClist = self.linkages_to_pclist ( links )
+        for pc in PClist :
+            self.add_ascendant_descendant ( pc[0], pc[1] )
+        self.set_root_id(self.list_roots()[0] )    
+    
     def distance_matrix_to_pclist ( self , distm:np.array ,
                                     cluster_connections:int = 1 ,
                                     hierarchy_connections:int = 1 ,
