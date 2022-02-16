@@ -303,8 +303,8 @@ class NodeGraph ( Node ) :
         PClist = self.linkages_to_pclist ( links )
         for pc in PClist :
             self.add_ascendant_descendant ( pc[0], pc[1] )
-        self.set_root_id(self.list_roots()[0] )    
-    
+        self.set_root_id(self.list_roots()[0] )
+
     def distance_matrix_to_pclist ( self , distm:np.array ,
                                     cluster_connections:int = 1 ,
                                     hierarchy_connections:int = 1 ,
@@ -313,7 +313,7 @@ class NodeGraph ( Node ) :
         # FASTER PCLIST CONSTRUCTION ROUTINE
         # RETURNS LIST USEFUL FOR HIERARCHY GENERATION
         # SHOULD BE EASIER TO PARALLELIZE WITH JIT
-        # lambda p:set -> bool INVALID SYNTAX #
+        #
         logic = lambda p,c : len(p&c) >= hierarchy_connections and len(p^c)>0
         if not bNonRedundant :
             logic = lambda p,c : len(p&c) >= hierarchy_connections
