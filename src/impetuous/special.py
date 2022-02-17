@@ -213,6 +213,35 @@ def Fibonacci(n):
 def F_truth(i): # THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2i+1
     return ( Fibonacci(i)**2+Fibonacci(i+1)**2 == Fibonacci(2*i+1))
 
+
+def unpack ( seq ) : # seq:Union -> Union
+    if isinstance ( seq,(list,tuple,set)) :
+        yield from ( x for y in seq for x in unpack(y) )
+    elif isinstance ( seq , dict ):
+        yield from ( x for item in seq.items() for y in item for x in unpack(y) )
+    else :
+        yield seq
+
+def rem ( a:list , H:list ) -> list :
+    h0 = []
+    for h in H:
+        hp = h - np.sum(h>np.array(h0))
+        h0 .append(h)
+        a .pop(hp)
+    return(a)
+
+def smom ( v:np.array , p:int ) -> np.array :
+    n = len(v)
+    X = [ np.mean(v) ]
+    X .append( np.std(v) )
+    z = (v-X[0])/X[1]
+    if p>2 :
+        for q in range( 3 , p+1 ) :
+            X.append( np.sum(z**q)/n )
+    return ( np.array(X)[:p] )
+
+
+
 if __name__ == '__main__' :
     print ( sign(-10) )
     print (  abs(-10) , abs(10) )
