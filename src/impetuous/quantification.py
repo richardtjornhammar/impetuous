@@ -1617,14 +1617,14 @@ def quality_metrics ( TP:int , FP:int , FN:int , TN:int , alternative:str='two-s
         }
     return ( results_lookup )
 
-def pvalues ( v:np.array )->np.array :
+def pvalues_dsdr_n ( v:np.array )->np.array :
     #
     # RANK DERIVATIVES CONVERGE
     # TO NORMAL DISTRIBUTION
     # FASTER THAN THE VALUES
     # USING CENTRAL LIMIT THEOREM
     #
-    def nn ( N:int , i:int , n:int=1 ) :
+    def nn ( N:int , i:int , n:int=1 )->list :
         t = [(i-n)%N,(i+n)%N]
         if i-n<0 :
             t[0] = 0
