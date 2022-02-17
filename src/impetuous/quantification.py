@@ -1617,6 +1617,36 @@ def quality_metrics ( TP:int , FP:int , FN:int , TN:int , alternative:str='two-s
         }
     return ( results_lookup )
 
+def pvalues ( v:np.array )->np.array :
+    #
+    # RANK DERIVATIVES CONVERGE
+    # TO NORMAL DISTRIBUTION
+    # FASTER THAN THE VALUES
+    # USING CENTRAL LIMIT THEOREM
+    #
+    def nn ( N:int , i:int , n:int=1 ) :
+        t = [(i-n)%N,(i+n)%N]
+        if i-n<0 :
+            t[0] = 0
+            t[1] += n-i
+        if i+n>=N :
+            t[0] -= n+i-N
+            t[1] = N-1
+        return ( t )
+
+    import scipy.stats as st
+    rv = st.rankdata(v)-1
+    vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
+    ds = []
+    for w,r in zip(v,rv) :
+        nr = nn(N,int(r),1)
+        nv = [ vr[j] for j in nr]
+        s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
+        ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
+    M_,Var_ = np.mean(ds) , np.std(ds)**2
+    from scipy.special import erf as erf_
+    loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+    return ( loc_Q  ( ds,M_,Var_ ) )
 
 def calculate_rates( journal_df:pd.DataFrame , inferred_df:pd.DataFrame ,
                      formula:str , inference_label:str = 'owner',
