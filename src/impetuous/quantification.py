@@ -1617,7 +1617,7 @@ def quality_metrics ( TP:int , FP:int , FN:int , TN:int , alternative:str='two-s
         }
     return ( results_lookup )
 
-def pvalues_dsdr_n ( v:np.array )->np.array :
+def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
     #
     # RANK DERIVATIVES CONVERGE
     # TO NORMAL DISTRIBUTION
@@ -1646,7 +1646,10 @@ def pvalues_dsdr_n ( v:np.array )->np.array :
     M_,Var_ = np.mean(ds) , np.std(ds)**2
     from scipy.special import erf as erf_
     loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
-    return ( loc_Q  ( ds,M_,Var_ ) )
+    rv = loc_Q ( ds,M_,Var_ )
+    if bReturnDerivatives :
+        rv = [*rv,*ds]
+    return ( np.array(rv).reshape(-1,N) )
 
 def calculate_rates( journal_df:pd.DataFrame , inferred_df:pd.DataFrame ,
                      formula:str , inference_label:str = 'owner',
