@@ -1624,6 +1624,8 @@ def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
     # FASTER THAN THE VALUES
     # USING CENTRAL LIMIT THEOREM
     #
+    N = len(v)
+
     def nn ( N:int , i:int , n:int=1 )->list :
         t = [(i-n)%N,(i+n)%N]
         if i-n<0 :
