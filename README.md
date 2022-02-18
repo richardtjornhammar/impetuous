@@ -581,10 +581,36 @@ We can also reconstruct the original data by multiplying together the factors of
 ```
 Thats all for now folks!
 
-# Example 11: The [traveling salesman](https://gist.github.com/richardtjornhammar/8c17b9d639ba700e03d2656898b63cc3)
+# Example 11: The NodeGraph class for agglomerative hierarchical clustering
 
-This classic problem can be solved by first constructing a distance matrix for all the sites/cities that the person must visit. By performing hierarchical clustering and storing the clusters as nodes in a hierarchical DAG one can obtain the solution by doing a breadth first search on that hierarchy. It is demonstrated [here](https://gist.github.com/richardtjornhammar/8c17b9d639ba700e03d2656898b63cc3) and uses the newly developed NodeGraph functionalities as well as the numerical hierarchical clustering routines (in `impetuous.hierarchical` and `impetuous.convert` respectively). This section will be further elaborated.
+An alternative way of constructing a DAG hierarchy is by using distance matrix linkages.
 
+```
+import numpy as np
+import typing
+
+if __name__=='__main__' :
+
+    import time
+    from impetuous.clustering import linkage
+
+    D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
+    print ( np.array(D) )
+    t0 = time.time()
+    links = linkage( D, command='min')
+    dt = time.time()-t0
+    print ('min>', linkage( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
+    print ('max>', linkage( D, command='max') )     # COMPLETE LINKAGE
+
+    import impetuous.convert as gg
+
+    GN = gg.NodeGraph()
+    GN .linkages_to_graph_dag( links )
+    GN .write_json( jsonfile='./graph_hierarchy.json' )
+
+```
+
+See also solution with less dependencies in the [graphtastic](https://github.com/richardtjornhammar/graphtastic) library
 
 # Notes
 

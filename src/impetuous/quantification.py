@@ -1619,10 +1619,7 @@ def quality_metrics ( TP:int , FP:int , FN:int , TN:int , alternative:str='two-s
 
 def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
     #
-    # RANK DERIVATIVES CONVERGE
-    # TO NORMAL DISTRIBUTION
-    # FASTER THAN THE VALUES
-    # USING CENTRAL LIMIT THEOREM
+    # PVALUES FROM "RANK DERIVATIVES"
     #
     N = len(v)
 
