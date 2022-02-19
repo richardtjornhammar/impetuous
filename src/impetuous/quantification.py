@@ -1652,6 +1652,39 @@ def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
         rv = [*rv,*ds,*ev ]
     return ( np.array(rv).reshape(-1,N) )
 
+
+def pvalues_dsdr_e ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
+    #
+    # PVALUES FROM "RANK DERIVATIVES"
+    #
+    N = len(v)
+
+    def nn ( N:int , i:int , n:int=1 )->list :
+        t = [(i-n)%N,(i+n)%N]
+        if i-n<0 :
+            t[0] = 0
+            t[1] += n-i
+        if i+n>=N :
+            t[0] -= n+i-N
+            t[1] = N-1
+        return ( t )
+
+    import scipy.stats as st
+    rv = st.rankdata(v)-1
+    vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
+    ds = []
+    for w,r in zip(v,rv) :
+        nr = nn(N,int(r),1)
+        nv = [ vr[j] for j in nr]
+        s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
+        ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
+    M_ = np.mean(ds)
+    loc_E  = lambda X,L_mle : [ np.exp(-L_mle*x) for x in X ]
+    ev = loc_E ( ds,1.0/M_)   # EXP DISTRIBUTION P
+    if bReturnDerivatives :
+        rv = [*ev,*ds ]
+    return ( np.array(rv).reshape(-1,N) )
+
 def calculate_rates( journal_df:pd.DataFrame , inferred_df:pd.DataFrame ,
                      formula:str , inference_label:str = 'owner',
                      bVerbose:bool = False ,
