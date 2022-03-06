@@ -694,7 +694,6 @@ def qvalues ( p_values_in , pi0 = None ) :
     return qs_
 
 
-
 class Qvalues ( object ) :
     def __init__( self, pvalues:np.array , method:str = "UNIQUE" , pi0:np.array = None ) :
         from scipy.stats import rankdata
@@ -764,6 +763,90 @@ class Qvalues ( object ) :
         self.qvalues = np.array([q[0] for q in qs_])
         return np.array(qs_)
 
+
+class Pvalues ( object ) :
+    def __init__( self, data_values:np.array , method:str = "RANK DERIV E" ) :
+        from scipy.stats import rankdata
+        self.rankdata = rankdata
+        self.method   : str      = method
+        self.dvalues  : np.array = data_values
+        self.pvalues  : np.array = pvalues
+        self.dsdrvalues : np.array = None
+        self.dpres    : np.array = None
+        if method == "RANK DERIV E" :
+            self.dpres = self.pvalues_dsdr_n ( self.pvalues )
+        if method == "RANK DERIV N" :
+            self.dpres = self.pvalues_dsdr_e ( self.pvalues )
+        self.pvalues = self.dpres[0]
+
+    def __str__ ( self ) :
+        return ( self.info() )
+
+    def __repr__( self ) :
+        return ( self.info() )
+
+    def help ( self ) :
+        #
+        # PVALUES FROM "RANK DERIVATIVES"
+        #
+        desc__ = "\n\nRANK DERIVATIVE P-VALUES\nVIABLE METHODS ARE method = RANK DERIV E, RANK DERIV N \n\n EMPLOYED METHOD: " + self.method
+        return ( desc__ )
+
+    def info ( self ) :
+        desc__ = "\nMETHOD:"+self.method+"\n   p-values       \t     ds-values\n"
+        return ( desc__+'\n'.join( [ ' \t '.join(["%10.10e"%z for z in s]) for s in self.dpres.T ] ) )
+
+    def get ( self ) :
+        return ( self.qpres )
+
+    def nn ( self, N:int , i:int , n:int=1 )->list :
+        t = [(i-n)%N,(i+n)%N]
+        if i-n<0 :
+            t[0] = 0
+            t[1] += n-i
+        if i+n>=N :
+            t[0] -= n+i-N
+            t[1] = N-1
+        return ( t )
+
+    def pvalues_dsdr_n ( self, v:np.array , bReturnDerivatives:bool=False ) -> np.array :
+        #
+        N = len(v)
+        import scipy.stats as st
+        rv = st.rankdata(v)-1
+        vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
+        ds = []
+        for w,r in zip(v,rv) :
+            nr = self.nn(N,int(r),1)
+            nv = [ vr[j] for j in nr]
+            s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
+            ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
+        M_,Var_ = np.mean(ds) , np.std(ds)**2
+        from scipy.special import erf as erf_
+        loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+        rv = loc_Q ( ds,M_,Var_ ) # KEEP CONSERVATIVE ...
+        if bReturnDerivatives :
+            rv = [*rv,*ds ]
+        return ( np.array(rv).reshape(-1,N) )
+
+    def pvalues_dsdr_e ( self, v:np.array , bReturnDerivatives:bool=False ) -> np.array :
+        #
+        N = len(v)
+        import scipy.stats as st
+        rv = st.rankdata(v)-1
+        vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
+        ds = []
+        for w,r in zip(v,rv) :
+            nr = self.nn(N,int(r),1)
+            nv = [ vr[j] for j in nr]
+            s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
+            ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
+        M_ = np.mean(ds)
+        loc_E  = lambda X,L_mle : [ np.exp(-L_mle*x) for x in X ]
+        ev = loc_E ( ds,1.0/M_)   # EXP DISTRIBUTION P
+        if bReturnDerivatives :
+            rv = [*ev,*ds ]
+        return ( np.array(rv).reshape(-1,N) )
 
 
 class MultiFactorAnalysis ( object ) :
