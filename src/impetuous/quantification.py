@@ -459,7 +459,7 @@ def multifactor_evaluation (  analyte_df , journal_df , formula ) :
     for c in eval_df.columns :
         all.append ( pd.DataFrame ( quantify_density_probability ( eval_df.loc[:,c].values ),
                 index = [c+',p',c+',r'], columns=eval_df.index ).T)
-    res_df = pd.concat( all,1 )
+    res_df = pd.concat( all,axis=1 )
     for c in res_df.columns:
         if ',p' in c:
             q = [ qv[0] for qv in qvalues(res_df.loc[:,c].values) ]
@@ -519,7 +519,7 @@ def proj_c ( P ) :
         print ( "FUNCTION REQUIRES A SAIGA OR PANDA DATA FRAME" )
     CS  = P.T.apply( lambda x: pd.Series( [x[0],x[1]]/np.sqrt(np.sum(x**2)),index=['cos','sin']) ).T
     RHO = P.T.apply( lambda x: np.sqrt(np.sum(x**2)) )
-    CYL = pd.concat( [RHO*CS['cos'],RHO*CS['sin']],1 )
+    CYL = pd.concat( [RHO*CS['cos'],RHO*CS['sin']],axis=1 )
     CYL.columns = ['X','Y']
     return ( CYL )
 
@@ -831,9 +831,9 @@ class Pvalues ( object ) :
         vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
         ds = []
         for w,r in zip(v,rv) :
-            nr = self.nn(N,int(r),1)
-            nv = [ vr[j] for j in nr ]
-            s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
+            nr  = self.nn(N,int(r),1)
+            nv  = [ vr[j] for j in nr ]
+            s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
             ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
         M_,Var_ = np.mean(ds) , np.std(ds)**2
         from scipy.special import erf as erf_
@@ -851,11 +851,12 @@ class Pvalues ( object ) :
         vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
         ds = []
         for w,r in zip(v,rv) :
-            nr = self.nn(N,int(r),1)
-            nv = [ vr[j] for j in nr ]
-            s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
-            ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
-        M_ = np.mean(ds)
+            nr  = self.nn(N,int(r),1)
+            nv  = [ vr[j] for j in nr ]
+            s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
+            dsv = np.mean( np.diff(s_) )
+            ds.append( dsv ) # DR IS ALWAYS 1
+        M_ = np.mean ( ds )
         loc_E  = lambda X,L_mle : [ np.exp(-L_mle*x) for x in X ]
         ev = loc_E ( ds,1.0/M_)   # EXP DISTRIBUTION P
         if bReturnDerivatives :
@@ -1731,13 +1732,13 @@ def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
         return ( t )
 
     import scipy.stats as st
-    rv = st.rankdata(v)-1
+    rv = st.rankdata(v,'ordinal')-1
     vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
     ds = []
     for w,r in zip(v,rv) :
-        nr = nn(N,int(r),1)
-        nv = [ vr[j] for j in nr]
-        s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
+        nr  = nn(N,int(r),1)
+        nv  = [ vr[j] for j in nr]
+        s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
         ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
     M_,Var_ = np.mean(ds) , np.std(ds)**2
     from scipy.special import erf as erf_
@@ -1767,17 +1768,18 @@ def pvalues_dsdr_e ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
         return ( t )
 
     import scipy.stats as st
-    rv = st.rankdata(v)-1
+    rv = st.rankdata(v,'ordinal')-1
     vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
     ds = []
     for w,r in zip(v,rv) :
-        nr = nn(N,int(r),1)
-        nv = [ vr[j] for j in nr]
-        s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
+        nr  = nn(N,int(r),1)
+        nv  = [ vr[j] for j in nr]
+        s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
         ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
     M_ = np.mean(ds)
     loc_E  = lambda X,L_mle : [ np.exp(-L_mle*x) for x in X ]
     ev = loc_E ( ds,1.0/M_)   # EXP DISTRIBUTION P
+    rv = np.array([ev])
     if bReturnDerivatives :
         rv = [*ev,*ds ]
     return ( np.array(rv).reshape(-1,N) )
