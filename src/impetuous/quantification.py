@@ -764,19 +764,22 @@ class Qvalues ( object ) :
         return np.array(qs_)
 
 
+
 class Pvalues ( object ) :
     def __init__( self, data_values:np.array , method:str = "RANK DERIV E" ) :
         from scipy.stats import rankdata
         self.rankdata = rankdata
-        self.method   : str      = method
-        self.dvalues  : np.array = data_values
-        self.pvalues  : np.array = pvalues
+        self.method   : str        = method
+        self.dvalues  : np.array   = data_values
+        self.pvalues  : np.array   = None
         self.dsdrvalues : np.array = None
-        self.dpres    : np.array = None
+        self.dpres    : np.array   = None
         if method == "RANK DERIV E" :
-            self.dpres = self.pvalues_dsdr_n ( self.pvalues )
+            self.dpres = self.pvalues_dsdr_e ( self.dvalues , True)
         if method == "RANK DERIV N" :
-            self.dpres = self.pvalues_dsdr_e ( self.pvalues )
+            self.dpres = self.pvalues_dsdr_n ( self.dvalues , True )
+        if method == "NORMAL" :
+            self.dpres = self.normal_pvalues ( self.dvalues , True )
         self.pvalues = self.dpres[0]
 
     def __str__ ( self ) :
@@ -809,16 +812,27 @@ class Pvalues ( object ) :
             t[1] = N-1
         return ( t )
 
+    def normal_pvalues ( self, v:np.array , bReturnDerivatives:bool=False  ) -> np.array :
+        ds = v # TRY TO ACT LIKE YOU ARE NORMAL ...
+        N = len(v) 
+        M_ , Var_ = np.mean(ds) , np.std(ds)**2
+        from scipy.special import erf as erf_
+        loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+        rv = loc_Q ( ds,M_,Var_ )
+        if bReturnDerivatives :
+            rv = [*rv,*ds ]
+        return ( np.array(rv).reshape(-1,N) )
+
     def pvalues_dsdr_n ( self, v:np.array , bReturnDerivatives:bool=False ) -> np.array :
         #
         N = len(v)
         import scipy.stats as st
-        rv = st.rankdata(v)-1
+        rv = st.rankdata(v,'ordinal') - 1
         vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
         ds = []
         for w,r in zip(v,rv) :
             nr = self.nn(N,int(r),1)
-            nv = [ vr[j] for j in nr]
+            nv = [ vr[j] for j in nr ]
             s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
             ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
         M_,Var_ = np.mean(ds) , np.std(ds)**2
@@ -833,12 +847,12 @@ class Pvalues ( object ) :
         #
         N = len(v)
         import scipy.stats as st
-        rv = st.rankdata(v)-1
+        rv = st.rankdata(v,'ordinal') - 1
         vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
         ds = []
         for w,r in zip(v,rv) :
             nr = self.nn(N,int(r),1)
-            nv = [ vr[j] for j in nr]
+            nv = [ vr[j] for j in nr ]
             s_ = sorted(list(set([*[v[vr[int(r)]]], *[v[j] for j in nv]])) )
             ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
         M_ = np.mean(ds)
