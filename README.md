@@ -614,7 +614,7 @@ See also solution with less dependencies in the [graphtastic](https://github.com
 
 # Example 12: Qualitative Personalized Medicine
 
-In this example we are testing the `Pvalues` and `Qvalues` classes in order to do some speculative qualitative personalized medicine. We have previously `retrieve_data` in Example 7 and since we wonder what the obese patients might express by themselves we have decided to employ a type of novel rank statistic for calculating the p-values of their respective transcript gene expressions. Since we are dealing with a dataset with many features per sample and there is no reasonable direct connection between the transcript probes we rank them and calculate what the average absolute distance between a rank and its neighbours are. We assume that these distances will be exponentially distributed and calculate p-values based on that hypothesis. You can always check if the assumption is true or not. After data [retrival](https://gist.github.com/richardtjornhammar/1b9f5742391b1bcf30f4821a00f30b6a) we can analyse it quickly, see below:
+In this example, we are testing the `Pvalues` and `Qvalues` classes in order to do some speculative qualitative personalized medicine. We have previously `retrieve_data` in Example 7 and since we wonder what the obese patients might express by themselves we have decided to employ a type of novel rank statistic for calculating the p-values of their respective transcript gene expressions. Since we are dealing with a dataset with many features per sample and there is no reasonable direct connection between the transcript probes we rank them and calculate what the average absolute distance between a rank and its neighbours are. We assume that these distances will be exponentially distributed and calculate p-values based on that hypothesis. You can always check if the assumption is true or not. After data [retrieval](https://gist.github.com/richardtjornhammar/1b9f5742391b1bcf30f4821a00f30b6a) we can analyse it quickly, see below:
 
 ```
 if __name__ == '__main__' :
@@ -643,9 +643,9 @@ REACTOME PATHWAY: Metabolism HSA-1430728
 TISSUE EXPRESSION (5): Adipocyte
 DISEASE GENE ASSOCIATION: Catecholaminergic polymorphic ventricular tachycardia
 ```
-are all enriched for this grouping. So it is bad news for this particular obese person because of the excerice and disease gene (CALM) association that increases the risk of heart failure during excerice.
+are all enriched for this grouping. So it is bad news for this particular obese person because of the exercise and disease gene (CALM) association that increases the risk of heart failure during an exercise.
 
-Remeber that you can define your own analyte groupings `gmt` files using this impetuous library.
+Remember that you can define your own analyte groupings `gmt` files using this impetuous library.
 
 # Notes
 
