@@ -802,6 +802,9 @@ class Pvalues ( object ) :
     def get ( self ) :
         return ( self.qpres )
 
+    def sgn ( self, x:float) -> int :
+        return( - int(x<0) + int(x>=0) )
+    
     def nn ( self, N:int , i:int , n:int=1 )->list :
         t = [(i-n)%N,(i+n)%N]
         if i-n<0 :
@@ -823,29 +826,12 @@ class Pvalues ( object ) :
             rv = [*rv,*ds ]
         return ( np.array(rv).reshape(-1,N) )
 
-    def pvalues_dsdr_n ( self, v:np.array , bReturnDerivatives:bool=False ) -> np.array :
+    def pvalues_dsdr_n ( self, v:np.array ,
+                         bReturnDerivatives:bool=False ,
+                         bSymmetric:bool=True ) -> np.array :
         #
         N = len(v)
-        import scipy.stats as st
-        rv = st.rankdata(v,'ordinal') - 1
-        vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
-        ds = []
-        for w,r in zip(v,rv) :
-            nr  = self.nn(N,int(r),1)
-            nv  = [ vr[j] for j in nr ]
-            s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
-            ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
-        M_,Var_ = np.mean(ds) , np.std(ds)**2
-        from scipy.special import erf as erf_
-        loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
-        rv = loc_Q ( ds,M_,Var_ ) # KEEP CONSERVATIVE ...
-        if bReturnDerivatives :
-            rv = [*rv,*ds ]
-        return ( np.array(rv).reshape(-1,N) )
-
-    def pvalues_dsdr_e ( self, v:np.array , bReturnDerivatives:bool=False ) -> np.array :
-        #
-        N = len(v)
+        vsym = lambda a,b : a*self.sgn(a) if b else a
         import scipy.stats as st
         rv = st.rankdata(v,'ordinal') - 1
         vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
@@ -855,7 +841,31 @@ class Pvalues ( object ) :
             nv  = [ vr[j] for j in nr ]
             s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
             dsv = np.mean( np.diff(s_) )
-            ds.append( dsv ) # DR IS ALWAYS 1
+            ds.append( vsym( dsv , bSymmetric) ) # DR IS ALWAYS 1
+        M_,Var_ = np.mean(ds) , np.std(ds)**2
+        from scipy.special import erf as erf_
+        loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+        rv = loc_Q ( ds,M_,Var_ )
+        if bReturnDerivatives :
+            rv = [*rv,*ds ]
+        return ( np.array(rv).reshape(-1,N) )
+
+    def pvalues_dsdr_e ( self, v:np.array ,
+                         bReturnDerivatives:bool=False ,
+                         bSymmetric:bool=True ) -> np.array :
+        #
+        N = len(v)
+        vsym = lambda a,b : a*self.sgn(a) if b else a
+        import scipy.stats as st
+        rv = st.rankdata(v,'ordinal') - 1
+        vr = { int(k):v for k,v in zip(rv,range(len(rv)))}
+        ds = []
+        for w,r in zip(v,rv) :
+            nr  = self.nn(N,int(r),1)
+            nv  = [ vr[j] for j in nr ]
+            s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
+            dsv = np.mean( np.diff(s_) )
+            ds.append( vsym( dsv , bSymmetric) ) # DR IS ALWAYS 1
         M_ = np.mean ( ds )
         loc_E  = lambda X,L_mle : [ np.exp(-L_mle*x) for x in X ]
         ev = loc_E ( ds,1.0/M_)   # EXP DISTRIBUTION P
@@ -1739,7 +1749,7 @@ def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
         nr  = nn(N,int(r),1)
         nv  = [ vr[j] for j in nr]
         s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
-        ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
+        ds.append( np.abs(np.mean(np.diff(s_))) ) # DR IS ALWAYS 1
     M_,Var_ = np.mean(ds) , np.std(ds)**2
     from scipy.special import erf as erf_
     loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
@@ -1775,7 +1785,7 @@ def pvalues_dsdr_e ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
         nr  = nn(N,int(r),1)
         nv  = [ vr[j] for j in nr]
         s_  = [ v[j] for j in sorted(list(set( [ *[vr[int(r)]] , *nv ] )) ) ]
-        ds.append( np.mean( np.diff(s_) )) # DR IS ALWAYS 1
+        ds.append( np.abs(np.mean(np.diff(s_))) ) # DR IS ALWAYS 1
     M_ = np.mean(ds)
     loc_E  = lambda X,L_mle : [ np.exp(-L_mle*x) for x in X ]
     ev = loc_E ( ds,1.0/M_)   # EXP DISTRIBUTION P
