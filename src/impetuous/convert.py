@@ -33,8 +33,11 @@ class Node ( object ) :
         self.data_        :dict  = dict() # OTHER THINGS SHOULD BE ALL INFORMATION FLOATING IN USERSPACE
 
     def can_it_be_root ( self, n:int=1 ) -> bool :
-        return ( len(self.ascendants_) < n )
+        return ( len( self.ascendants_  ) < n )
 
+    def is_it_a_leaf( self, n:int=1 ) -> bool :
+        return ( len( self.descendants_ ) < n )
+    
     def supplement ( self, n:super ) -> None :
         self.label_       = n.label_
         self.description_ = n.description_
@@ -139,13 +142,13 @@ class NodeGraph ( Node ) :
         self.graph_map_     = dict()
 
     def keys ( self )   -> list :
-        return( self.graph_map_.keys() )
+        return ( self.graph_map_.keys() )
 
     def values ( self ) -> list :
-        return( self.graph_map_.values() )
+        return ( self.graph_map_.values() )
 
     def items ( self )  -> list :
-        return( self.graph_map_.items() )
+        return ( self.graph_map_.items() )
 
     def list_roots ( self ) ->  type(list(str())) :
         roots = [] # BLOODY ROOTS
@@ -192,8 +195,9 @@ class NodeGraph ( Node ) :
         results['path'] = [ idx for idx in results['path'] if not idx==identification ]
         return ( results )
 
-    def search ( self , order:str = 'breadth', root_id:str = None ,
-                 linktype:str = 'links', stop_at:str = None ) -> dict :
+    def search ( self , order:str = 'breadth' , root_id:str = None ,
+                 linktype:str = 'links' , stop_at:str = None ,
+                 bOnlyLeafNodes:bool = False ) -> dict :
         #
         path:list   = list()
         visited:set = set()
@@ -209,7 +213,8 @@ class NodeGraph ( Node ) :
                 v = S[0] ; S = S[1:]
                 ncurrent:Node = self.get_node(v)
                 visited       = visited|set([v])
-                path.append( ncurrent.identification() )
+                if not bOnlyLeafNodes or ncurrent.is_it_a_leaf() :
+                    path.append( ncurrent.identification() )
                 #
                 # ADDED STOP CRITERION FOR WHEN THE STOP NODE IS FOUND
                 if not stop_at is None :
@@ -231,7 +236,8 @@ class NodeGraph ( Node ) :
                     for w in links :
                         if not w in visited and len(w)>0:
                             S = [*[w],*S] # STACK
-                    path.append( ncurrent.identification() )
+                    if not bOnlyLeafNodes or ncurrent.is_it_a_leaf() :
+                        path.append( ncurrent.identification() )
                     #
                     # ADDED STOP CRITERION FOR WHEN THE STOP NODE IS FOUND
                     if not stop_at is None :
