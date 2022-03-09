@@ -189,10 +189,18 @@ class NodeGraph ( Node ) :
     def complete_lineage ( self , identification : str ,
                            order:str    = 'depth'      ,
                            linktype:str = 'ascendants' ) -> dict :
-        # 'ascendants' , 'descendants'
         root_id = identification
-        results = self.search( order=order , root_id=identification , linktype=linktype )
+        results = self.search ( order=order , root_id=identification , linktype=linktype )
         results['path'] = [ idx for idx in results['path'] if not idx==identification ]
+        return ( results )
+
+    def retrieve_leaves ( self , identification : str  ,
+                           order:str    = 'depth'      ,
+                           linktype:str = 'descendants' ) -> dict :
+        root_id = identification      
+        results = self.search ( order=order , root_id=identification ,
+                                linktype=linktype, bOnlyLeafNodes=True )
+        results['path'] = [ idx for idx in results['path'] if not idx==identification ]        
         return ( results )
 
     def search ( self , order:str = 'breadth' , root_id:str = None ,
