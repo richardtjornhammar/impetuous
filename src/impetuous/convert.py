@@ -65,6 +65,9 @@ class Node ( object ) :
     def set_metrics ( self , metrics:list ) -> None :
         self.metrics_ = [ *self.metrics_ , *metrics ]
 
+    def get_metrics ( self ) -> list :
+        return ( self.metrics_ )
+
     def level ( self ) -> None :
         return ( self.level_ )
 
@@ -318,7 +321,12 @@ class NodeGraph ( Node ) :
         PClist = self.linkages_to_pclist ( links )
         for pc in PClist :
             self.add_ascendant_descendant ( pc[0], pc[1] )
-        self.set_root_id(self.list_roots()[0] )
+            self.get_graph()[pc[0]].get_data()['analyte ids'] = [int(a) for a in pc[0].split('.')]
+            self.get_graph()[pc[1]].get_data()['analyte ids'] = [int(a) for a in pc[1].split('.')]
+        for k,v in links.items():
+            self.get_graph()[k].set_metrics([v])
+        root_ = self.list_roots()[0]
+        self.set_root_id( root_ )
 
     def distance_matrix_to_pclist ( self , distm:np.array ,
                                     cluster_connections:int = 1 ,
@@ -385,11 +393,12 @@ class NodeGraph ( Node ) :
         for pc_ in pclist :
             lpc0 = [ lookup[l] for l in list(pc_[0]) ]
             lpc1 = [ lookup[l] for l in list(pc_[1]) ]
-            asc = str(lpc0)
-            des = str(lpc1)
+            asc = '.'.join([str(l) for l in lpc0])
+            des = '.'.join([str(l) for l in lpc1])
             asc_met = pc_[2]
             self.add_ascendant_descendant(asc,des)
-            self.get_graph()[asc].set_metrics([asc_met])
+            if len( self.get_graph()[asc].get_metrics() ) < 1 :
+                self.get_graph()[asc].set_metrics([asc_met])
             self.get_graph()[asc].get_data()['analyte ids'] = lpc0
             self.get_graph()[des].get_data()['analyte ids'] = lpc1
         for key in self.keys() :
@@ -506,6 +515,9 @@ class NodeGraph ( Node ) :
                 if len(sv) == 0 :
                     sv = "\"\""
                 head_string   = head_string + ", \"" + str(k) + "\": " + sv
+        met = node.get_metrics()
+        head_string = head_string + ", \"metric\": " + str( met[0] if len(met)>0 else 0 )
+
         desc_h_str    = ", \"children\": ["
         desc_t_str    = "]"
         tail_string   = "}"
@@ -521,6 +533,7 @@ class NodeGraph ( Node ) :
         outp = outp + tail_string
         return ( outp,I )
 
+
     def write_json ( self , jsonfile:str = 'rtree.json', bCalcLevel:bool = True ,
                      linktype:str = 'descendants', root_id:str = None ) -> str :
         I:int = 1
@@ -535,6 +548,19 @@ class NodeGraph ( Node ) :
         of_ = open(jsonfile,'w')
         print ( json_data_txt,file=of_ )
         return( json_data_txt )
+
+    def write_gmt ( self, gmtfile:str = 'rgroups.gmt' ) -> str :
+        gmt_data_txt = "#GROUPNAME\tPARENT:DESC:LVL:MET\tANALYTE1\tANALYTE2\t...\n"
+        for item in self.items() :
+            asc = ':'.join(item[1].get_links('ascendants'))
+            gmt_line = item[0] + '\t' + asc + ':' + str(item[1].description()) + \
+                    ':' + str(item[1].level()) + ':' + \
+                    ' '.join([str(i) for i in item[1].get_metrics()]) + '\t' + \
+                    '\t'.join([str(i) for i in item[1].get_data()['analyte ids']]) + '\n'
+            gmt_data_txt = gmt_data_txt + gmt_line
+        of_ = open(gmtfile,'w')
+        print ( gmt_data_txt ,file=of_)
+        return( gmt_data_txt )
 
 
 def add_attributes_to_node_graph ( p_df:type(pd.DataFrame) , tree:NodeGraph ) -> NodeGraph :

@@ -701,7 +701,6 @@ def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
                     bRemoveZeros = False )""")
         exit ( 1 )
 
-
 def unpack ( seq ) : # seq:Union -> Union
     if isinstance ( seq,(list,tuple,set)) :
         yield from ( x for y in seq for x in unpack(y) )
@@ -773,12 +772,12 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
             if la1 in lp :
                 J+=1
                 h1 = lp[ label_order(i,k) ]
-                h0 = h1 ; q0 = i
+                h0 = h1 #; q0 = i
             la2 = label_order(j,k)
             if la2 in lp :
                 J+=1
                 h2 = lp[ label_order(j,k) ]
-                h0 = h2 ; q0 = j
+                h0 = h2 #; q0 = j
             if J == 2 :
                 Dijk = func ( R , h1 , h2 )
             elif J == 1 :
@@ -798,7 +797,10 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
         for label,d in found.items() :
             R.append(d)
             sidx.append(label)
+    for c in sorted( [ (v,k) for k,v in LINKS.items() ] )[-1][1].split('.'):
+        LINKS[c] = 0
     return ( LINKS )
+
 
 if __name__=='__main__' :
 
@@ -806,7 +808,7 @@ if __name__=='__main__' :
     print ( np.array(D) )
     print ( linkage( D, command='min') )
     print ( linkage( D, command='max') )
-    
+
     if False :
         #
         # TEST DEPENDS ON THE DIABETES DATA FROM BROAD INSTITUTE
