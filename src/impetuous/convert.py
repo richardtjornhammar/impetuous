@@ -32,10 +32,10 @@ class Node ( object ) :
         self.descendants_ :list  = list() # OUTWARD LINKS , DIRECT DESCENDENCY ( 1 LEVEL )
         self.data_        :dict  = dict() # OTHER THINGS SHOULD BE ALL INFORMATION FLOATING IN USERSPACE
 
-    def can_it_be_root ( self, n:int=1 ) -> bool :
+    def is_a_root ( self, n:int=1 ) -> bool :
         return ( len( self.ascendants_  ) < n )
 
-    def is_it_a_leaf( self, n:int=1 ) -> bool :
+    def is_a_leaf( self, n:int=1 ) -> bool :
         return ( len( self.descendants_ ) < n )
     
     def supplement ( self, n:super ) -> None :
@@ -153,7 +153,7 @@ class NodeGraph ( Node ) :
     def list_roots ( self ) ->  type(list(str())) :
         roots = [] # BLOODY ROOTS
         for name,node in self.items():
-            if node.can_it_be_root() :
+            if node.is_a_root() :
                 roots.append( name )
         return ( roots )
 
@@ -221,7 +221,7 @@ class NodeGraph ( Node ) :
                 v = S[0] ; S = S[1:]
                 ncurrent:Node = self.get_node(v)
                 visited       = visited|set([v])
-                if not bOnlyLeafNodes or ncurrent.is_it_a_leaf() :
+                if not bOnlyLeafNodes or ncurrent.is_a_leaf() :
                     path.append( ncurrent.identification() )
                 #
                 # ADDED STOP CRITERION FOR WHEN THE STOP NODE IS FOUND
@@ -244,7 +244,7 @@ class NodeGraph ( Node ) :
                     for w in links :
                         if not w in visited and len(w)>0:
                             S = [*[w],*S] # STACK
-                    if not bOnlyLeafNodes or ncurrent.is_it_a_leaf() :
+                    if not bOnlyLeafNodes or ncurrent.is_a_leaf() :
                         path.append( ncurrent.identification() )
                     #
                     # ADDED STOP CRITERION FOR WHEN THE STOP NODE IS FOUND
@@ -255,6 +255,7 @@ class NodeGraph ( Node ) :
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
 
+    
     def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld:bool=True ) -> list :
         #
         # AN ALTERNATIVE METHOD
@@ -392,7 +393,7 @@ class NodeGraph ( Node ) :
             self.get_graph()[asc].get_data()['analyte ids'] = lpc0
             self.get_graph()[des].get_data()['analyte ids'] = lpc1
         for key in self.keys() :
-            if self.get_graph()[key].can_it_be_root(n_):
+            if self.get_graph()[key].is_a_root(n_):
                 self.set_root_id ( key )
         if bVerbose :
             self.show()
