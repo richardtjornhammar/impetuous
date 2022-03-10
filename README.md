@@ -610,6 +610,42 @@ if __name__=='__main__' :
 
 ```
 
+# Example 12: Use the NodeGraph class to create a gmt file
+
+When your data is high dimensional one alternative to analysing it is via statistical methods based on groupings. One way of obtaining the groupings is by creating a DAG hierarchy. Here we do that and write the resulting information to `gmt` and `json` files. You can calculate pairwise correlation distances or any other distance matrix type that describes your data and pass it either to the linkage methods or the slower distance matrix conversion methods. In this case the two are equivalent and produces the same results. If you happen to have a list of names corresponding to the name of a analyte in the distance matrix then you can supply a dictionary to the `NodeGraph` class in order to translate the distance indices to their proper names.
+
+```
+import numpy   as np
+import typing
+
+if __name__=='__main__' :
+
+    import time
+    from impetuous.clustering import linkage
+
+    D = np.array([[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ])
+    print ( np.array(D) )
+    t0 = time.time()
+    links = linkage( D, command='min')
+    dt = time.time()-t0
+    print ('min>', linkage( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
+
+    import impetuous.convert as gg
+
+    GN = gg.NodeGraph()
+    GN .linkages_to_graph_dag( links )
+    GN .write_json( jsonfile='./lgraph_hierarchy.json' )
+    GN .rename_data_field_values( {'0':'UNC13C','1':'PCYT2','2':'BDH1','3':'OMA1','4':'VEGFA'} , 'analyte ids' )
+    GN .write_gmt( "./lgroups.gmt" )
+
+    GD = gg.NodeGraph()
+    GD .distance_matrix_to_graph_dag( D )
+    GD .write_json( jsonfile='./draph_hierarchy.json' )
+    GD .write_gmt( "./dgroups.gmt" )
+
+```
+Note that the rename method was called after we wrote the `json` hierarchy and thus only the `lgroups.gmt` contain the proper names while the other are annotated with the indernal index values. Cluster names are deduced by the index values joined by a `.`. If you look in the `gmt` file with a text editor you will see that the first column contains the `child` cluster and the second columns first entry contains the `parent` cluster name (it is also followed by more information joined in with a `:`). 
+
 See also solution with less dependencies in the [graphtastic](https://github.com/richardtjornhammar/graphtastic) library
 
 # Notes

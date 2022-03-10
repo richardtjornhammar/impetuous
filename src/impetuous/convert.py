@@ -539,7 +539,7 @@ class NodeGraph ( Node ) :
         for item in self.items() :
             igdfnl = item[1].get_data()[field_name]
             self.get_graph()[item[0]].get_data()[field_name] =\
-                [ n if not str(n) in lookup else lookup[str(n)] for n in igdfnl ]
+                [ n if not n in lookup else lookup[n] for n in igdfnl ]
 
     def write_json ( self , jsonfile:str = 'rtree.json', bCalcLevel:bool = True ,
                      linktype:str = 'descendants', root_id:str = None ) -> str :
