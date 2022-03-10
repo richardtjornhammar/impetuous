@@ -644,7 +644,7 @@ if __name__=='__main__' :
     GD .write_gmt( "./dgroups.gmt" )
 
 ```
-Note that the rename method was called after we wrote the `json` hierarchy and thus only the `lgroups.gmt` contain the proper names while the other are annotated with the indernal index values. Cluster names are deduced by the index values joined by a `.`. If you look in the `gmt` file with a text editor you will see that the first column contains the `child` cluster and the second columns first entry contains the `parent` cluster name (it is also followed by more information joined in with a `:`). 
+Note that the rename method was called after we wrote the `json` hierarchy and thus only the `lgroups.gmt` contain the proper names while the other are annotated with the internal index values. Cluster names are deduced by the index values joined by a `.`. If you look in the `gmt` file with a text editor you will see that the first column contains the `child` cluster and the second columns first entry contains the `parent` cluster name (it is also followed by more information joined in with a `:`). The field delimiter for `gmt` file fields is a tab delimiter.
 
 See also solution with less dependencies in the [graphtastic](https://github.com/richardtjornhammar/graphtastic) library
 
