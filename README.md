@@ -635,7 +635,7 @@ if __name__=='__main__' :
     GN = gg.NodeGraph()
     GN .linkages_to_graph_dag( links )
     GN .write_json( jsonfile='./lgraph_hierarchy.json' )
-    GN .rename_data_field_values( {'0':'UNC13C','1':'PCYT2','2':'BDH1','3':'OMA1','4':'VEGFA'} , 'analyte ids' )
+    GN .rename_data_field_values( {0:'UNC13C',1:'PCYT2',2:'BDH1',3:'OMA1',4:'VEGFA'} , 'analyte ids' )
     GN .write_gmt( "./lgroups.gmt" )
 
     GD = gg.NodeGraph()
