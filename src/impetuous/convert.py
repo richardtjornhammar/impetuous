@@ -533,6 +533,13 @@ class NodeGraph ( Node ) :
         outp = outp + tail_string
         return ( outp,I )
 
+    def rename_data_field_values ( self, lookup:dict = None , field_name:str = 'analyte ids' ) -> None :
+        if lookup is None :
+            return
+        for item in self.items() :
+            igdfnl = item[1].get_data()[field_name]
+            self.get_graph()[item[0]].get_data()[field_name] =\
+                [ n if not str(n) in lookup else lookup[str(n)] for n in igdfnl ]
 
     def write_json ( self , jsonfile:str = 'rtree.json', bCalcLevel:bool = True ,
                      linktype:str = 'descendants', root_id:str = None ) -> str :
