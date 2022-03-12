@@ -541,7 +541,7 @@ class NodeGraph ( Node ) :
             self.get_graph()[item[0]].get_data()[field_name] =\
                 [ n if not n in lookup else lookup[n] for n in igdfnl ]
 
-    def write_json ( self , jsonfile:str = 'rtree.json', bCalcLevel:bool = True ,
+    def write_json ( self , jsonfile:str = None, bCalcLevel:bool = True ,
                      linktype:str = 'descendants', root_id:str = None ) -> str :
         I:int = 1
         if root_id is None :
@@ -552,11 +552,12 @@ class NodeGraph ( Node ) :
         json_data_txt,I = self.hprint( node, visited,
                                        linktype   = linktype,
                                        bCalcLevel = bCalcLevel )
-        of_ = open(jsonfile,'w')
-        print ( json_data_txt,file=of_ )
-        return( json_data_txt )
+        if not jsonfile is None :
+            of_ = open(jsonfile,'w')
+            print ( json_data_txt,file=of_ )
+        return ( json_data_txt )
 
-    def write_gmt ( self, gmtfile:str = 'rgroups.gmt' ) -> str :
+    def write_gmt ( self, gmtfile:str = None ) -> str :
         gmt_data_txt = "#GROUPNAME\tPARENT:DESC:LVL:MET\tANALYTE1\tANALYTE2\t...\n"
         for item in self.items() :
             asc = ':'.join(item[1].get_links('ascendants'))
@@ -565,9 +566,11 @@ class NodeGraph ( Node ) :
                     ' '.join([str(i) for i in item[1].get_metrics()]) + '\t' + \
                     '\t'.join([str(i) for i in item[1].get_data()['analyte ids']]) + '\n'
             gmt_data_txt = gmt_data_txt + gmt_line
-        of_ = open(gmtfile,'w')
-        print ( gmt_data_txt ,file=of_)
-        return( gmt_data_txt )
+
+        if not gmtfile is None:
+            of_ = open(gmtfile,'w')
+            print ( gmt_data_txt ,file=of_)
+        return ( gmt_data_txt )
 
 
 def add_attributes_to_node_graph ( p_df:type(pd.DataFrame) , tree:NodeGraph ) -> NodeGraph :
