@@ -571,7 +571,45 @@ class NodeGraph ( Node ) :
             of_ = open(gmtfile,'w')
             print ( gmt_data_txt ,file=of_)
         return ( gmt_data_txt )
+    
+    def collect_linkages(self)->dict:
+        #
+        # DEV
+        return(dict())
+    
+    def write_linkages(self,linkfile:str=None) -> str :
+        linkages_txt=""
+        links_ = self.collect_linkages()
+        #
+        # DEV
+        if not linkfile is None:
+            of_ = open(linkfile,'w')
+            print ( linkages_txt ,file=of_)
+        return ( linkages_txt )
 
+    
+class Neuron ( Node ) :
+    def __init__ ( self ) :
+        #
+        # DEV
+        # A BIOLOGICAL PHYSICS NEURON
+        # AS NODE BUT ALSO
+        #
+        self.region_      :str   = ""
+        self.strength_    :float = 0
+        self.reactivity_  :float = 0
+            
+    def activation_(self,stimulus:float) -> None :
+        return ( None )
+    
+    def pot_(self,stimulus:float) -> None :
+        # POTENTIATE
+        return ( None )
+    
+    def dep_(self,stimulus:float) -> None :
+        # DEPRESS
+        return ( None )
+    
 
 def add_attributes_to_node_graph ( p_df:type(pd.DataFrame) , tree:NodeGraph ) -> NodeGraph :
     for idx in p_df.index.values :
