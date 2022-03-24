@@ -568,18 +568,28 @@ class NodeGraph ( Node ) :
             gmt_data_txt = gmt_data_txt + gmt_line
 
         if not gmtfile is None:
-            of_ = open(gmtfile,'w')
-            print ( gmt_data_txt ,file=of_)
+            of_ = open ( gmtfile , 'w' )
+            print ( gmt_data_txt , file=of_)
         return ( gmt_data_txt )
     
-    def collect_linkages(self)->dict:
+    def collect_linkages ( self ) -> dict :
         #
-        # DEV
-        return(dict())
+        links = dict()
+        for item in self.items() :
+            if True :
+                a_ = 0
+                if len( str(item[1].level()) )>0 :
+                    a_ = item[1].level()
+                mets = item[1].get_metrics()
+                if len( mets ) > 0 :
+                    a_ = mets[0]
+                links[item[0]] = a_
+        return ( links )
     
-    def write_linkages(self,linkfile:str=None) -> str :
-        linkages_txt=""
-        links_ = self.collect_linkages()
+    def write_linkages ( self , linkfile:str=None ) -> str :
+        #
+        links_ = [ "\"cluster\":"+str(k) + ", \"metric\":" + str(v) for k,v in self.collect_linkages().items() ]
+        linkages_txt = '['+']\n['.join(links_)+'] '
         #
         # DEV
         if not linkfile is None:
