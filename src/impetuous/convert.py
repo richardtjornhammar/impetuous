@@ -135,7 +135,37 @@ class Node ( object ) :
             s_inf += '\n'+str(item[0])+'\t'+str(item[1])
         print ( s_inf )
 
-class NodeGraph ( Node ) :
+class Neuron ( Node ) :
+    def __init__ ( self ) :
+        #
+        # DEV
+        # A BIOLOGICAL PHYSICS NEURON
+        # AS NODE BUT ALSO
+        #
+        self.region_      :str   = ""
+        self.strength_    :float = 0
+        self.reactivity_  :float = 0
+            
+    def activation_(self,stimulus:float) -> None :
+        return ( None )
+    
+    def pot_(self,stimulus:float) -> None :
+        # POTENTIATE
+        return ( None )
+    
+    def dep_(self,stimulus:float) -> None :
+        # DEPRESS
+        return ( None )
+
+ 
+class NodeGraph ( Neuron ) :
+    #
+    # ONLY DEPENDENT ON FUNCTIONALITY COMPATIBLE WITH THE NODE CLASS
+    # EVEN IF IT INHERITS HIGHER TYPES
+    # EXTEND THE NODEGRAPH FOR EACH ADDITIONAL NODE TYPE
+    # IN NEW GRAPH TYPES. ALWAYS DEPENDS ON THE MOST EXTENDED SUBTYPE 
+    # SO THAT NODE < NEURON < OTHER HIGHER TYPES
+    #
     # https://github.com/richardtjornhammar/RichTools/commit/c4b9daa78f2a311995d142b0e74fba7c3fdbed20#diff-0b990604c2ec9ebd6f320ebe92099d46e0ab8e854c6e787fac2f208409d112d3
     def __init__( self ) :
         self.root_id_       = ''
@@ -257,7 +287,6 @@ class NodeGraph ( Node ) :
                             break
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
-
     
     def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld:bool=True ) -> list :
         #
@@ -597,29 +626,12 @@ class NodeGraph ( Node ) :
             print ( linkages_txt ,file=of_)
         return ( linkages_txt )
 
-    
-class Neuron ( Node ) :
+
+class Brain ( NodeGraph ) :
     def __init__ ( self ) :
-        #
-        # DEV
-        # A BIOLOGICAL PHYSICS NEURON
-        # AS NODE BUT ALSO
-        #
-        self.region_      :str   = ""
-        self.strength_    :float = 0
-        self.reactivity_  :float = 0
-            
-    def activation_(self,stimulus:float) -> None :
-        return ( None )
-    
-    def pot_(self,stimulus:float) -> None :
-        # POTENTIATE
-        return ( None )
-    
-    def dep_(self,stimulus:float) -> None :
-        # DEPRESS
-        return ( None )
-    
+        # THIS CLASS WILL UTILIZE NEURON SPECIFIC SUBFUNCTIONS
+        IQ_:int = 0
+
 
 def add_attributes_to_node_graph ( p_df:type(pd.DataFrame) , tree:NodeGraph ) -> NodeGraph :
     for idx in p_df.index.values :
