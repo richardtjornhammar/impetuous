@@ -648,6 +648,10 @@ Note that the rename method was called after we wrote the `json` hierarchy and t
 
 See also solution with less dependencies in the [graphtastic](https://github.com/richardtjornhammar/graphtastic) library
 
+# [Example 13](https://gist.githubusercontent.com/richardtjornhammar/74175e415c4cf35af8424696589a57a7/raw/28b902ec282b43cbd0f5e34f6ceffea257d7e9a1/cexp.py): Compare distance geometry clustering with UMAP
+
+![teaser](https://gist.githubusercontent.com/richardtjornhammar/997e179a5e773fe054d2f8edcdb5cd72/raw/78ec4e67ffa4585918ca7e117c5a080b6188447b/myscatter_comparison.svg)
+
 # Notes
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. 
