@@ -722,7 +722,7 @@ and finally save the image as an `svg`
     fig.savefig(image_name, format=image_format, dpi=300)
 
 ```
-It is readily viewable below and we can see that the UMAP and Distance Geometry algorithms both have a tendency to push the solutions towards the same quadrants (given that we center the data). But that the UMAP was able to discriminate better forcing the solution into tighter clusters. Some of the clusters in the right hand side figure however separate in the third dimension (not shown).
+It is readily viewable below and we can see that the UMAP and Distance Geometry algorithms both cluster the data. But that the UMAP was able to discriminate better, forcing the solution into tighter clusters. Some of the clusters in the right hand side figure however separate in the third dimension (not shown).
 
 ![teaser](https://gist.githubusercontent.com/richardtjornhammar/997e179a5e773fe054d2f8edcdb5cd72/raw/78ec4e67ffa4585918ca7e117c5a080b6188447b/myscatter_comparison.svg)
 
