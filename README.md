@@ -650,7 +650,7 @@ See also solution with less dependencies in the [graphtastic](https://github.com
 
 # [Example 13](https://gist.githubusercontent.com/richardtjornhammar/74175e415c4cf35af8424696589a57a7/raw/28b902ec282b43cbd0f5e34f6ceffea257d7e9a1/cexp.py): Compare distance geometry clustering with UMAP
 
-This library contains several clustering algorithms and fitting procedures. In this example we will use the SVD based distance geometry algorithm to project the distance matrix of mnist digits onto a 2D surface and compare the result with what can be obtained using the [UMAP](https://umap-learn.readthedocs.io/en/latest/plotting.html) methods. UMAP works in a nonlinear fashion in order to project your data onto a surface that also maximizes mutual distances. Distance geometry works on nonlinear data described by a distance matrix, but creates a linear projection onto the highest variance dimensions in falling order. Note that distance geometry is not a PCA method but a true transformation between relative distances and their absolute coordinates. UMAP distorts the topology of absolute coordinates while distance geometry does not. UMAP is however better at discriminating distinct points.
+This library contains several clustering algorithms and fitting procedures. In this example we will use the SVD based distance geometry algorithm to project the distance matrix of mnist digits onto a 2D surface and compare the result with what can be obtained using the [UMAP](https://umap-learn.readthedocs.io/en/latest/plotting.html) methods. UMAP works in a nonlinear fashion in order to project your data onto a surface that also maximizes mutual distances. Distance geometry works on nonlinear data described by a distance matrix, but creates a linear projection onto the highest variance dimensions in falling order. Note that distance geometry is not a PCA method but a transformation between relative distances and their absolute coordinates. UMAP can distort the topology of absolute coordinates while distance geometry does not. UMAP is however better at discriminating distinct points.
 
 Lets have a look at the setup
 ```
@@ -681,15 +681,12 @@ We have now installed both the `impetuous-gfa` as well as the `umap-learn` libra
 if __name__ == '__main__' :
 
     pendigits = sklearn.datasets.load_digits()
-    digidat   = pendigits['data']
-    digim     = pendigits['images']
     targets   = pendigits.target
-    if len ( digidat ) == len ( digim ) :
 
-        all_colors = list ( mcolors.CSS4_COLORS.keys() )
-        NC = len ( all_colors )
-        NU = len ( set( targets ) )
-        plot_colors = [ all_colors[ic] for ic in  [ int(np.floor(NC*(t+0.5)/NU)) for t in targets ] ]
+    all_colors = list ( mcolors.CSS4_COLORS.keys() )
+    NC = len ( all_colors )
+    NU = len ( set( targets ) )
+    plot_colors = [ all_colors[ic] for ic in  [ int(np.floor(NC*(t+0.5)/NU)) for t in targets ] ]
 ```
 
 Now we project our data using both methods
