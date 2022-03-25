@@ -650,6 +650,80 @@ See also solution with less dependencies in the [graphtastic](https://github.com
 
 # [Example 13](https://gist.githubusercontent.com/richardtjornhammar/74175e415c4cf35af8424696589a57a7/raw/28b902ec282b43cbd0f5e34f6ceffea257d7e9a1/cexp.py): Compare distance geometry clustering with UMAP
 
+This library contains several clustering algorithms and fitting procedures. In this example we will use the SVD based distance geometry algorithm to project the distance matrix of mnist digits onto a 2D surface and compare the result with what can be obtained using the [UMAP](https://umap-learn.readthedocs.io/en/latest/plotting.html) methods. UMAP works in a nonlinear fashion in order to project your data onto a surface that also maximizes mutual distances. Distance geometry works on nonlinear data described by a distance matrix, but creates a linear projection onto the highest variance dimensions in falling order. Note that distance geometry is not a PCA method but a true transformation between relative distances and their absolute coordinates. UMAP distorts the topology of absolute coordinates while distance geometry does not. UMAP is however better at discriminating distinct points.
+
+Lets have a look at the setup
+```
+import numpy as np
+
+# https://umap-learn.readthedocs.io/en/latest/plotting.html
+import sklearn.datasets
+import umap
+import umap.plot
+import umap.utils as utils
+import umap.aligned_umap
+
+import matplotlib.pyplot as plt
+import matplotlib
+import matplotlib.colors as mcolors
+
+matplotlib.use('TkAgg',force=True)
+
+from impetuous.clustering import distance_matrix_to_absolute_coordinates , absolute_coordinates_to_distance_matrix
+#
+# COMPARING WITH MY DISTANCE GEOMETRY SOLUTION
+#
+```
+
+We have now installed both the `impetuous-gfa` as well as the `umap-learn` libraries. So we load the data and prepare the colors we want to use
+
+```
+if __name__ == '__main__' :
+
+    pendigits = sklearn.datasets.load_digits()
+    digidat   = pendigits['data']
+    digim     = pendigits['images']
+    targets   = pendigits.target
+    if len ( digidat ) == len ( digim ) :
+
+        all_colors = list ( mcolors.CSS4_COLORS.keys() )
+        NC = len ( all_colors )
+        NU = len ( set( targets ) )
+        plot_colors = [ all_colors[ic] for ic in  [ int(np.floor(NC*(t+0.5)/NU)) for t in targets ] ]
+```
+
+Now we project our data using both methods
+
+```
+    #
+    # DISTANCE GEOMETRY CLUSTERING FOR DIMENSIONALITY REDUCTION
+    distm      = absolute_coordinates_to_distance_matrix ( pendigits['data'] )
+    projection = distance_matrix_to_absolute_coordinates ( distm , n_dimensions = 3 )
+    #
+    # UMAP CLUSTERING FOR DIMENSIONALITY REDUCTION
+    umap_crds  = umap.UMAP().fit_transform( pendigits.data )
+```
+Now we want to plot the results with `matplotlib`
+```
+    fig, axs = plt.subplots( 1, 2, figsize=(20, 20) )
+    
+    axs[0].scatter( umap_crds[:, 0] , umap_crds[:, 1] ,
+                    c=plot_colors , marker='.', alpha=1. , s=1. )
+
+    for x,y,c in zip ( projection[0], projection[1], plot_colors ) :
+        axs[1].plot ( x, y , c , marker='.' )
+
+    plt.show()
+```
+and finally save the image as an `svg`
+```
+    image_format = 'svg'
+    image_name = 'myscatter_comparison.svg'
+    fig.savefig(image_name, format=image_format, dpi=300)
+
+```
+It is readily viewable below and we can see that the UMAP and Distance Geometry algorithms both have a tendency to push the solutions towards the same quadrants (given that we center the data). But that the UMAP was able to discriminate better forcing the solution into tighter clusters. Some of the clusters in the right hand side figure however separate in the third dimension (not shown).
+
 ![teaser](https://gist.githubusercontent.com/richardtjornhammar/997e179a5e773fe054d2f8edcdb5cd72/raw/78ec4e67ffa4585918ca7e117c5a080b6188447b/myscatter_comparison.svg)
 
 # Notes
