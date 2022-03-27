@@ -402,12 +402,18 @@ class NodeGraph ( Neuron ) :
         Z = np.diag(S**0.5)[:,:DIM]
         xr = np.dot( Z.T,Vt )
         return ( xr.T )
-    
-    def calculate_adjacency_matrix( self , analyte_identifier:str = None,
-                                    bSparse:bool=False ) -> dict :
+
+    def calculate_adjacency_matrix( self , bSparse:bool    = False ,
+                                    analyte_identifier:str = None  ,
+                                    analyte_adjacency_level:int = None  ) -> dict :
         #
-        # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE ANALYTE ADJACENCY MATRIX
-        # ELSE CONSTRUCT NODE TO NODE LINK ADJACENCY MATRIX
+        # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE
+        # ANALYTE ADJACENCY MATRIX AT A SPECIFIED LEVEL
+        # NOTE THAT YOU CAN GET THE ADJACENCY MATRIX FOR ALL
+        # ANALYTES VIA : distance_matrix:np.array, level_cutoff:float
+        # adj_matrix = distance_matrix<=level_cutoff - np.eye(len(distance_matrix))
+        #
+        # DEFAULT: CONSTRUCT NODE TO NODE (CLUSTERS) LINK ADJACENCY MATRIX
         #
         def unravel( seq:list )->list :
             if isinstance( seq , (list) ):
@@ -417,7 +423,7 @@ class NodeGraph ( Neuron ) :
 
         graph = self.get_graph()
         
-        if analyte_identifier is None :
+        if analyte_identifier is None or analyte_adjacency_level is None :
             names  = list(self.keys())
             Nn     = len(names)
             lookup = {n:i for n,i in zip(names,range(Nn)) }
@@ -435,8 +441,35 @@ class NodeGraph ( Neuron ) :
                     amat[i,j] = 1
                     amat[j,i] = 1
         else :
-            amat  = None
-            names = None
+            level = analyte_adjacency_level
+            root_data = graph[ self.get_root_id() ].get_data()
+            if analyte_identifier in root_data :
+                names = root_data[ analyte_identifier ]
+            else :
+                print ( 'ERROR COULD NOT FIND GLOBAL IDENTIFIER INFORMATION:' , analyte_identifier )
+                exit (1)
+            Nn = len( names )
+            nnames = list(self.keys())
+            lookup = { a:i for a,i in zip(names,range(Nn)) }
+            if bSparse :
+                amat = dict()
+            else :
+                amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
+            for name in nnames :
+                LINKS = []
+                for linktype in [ 'links' , 'ascendants' , 'descendants' ]:
+                    LINKS.append( graph[name].get_links(linktype) )
+                for link in list(unravel(LINKS)):
+                    i_names = graph[ name ].get_data()[ analyte_identifier ]
+                    j_names = graph[ link ].get_data()[ analyte_identifier ]
+                    if graph[ link ].level()==level or graph[name].level()==level :
+                        for namei in i_names :
+                            for namej in j_names :
+                                i = lookup [ namei ]
+                                j = lookup [ namej ]
+                                if not i == j :
+                                    amat[i,j] = 1
+                                    amat[j,i] = 1
         return ( { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse } )
     
     def retrieve_adjacency_matrix( self , bForceRecalculate:bool=False ) -> dict :
