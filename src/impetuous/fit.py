@@ -17,6 +17,7 @@ limitations under the License.
 import numpy as np
 import pandas as pd
 import operator
+import typing
 
 class quaternion ( ) :
     def __init__ ( self , vector=None , angle=None ):
@@ -646,7 +647,7 @@ def ShapeAlignment( P, Q ,
     return ( B )
 
 from impetuous.clustering import distance_matrix_to_absolute_coordinates
-def HighDimensionalAlignment ( P , Q , bPdist=True ) :
+def HighDimensionalAlignment ( P:np.array , Q:np.array , bPdist:bool=True ) -> np.array :
     # HIGHER DIMENSIONAL VERSION OF
     # def KabschAlignment ( P , Q )
     #
