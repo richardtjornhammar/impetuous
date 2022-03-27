@@ -37,7 +37,7 @@ class Node ( object ) :
 
     def is_a_leaf( self, n:int=1 ) -> bool :
         return ( len( self.descendants_ ) < n )
-    
+
     def supplement ( self, n:super ) -> None :
         self.label_       = n.label_
         self.description_ = n.description_
@@ -145,25 +145,25 @@ class Neuron ( Node ) :
         self.region_      :str   = ""
         self.strength_    :float = 0
         self.reactivity_  :float = 0
-            
+
     def activation_(self,stimulus:float) -> None :
         return ( None )
-    
+
     def pot_(self,stimulus:float) -> None :
         # POTENTIATE
         return ( None )
-    
+
     def dep_(self,stimulus:float) -> None :
         # DEPRESS
         return ( None )
 
- 
+
 class NodeGraph ( Neuron ) :
     #
     # ONLY DEPENDENT ON FUNCTIONALITY COMPATIBLE WITH THE NODE CLASS
     # EVEN IF IT INHERITS HIGHER TYPES
     # EXTEND THE NODEGRAPH FOR EACH ADDITIONAL NODE TYPE
-    # IN NEW GRAPH TYPES. ALWAYS DEPENDS ON THE MOST EXTENDED SUBTYPE 
+    # IN NEW GRAPH TYPES. ALWAYS DEPENDS ON THE MOST EXTENDED SUBTYPE
     # SO THAT NODE < NEURON < OTHER HIGHER TYPES
     #
     # https://github.com/richardtjornhammar/RichTools/commit/c4b9daa78f2a311995d142b0e74fba7c3fdbed20#diff-0b990604c2ec9ebd6f320ebe92099d46e0ab8e854c6e787fac2f208409d112d3
@@ -173,7 +173,7 @@ class NodeGraph ( Neuron ) :
         self.num_edges_        = 0
         self.num_vertices_     = 0
         self.graph_map_        = dict()
-        self.adjacency_matrix_ = dict() 
+        self.adjacency_matrix_ = dict()
 
     def keys ( self )   -> list :
         return ( self.graph_map_.keys() )
@@ -231,10 +231,10 @@ class NodeGraph ( Neuron ) :
     def retrieve_leaves ( self , identification : str  ,
                            order:str    = 'depth'      ,
                            linktype:str = 'descendants' ) -> dict :
-        root_id = identification      
+        root_id = identification
         results = self.search ( order=order , root_id=identification ,
                                 linktype=linktype, bOnlyLeafNodes=True )
-        results['path'] = [ idx for idx in results['path'] if not idx==identification ]        
+        results['path'] = [ idx for idx in results['path'] if not idx==identification ]
         return ( results )
 
     def search ( self , order:str = 'breadth' , root_id:str = None ,
@@ -288,7 +288,7 @@ class NodeGraph ( Neuron ) :
                             break
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
-    
+
     def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld:bool=True ) -> list :
         #
         # AN ALTERNATIVE METHOD
@@ -405,7 +405,8 @@ class NodeGraph ( Neuron ) :
 
     def calculate_adjacency_matrix( self , bSparse:bool    = False ,
                                     analyte_identifier:str = None  ,
-                                    analyte_adjacency_level:int = None  ) -> dict :
+                                    analyte_adjacency_level:int = None,
+                                    linktypes:list[str] = [ 'links' , 'ascendants' , 'descendants' ] ) -> dict :
         #
         # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE
         # ANALYTE ADJACENCY MATRIX AT A SPECIFIED LEVEL
@@ -415,14 +416,14 @@ class NodeGraph ( Neuron ) :
         #
         # DEFAULT: CONSTRUCT NODE TO NODE (CLUSTERS) LINK ADJACENCY MATRIX
         #
-        def unravel( seq:list )->list :
+        def unravel( seq:list ) -> list :
             if isinstance( seq , (list) ):
                 yield from (x for y in seq for x in unravel(y))
             else:
                 yield seq
 
         graph = self.get_graph()
-        
+
         if analyte_identifier is None or analyte_adjacency_level is None :
             names  = list(self.keys())
             Nn     = len(names)
@@ -433,7 +434,7 @@ class NodeGraph ( Neuron ) :
                 amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
             for name in names :
                 LINKS = []
-                for linktype in [ 'links' , 'ascendants' , 'descendants' ]:
+                for linktype in linktypes :
                     LINKS.append( graph[name].get_links(linktype) )
                 for link in list(unravel(LINKS)):
                     i = lookup[name]
@@ -457,12 +458,12 @@ class NodeGraph ( Neuron ) :
                 amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
             for name in nnames :
                 LINKS = []
-                for linktype in [ 'links' , 'ascendants' , 'descendants' ]:
+                for linktype in linktypes :
                     LINKS.append( graph[name].get_links(linktype) )
                 for link in list(unravel(LINKS)):
                     i_names = graph[ name ].get_data()[ analyte_identifier ]
                     j_names = graph[ link ].get_data()[ analyte_identifier ]
-                    if graph[ link ].level()==level or graph[name].level()==level :
+                    if (graph[ link ].level()==level or graph[name].level()==level) or level<0 :
                         for namei in i_names :
                             for namej in j_names :
                                 i = lookup [ namei ]
@@ -472,7 +473,7 @@ class NodeGraph ( Neuron ) :
                                     amat[j,i] = 1
         self.adjacency_matrix_ = { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse }
         return ( self.adjacency_matrix_ )
-    
+
     def retrieve_adjacency_matrix( self , bForceRecalculate:bool=False ) -> dict :
         if self.adjacency_matrix_ is None or ( not self.adjacency_matrix_ is None and bForceRecalculate ) :
             amat_d = self.calculate_adjacency_matrix()
