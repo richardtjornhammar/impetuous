@@ -402,15 +402,42 @@ class NodeGraph ( Neuron ) :
         Z = np.diag(S**0.5)[:,:DIM]
         xr = np.dot( Z.T,Vt )
         return ( xr.T )
-
-    def calculate_adjacency_matrix( self , analyte_identifier:str = None ) -> dict :
-        # DUMMY
-        # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE LEAF ADJACENCY MATRIX
+    
+    def calculate_adjacency_matrix( self , analyte_identifier:str = None,
+                                    bSparse:bool=False ) -> dict :
+        #
+        # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE ANALYTE ADJACENCY MATRIX
         # ELSE CONSTRUCT NODE TO NODE LINK ADJACENCY MATRIX
         #
-        amat  = np.zeros(6)
-        names = ['a','b','c','d','e','f']
-        return ( { 'adjacency matrix':amat , 'index names':names } )
+        def unravel( seq:list )->list :
+            if isinstance( seq , (list) ):
+                yield from (x for y in seq for x in unravel(y))
+            else:
+                yield seq
+
+        graph = self.get_graph()
+        
+        if analyte_identifier is None :
+            names  = list(self.keys())
+            Nn     = len(names)
+            lookup = {n:i for n,i in zip(names,range(Nn)) }
+            if bSparse :
+                amat = dict()
+            else :
+                amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
+            for name in names :
+                LINKS = []
+                for linktype in [ 'links' , 'ascendants' , 'descendants' ]:
+                    LINKS.append( graph[name].get_links(linktype) )
+                for link in list(unravel(LINKS)):
+                    i = lookup[name]
+                    j = lookup[link]
+                    amat[i,j] = 1
+                    amat[j,i] = 1
+        else :
+            amat  = None
+            names = None
+        return ( { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse } )
     
     def retrieve_adjacency_matrix( self , bForceRecalculate:bool=False ) -> dict :
         if self.adjacency_matrix_ is None or ( not self.adjacency_matrix_ is None and bForceRecalculate ) :
