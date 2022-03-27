@@ -646,7 +646,7 @@ def ShapeAlignment( P, Q ,
     return ( B )
 
 from impetuous.clustering import distance_matrix_to_absolute_coordinates
-def HighDimensionalAlignment ( P , Q ) :
+def HighDimensionalAlignment ( P , Q , bPdist=True ) :
     # HIGHER DIMENSIONAL VERSION OF
     # def KabschAlignment ( P , Q )
     #
@@ -679,8 +679,13 @@ def HighDimensionalAlignment ( P , Q ) :
         print ( 'MALFORMED COORDINATE PROBLEM' )
         exit ( 1 )
     #
-    DP = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in P for q in P ] ) .reshape( N,N )
-    DQ = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in Q for q in Q ] ) .reshape( M,M )
+    if bPdist :
+        from impetuous.clustering import absolute_coordinates_to_distance_matrix
+        DP = absolute_coordinates_to_distance_matrix( P )
+        DQ = absolute_coordinates_to_distance_matrix( Q )
+    else :
+        DP = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in P for q in P ] ) .reshape( N,N )
+        DQ = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in Q for q in Q ] ) .reshape( M,M )
     #
     PX = distance_matrix_to_absolute_coordinates ( DP , n_dimensions = DIM ).T
     QX = distance_matrix_to_absolute_coordinates ( DQ , n_dimensions = DIM ).T
