@@ -470,7 +470,8 @@ class NodeGraph ( Neuron ) :
                                 if not i == j :
                                     amat[i,j] = 1
                                     amat[j,i] = 1
-        return ( { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse } )
+        self.adjacency_matrix_ = { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse }
+        return ( self.adjacency_matrix_ )
     
     def retrieve_adjacency_matrix( self , bForceRecalculate:bool=False ) -> dict :
         if self.adjacency_matrix_ is None or ( not self.adjacency_matrix_ is None and bForceRecalculate ) :
