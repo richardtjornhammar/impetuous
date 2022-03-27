@@ -168,11 +168,12 @@ class NodeGraph ( Neuron ) :
     #
     # https://github.com/richardtjornhammar/RichTools/commit/c4b9daa78f2a311995d142b0e74fba7c3fdbed20#diff-0b990604c2ec9ebd6f320ebe92099d46e0ab8e854c6e787fac2f208409d112d3
     def __init__( self ) :
-        self.root_id_       = ''
-        self.desc_          = "SUPPORTS DAGS :: NO STRUCTURE ASSERTION"
-        self.num_edges_     = 0
-        self.num_vertices_  = 0
-        self.graph_map_     = dict()
+        self.root_id_          = ''
+        self.desc_             = "SUPPORTS DAGS :: NO STRUCTURE ASSERTION"
+        self.num_edges_        = 0
+        self.num_vertices_     = 0
+        self.graph_map_        = dict()
+        self.adjacency_matrix_ = dict() 
 
     def keys ( self )   -> list :
         return ( self.graph_map_.keys() )
@@ -401,6 +402,23 @@ class NodeGraph ( Neuron ) :
         Z = np.diag(S**0.5)[:,:DIM]
         xr = np.dot( Z.T,Vt )
         return ( xr.T )
+
+    def calculate_adjacency_matrix( self , analyte_identifier:str = None ) -> dict :
+        # DUMMY
+        # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE LEAF ADJACENCY MATRIX
+        # ELSE CONSTRUCT NODE TO NODE LINK ADJACENCY MATRIX
+        #
+        amat  = np.zeros(6)
+        names = ['a','b','c','d','e','f']
+        return ( { 'adjacency matrix':amat , 'index names':names } )
+    
+    def retrieve_adjacency_matrix( self , bForceRecalculate:bool=False ) -> dict :
+        if self.adjacency_matrix_ is None or ( not self.adjacency_matrix_ is None and bForceRecalculate ) :
+            amat_d = self.calculate_adjacency_matrix()
+            self.adjacency_matrix_  = amat_d
+        else :
+            amat_d = self.adjacency_matrix_
+        return ( amat_d )
 
     def distance_matrix_to_graph_dag ( self , distm:np.array , n_:int=1 , bVerbose:bool=False , names:list=None ) -> None :
         #
