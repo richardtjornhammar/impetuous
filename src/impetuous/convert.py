@@ -446,7 +446,7 @@ class NodeGraph ( Neuron ) :
                 amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
             for name in names :
                 LINKS = []
-                for linktype in linktypes :
+                for linktype in linktypes : # WRONG BOOK-KEEPING HERE
                     LINKS.append( graph[name].get_links(linktype) )
                 for link in list(unravel(LINKS)):
                     i = lookup[name]
@@ -469,7 +469,7 @@ class NodeGraph ( Neuron ) :
                 amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
             for name in nnames :
                 LINKS = []
-                for linktype in linktypes :
+                for linktype in linktypes : # WRONG BOOK-KEEPING HERE
                     LINKS.append( graph[name].get_links(linktype) )
                 for link in list(unravel(LINKS)):
                     i_names = graph[ name ].get_data()[ analyte_identifier ]
@@ -573,13 +573,14 @@ class NodeGraph ( Neuron ) :
             desc = []
             ascs = []
             linx = []
-            adjv = adj_matrix[i]
-            for j in range(len(adjv)) :
-                if adjv[j] == 1 and i<j :
+            d_adjv = adj_matrix[i,:]
+            a_adjv = adj_matrix[:,i]
+            for j in range(len(d_adjv)) :
+                if d_adjv[j] == 1 and i!=j :
                     desc.append(set_name(j,names,bAssignIDs))
-                if adjv[j] == 1 and i>j :
+                if a_adjv[j] == 1 and i!=j :
                     ascs.append(set_name(j,names,bAssignIDs))
-                if adjv[j] == 1 and i!=j :
+                if a_adjv[j] == 1 or d_adjv[j] == 1 and i!=j :
                     linx.append(set_name(j,names,bAssignIDs))
             n.add_links(desc,linktype='descendants' )
             n.add_links(linx,linktype='links' )
