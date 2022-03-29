@@ -114,7 +114,7 @@ class Node ( object ) :
         self.links_ = list(set( edges ))
     #
     # NOTE : list[str] type declaration is not working in Python3.8
-    def add_links ( self, links:type(list(str())), bClear:bool = False , linktype:str = 'links' ) -> None :
+    def add_links ( self, links:list[str], bClear:bool = False , linktype:str = 'links' ) -> None :
         edges = self.get_links( linktype )
         if bClear :
             edges = list()
@@ -576,7 +576,6 @@ class NodeGraph ( Neuron ) :
             n.set_id(name)
             desc = []
             ascs = []
-            linx = []
             d_adjv = adj_matrix[i,:]
             a_adjv = adj_matrix[:,i]
             for j in range(len(d_adjv)) :
@@ -587,8 +586,8 @@ class NodeGraph ( Neuron ) :
                 if a_adjv[j] == 1 :
                     ascs.append(set_name(j,names,bAssignIDs))
             n.add_links(list(set(desc)),linktype='descendants' )
-            n.add_links(list(set(desc)|set(ascs)),linktype='links' )
             n.add_links(list(set(ascs)),linktype='ascendants' )
+            n.add_links(list(set(desc)|set(ascs)),linktype='links' )
             self.add(n)
 
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
@@ -627,7 +626,7 @@ class NodeGraph ( Neuron ) :
             degree_d[idx]   = {'descendants':n_desc,'ascendants':n_asc,'links':n_links} # LOCAL MYOPIC
             #
             # IF DIRECTED
-            if not bMyopic:
+            if not bMyopic :
                 all_descendants = set( self.complete_lineage( idx,linktype='descendants')['path'] )
                 all_ancestors   = set( self.complete_lineage( idx,linktype='ascendants' )['path'] )
                 degree_d[idx]['all ascendants']  = [len(all_ancestors)   , all_ancestors   ]
