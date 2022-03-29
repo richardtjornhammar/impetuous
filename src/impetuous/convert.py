@@ -37,6 +37,17 @@ class Node ( object ) :
 
     def is_a_leaf( self, n:int=1 ) -> bool :
         return ( len( self.descendants_ ) < n )
+    
+    def degree ( self , degree_type:str='descendants' )->int :
+        #
+        # UNDIRECTED NODE DEGREE
+        if degree_type == 'descendants':
+            return ( len( self.descendants_ ) )
+        if degree_type == 'ascendants':
+            return ( len( self.ascendants_ ) )
+        if degree_type == 'links':
+            return ( len( self.links_ ) )
+        return (-1) # UNDEFINED OPTION
 
     def supplement ( self, n:super ) -> None :
         self.label_       = n.label_
@@ -568,6 +579,27 @@ class NodeGraph ( Neuron ) :
         descendants = [ ( idx , set( self.complete_lineage( idx,linktype='descendants')['path'] ) ) for idx in all_names ]
         ancestors   = [ ( idx , set( self.complete_lineage( idx,linktype='ascendants' )['path'] ) ) for idx in all_names ]
         return ( ancestors , descendants )
+
+    def degrees ( self , bMyopic=True ) -> dict :
+        #
+        # DELIVER ALL NODE DEGREES OR DIRECTED NODE GRAPH DEGREES
+        all_names = self.keys()
+        graph     = self.get_graph()
+        degree_d  = dict()
+        for idx in all_names :
+            node_   = graph[ idx ]
+            n_desc  = node_.degree('descendants')
+            n_asc   = node_.degree('ascendants')
+            n_links = node_.degree('links')
+            degree_d[idx]   = {'descendants':n_desc,'ascendants':n_asc,'links':n_links} # LOCAL MYOPIC
+            #
+            # IF DIRECTED
+            if not bMyopic:
+                all_descendants = set( self.complete_lineage( idx,linktype='descendants')['path'] )
+                all_ancestors   = set( self.complete_lineage( idx,linktype='ascendants' )['path'] )
+                degree_d[idx]['all ascendants']  = [len(all_ancestors)   , all_ancestors   ]
+                degree_d[idx]['all descendants'] = [len(all_descendants) , all_descendants ]
+        return ( degree_d )
 
     def ascendant_descendant_file_to_dag ( self, relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
