@@ -557,6 +557,35 @@ class NodeGraph ( Neuron ) :
         approximate_distm *= 1-np.eye(m_)
         return ( np.abs(approximate_distm) , lookup )
 
+    def assign_graph_from_adjacency_matrix ( self , adj_matrix:np.array , names:list[str] = None ) -> None :
+        bAssignIDs = False
+        if len ( adj_matrix ) == len ( set(names) ) :
+            bAssignIDs = True
+        def set_name(i:int,names:list[str],bSet:bool)->str:
+            if bSet:
+                return(names[i])
+            else:
+                return(str(i))
+        for i in range(len(adj_matrix)) :
+            n = Node()
+            name = set_name(i,names,bAssignIDs)
+            n.set_id(name)
+            desc = []
+            ascs = []
+            linx = []
+            adjv = adj_matrix[i]
+            for j in range(len(adjv)) :
+                if adjv[j] == 1 and i<j :
+                    desc.append(set_name(j,names,bAssignIDs))
+                if adjv[j] == 1 and i>j :
+                    ascs.append(set_name(j,names,bAssignIDs))
+                if adjv[j] == 1 and i!=j :
+                    linx.append(set_name(j,names,bAssignIDs))
+            n.add_links(desc,linktype='descendants' )
+            n.add_links(linx,linktype='links' )
+            n.add_links(ascs,linktype='ascendants' )
+            self.add(n)
+
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
         n = Node()
         n.set_id(ascendant)
