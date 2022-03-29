@@ -426,6 +426,7 @@ class NodeGraph ( Neuron ) :
         # adj_matrix = distance_matrix<=level_cutoff - np.eye(len(distance_matrix))
         #
         # DEFAULT: CONSTRUCT NODE TO NODE (CLUSTERS) LINK ADJACENCY MATRIX
+        #          WE DONT ENFORCE SYMMETRY
         #
         def unravel( seq:list ) -> list :
             if isinstance( seq , (list) ):
@@ -451,7 +452,6 @@ class NodeGraph ( Neuron ) :
                     i = lookup[name]
                     j = lookup[link]
                     amat[i,j] = 1
-                    amat[j,i] = 1
         else :
             level = analyte_adjacency_level
             root_data = graph[ self.get_root_id() ].get_data()
@@ -481,7 +481,6 @@ class NodeGraph ( Neuron ) :
                                 j = lookup [ namej ]
                                 if not i == j :
                                     amat[i,j] = 1
-                                    amat[j,i] = 1
         self.adjacency_matrix_ = { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse }
         return ( self.adjacency_matrix_ )
 
