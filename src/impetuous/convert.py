@@ -417,7 +417,7 @@ class NodeGraph ( Neuron ) :
     def calculate_adjacency_matrix( self , bSparse:bool    = False ,
                                     analyte_identifier:str = None  ,
                                     analyte_adjacency_level:int = None,
-                                    linktypes:list[str] = [ 'links' , 'ascendants' , 'descendants' ] ) -> dict :
+                                    linktypes:list[str] = [ 'ascendants' , 'descendants' ] ) -> dict :
         #
         # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE
         # ANALYTE ADJACENCY MATRIX AT A SPECIFIED LEVEL
@@ -428,14 +428,7 @@ class NodeGraph ( Neuron ) :
         # DEFAULT: CONSTRUCT NODE TO NODE (CLUSTERS) LINK ADJACENCY MATRIX
         #          WE DONT ENFORCE SYMMETRY
         #
-        def unravel( seq:list ) -> list :
-            if isinstance( seq , (list) ):
-                yield from (x for y in seq for x in unravel(y))
-            else:
-                yield seq
-
         graph = self.get_graph()
-
         if analyte_identifier is None or analyte_adjacency_level is None :
             names  = list(self.keys())
             Nn     = len(names)
@@ -445,13 +438,19 @@ class NodeGraph ( Neuron ) :
             else :
                 amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
             for name in names :
-                LINKS = []
-                for linktype in linktypes : # WRONG BOOK-KEEPING HERE
-                    LINKS.append( graph[name].get_links(linktype) )
-                for link in list(unravel(LINKS)):
-                    i = lookup[name]
-                    j = lookup[link]
-                    amat[i,j] = 1
+                for linktype in linktypes:
+                    for link in graph[name].get_links(linktype) :
+                        i = lookup[name]
+                        j = lookup[link]
+                        if i == j :
+                            continue
+                        if linktype == 'ascendants':
+                            amat[j,i] = 1
+                        if linktype == 'descendants':
+                            amat[i,j] = 1
+                        if linktype == 'links':
+                            amat[j,i] = 1
+                            amat[i,j] = 1
         else :
             level = analyte_adjacency_level
             root_data = graph[ self.get_root_id() ].get_data()
@@ -468,19 +467,24 @@ class NodeGraph ( Neuron ) :
             else :
                 amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
             for name in nnames :
-                LINKS = []
-                for linktype in linktypes : # WRONG BOOK-KEEPING HERE
-                    LINKS.append( graph[name].get_links(linktype) )
-                for link in list(unravel(LINKS)):
-                    i_names = graph[ name ].get_data()[ analyte_identifier ]
-                    j_names = graph[ link ].get_data()[ analyte_identifier ]
-                    if (graph[ link ].level()==level or graph[name].level()==level) or level<0 :
-                        for namei in i_names :
-                            for namej in j_names :
-                                i = lookup [ namei ]
-                                j = lookup [ namej ]
-                                if not i == j :
-                                    amat[i,j] = 1
+                for linktype in linktypes :
+                    for link in graph[name].get_links(linktype) :
+                        i_names = graph[ name ].get_data()[ analyte_identifier ]
+                        j_names = graph[ link ].get_data()[ analyte_identifier ]
+                        if (graph[ link ].level()==level or graph[name].level()==level) or level<0 :
+                            for namei in i_names :
+                                for namej in j_names :
+                                    i = lookup [ namei ]
+                                    j = lookup [ namej ]
+                                    if i == j :
+                                        continue
+                                    if linktype == 'ascendants':
+                                        amat[j,i] = 1
+                                    if linktype == 'descendants':
+                                        amat[i,j] = 1
+                                    if linktype == 'links':
+                                        amat[j,i] = 1
+                                        amat[i,j] = 1
         self.adjacency_matrix_ = { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse }
         return ( self.adjacency_matrix_ )
 
@@ -576,15 +580,15 @@ class NodeGraph ( Neuron ) :
             d_adjv = adj_matrix[i,:]
             a_adjv = adj_matrix[:,i]
             for j in range(len(d_adjv)) :
-                if d_adjv[j] == 1 and i!=j :
+                if i == j :
+                    continue
+                if d_adjv[j] == 1 :
                     desc.append(set_name(j,names,bAssignIDs))
-                if a_adjv[j] == 1 and i!=j :
+                if a_adjv[j] == 1 :
                     ascs.append(set_name(j,names,bAssignIDs))
-                if a_adjv[j] == 1 or d_adjv[j] == 1 and i!=j :
-                    linx.append(set_name(j,names,bAssignIDs))
-            n.add_links(desc,linktype='descendants' )
-            n.add_links(linx,linktype='links' )
-            n.add_links(ascs,linktype='ascendants' )
+            n.add_links(list(set(desc)),linktype='descendants' )
+            n.add_links(list(set(desc)|set(ascs)),linktype='links' )
+            n.add_links(list(set(ascs)),linktype='ascendants' )
             self.add(n)
 
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
