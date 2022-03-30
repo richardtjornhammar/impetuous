@@ -717,6 +717,22 @@ def rem ( a:list , H:list ) -> list :
         a .pop(hp)
     return(a)
 
+def nppop(A:np.array, irow:int=None, jcol:int=None ) -> list[np.array] :
+    # ASSUMES ROW MAJOR ORDER MATRIX ...
+    rrow:np.array() = None
+    rcol:np.array() = None
+    N = len(A)
+    M0,M1 = np.shape(A)
+    if not irow is None :
+        rrow = A[irow,:]
+        A    = np.delete(A,range(N*irow,N*(irow+1))).reshape(-1,N)
+        M0   = M0-1
+    if not jcol is None :
+        rcol = A[:,jcol]
+        A    = np.delete(A,range(jcol,len(A.reshape(-1)),N) )
+        M1   = M1-1
+    return ( [rrow,rcol,A.reshape(M0,M1)] )
+
 def linkage ( distm:np.array , command:str = 'max' ) -> dict :
     #
     # CALUCULATES WHEN SAIGAS ARE LINKED
