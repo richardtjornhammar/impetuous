@@ -718,7 +718,7 @@ def rem ( a:list , H:list ) -> list :
     return(a)
 
 def nppop(A:np.array, irow:int=None, jcol:int=None ) -> list[np.array] :
-    # ASSUMES ROW MAJOR ORDER MATRIX ...
+    # ASSUMES ROW MAJOR ORDER
     rrow:np.array() = None
     rcol:np.array() = None
     N = len(A)
@@ -732,6 +732,53 @@ def nppop(A:np.array, irow:int=None, jcol:int=None ) -> list[np.array] :
         A    = np.delete(A,range(jcol,len(A.reshape(-1)),N) )
         M1   = M1-1
     return ( [rrow,rcol,A.reshape(M0,M1)] )
+
+def link1_ ( D:np.array , method:str = 'min' ) -> list :
+    def func( r:float,c:float,lab:str='min' ) -> float :
+        if lab == 'max' :
+            return ( r if r > c else c )
+        if lab == 'min' :
+            return ( r if r < c else c )
+    nmind  = np.argmin(D)
+    ( i,j )  = ( int(nmind/len(D)) , nmind%len(D) )
+    k = j - int(i<j)
+    l = i - int(j<i)
+    pop1 = nppop(D,i,j)
+    pop2 = nppop(pop1[-1],k,l)
+    lpr  = list(pop2[0])
+    d    = lpr.pop(l)
+    lpr  = np.array(lpr)
+    lpc  = pop2[1]
+    nvec = np.array([*[D[0,0]],*[ func(r,c,method) for (r,c) in zip(lpr,lpc) ]])
+    DUM  = np.eye(len(nvec))*0
+    DUM[ 0  , : ] = nvec
+    DUM[ :  , 0 ] = nvec
+    DUM[ 1: , 1:] = pop2[-1]
+    return ( [ DUM , (i,j) , d ]  )
+
+def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
+    N   = len(D)
+    idx = list()
+    for i in range(N): D[i,i] = np.max(D)*1.1; idx.append(i)
+    cidx     = []
+    sidx     = set()
+    res      = [D]
+    linkages = dict()
+    while ( len(res[0]) > 1 ) :
+        res   = link1_ ( res[0] , method )
+        oidx  = tuple ( unpack( tuple( [ idx[i] for i in res[1] ]) ) )
+        unique_local_clusters = [ c for c in cidx if len( set(c) - set(oidx) ) >0 ]
+        unique_local_clusters .append( oidx )
+        cidx  .append( oidx )
+        sidx  = sidx|set(oidx)
+        idx0  = idx
+        idx   = [*unique_local_clusters[::-1] , *[i for i in range(N) if not i in sidx ]]
+        linkages[ oidx ] = res[-1]
+    for i in range(N) :
+        linkages[ (i,) ] = 0
+    return ( linkages )
+
+
 
 def linkage ( distm:np.array , command:str = 'max' ) -> dict :
     #
