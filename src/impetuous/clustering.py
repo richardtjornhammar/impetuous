@@ -771,7 +771,6 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         unique_local_clusters .append( oidx )
         cidx  .append( oidx )
         sidx  = sidx|set(oidx)
-        idx0  = idx
         idx   = [*unique_local_clusters[::-1] , *[i for i in range(N) if not i in sidx ]]
         linkages[ oidx ] = res[-1]
     for i in range(N) :
