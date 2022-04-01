@@ -778,6 +778,28 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
+def linkage_hier ( D:np.array , method:str = 'min' ) -> dict :
+    N   = len(D)
+    dm  = np.max(D)*1.1
+    idx = list()
+    for i in range(N): D[i,i] = dm; idx.append(i)
+    cidx     = []
+    sidx     = set()
+    res      = [D]
+    linkages = dict()
+    while ( len(res[0]) > 1 ) :
+        res   = link1_ ( res[0] , method )
+        oidx  = tuple( [ idx[i] for i in res[1] ])
+        unique_local_clusters = [ c for c in cidx if len( set(c) - set(unpack(oidx)) ) >0 ]
+        unique_local_clusters .append( oidx )
+        cidx  .append( oidx )
+        sidx  = sidx|set(unpack(oidx))
+        idx   = [*unique_local_clusters[::-1] , *[i for i in range(N) if not i in sidx ]]
+        linkages[ oidx ] = res[-1]
+    for i in range(N) :
+        linkages[ (i,) ] = 0
+    return ( linkages )
+
 def lint2lstr ( seq:list[int] ) -> list[str] :
     if isinstance ( seq,(list,tuple,set)) :
         yield from ( str(x) for y in seq for x in lint2lstr(y) )
@@ -791,9 +813,9 @@ def linkages ( distm:np.array , command:str='min' ,
         distm = distm.copy()
     if bUseScipy :
         from scipy.cluster.hierarchy import linkage as sclinks
-        from scipy.spatial.distance import squareform
+        from scipy.spatial.distance  import squareform
         from scipy.cluster.hierarchy import fcluster
-        from impetuous.hierarchical import matrixZ2linkage_dict_tuples
+        from impetuous.hierarchical  import matrixZ2linkage_dict_tuples
         Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
         linkages_ = matrixZ2linkage_dict_tuples ( Z )
     else :
