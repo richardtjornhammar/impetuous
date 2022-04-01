@@ -451,13 +451,9 @@ def build_pclist_word_hierarchy ( filename = None ,  # 'new_compartment_genes.gm
 def matrixZ2linkage_dict_tuples ( Z ) :
     # from scipy.cluster.hierarchy import linkage
     from scipy.cluster.hierarchy import fcluster
-    H  = []
-    d_ = []
-    for d in Z[:,2] :
-        H.append( fcluster ( Z ,d, 'distance' ) )
-        d_.append(d)
     CL = {}
-    for row , d in zip(H,d_) :
+    for d in Z[:,2] :
+        row = fcluster ( Z ,d, 'distance' )
         sv_ = sorted(list(set(row)))
         cl  = {s:[] for s in sv_}
         for i in range( len( row ) ) :
