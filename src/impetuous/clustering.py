@@ -777,7 +777,7 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
-def lint2lstr ( seq:list[str] ) -> list[int] :
+def lint2lstr ( seq:list[int] ) -> list[str] :
     if isinstance ( seq,(list,tuple,set)) :
         yield from ( str(x) for y in seq for x in unpack(y) )
     else :
