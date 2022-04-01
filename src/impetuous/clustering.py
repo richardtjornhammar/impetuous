@@ -794,9 +794,8 @@ def linkages ( distm:np.array , method:str='min',
         Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[method] )
         linkages_ = matrixZ2linkage_dict_tuples ( Z )
     else :
-        linkages_ = linkage_dict_tuples ( D = distm , method = method , bStrKeys = bStrKeys )
+        linkages_ = linkage_dict_tuples ( D = distm , method = method )
     if bLegacy :
-        print ( '!!!DONT USE THIS!!!' )
         return ( linkage( distm = distm , method = method ) )
     if bStrKeys :
         L = {}
@@ -810,45 +809,33 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
     print ( 'WARNING! LEGACY CODE!' )
     D = distm
     N = len(D)
-
     sidx = [ str(i)+'-'+str(j) for i in range(N) for j in range(N) if i<j ]
     pidx = [ [i,j] for i in range(N) for j in range(N) if i<j ]
     R = [ D[idx[0]][idx[1]] for idx in pidx ]
-
     label_order = lambda i,k: i+'-'+k if '.' in i else k+'-'+i if '.' in k else  i+'-'+k if int(i)<int(k) else k+'-'+i
-
     if command == 'max':
         func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]>R[j] else [(R[j],j),(R[i],i)]
     if command == 'min':
         func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]<R[j] else [(R[j],j),(R[i],i)]
-
     LINKS = {}
     cleared = set()
-
     for I in range( N**2 ) : # WORST CASE SCENARIO
-
         clear = []
         if len(R) == 0 :
             break
-
         nar   = np.argmin( R )
         clu_idx = sidx[nar].replace('-','.')
-
         LINKS = { **{ clu_idx : R[nar] } , **LINKS }
         lp    = {}
-
         for l in range(len(sidx)) :
             lidx = sidx[l]
             lp [ lidx ] = l
-
         pij   = sidx[nar].split('-')
         cidx  = set( unpack( [ s.split('-') for s in [ s for s in sidx if len(set(s.split('-'))-set(pij)) == 1 ] ] ) )-set(pij)
         ccidx = set( [ s for s in [ s for s in sidx if len(set(s.split('-'))-set(pij)) == 1 ] ] )
         found = {}
-
         i   = pij[0]
         j   = pij[1]
-
         for k in cidx :
             h0 , h1 , h2 , q0, J = None , None , None , None, 0
             if k == j or k == i :
@@ -873,12 +860,10 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
             nidx = list( set(sidx[Dijk[0][1]].split('-'))-set(pij) )[0]
             nclu_idx = clu_idx + '-' + nidx
             found[ nclu_idx ] = Dijk[0][0]
-
         clear = [*[ lp[c] for c in ccidx ],*[nar]]
         cleared = cleared | set( unpack( [ sidx[c].split('-') for c in clear ]) )
         R = rem(R,clear)
         sidx = rem(sidx,clear)
-
         for label,d in found.items() :
             R.append(d)
             sidx.append(label)
