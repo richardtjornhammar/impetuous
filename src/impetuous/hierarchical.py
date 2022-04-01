@@ -448,7 +448,7 @@ def build_pclist_word_hierarchy ( filename = None ,  # 'new_compartment_genes.gm
     else :
         return ( PClist )
 
-def matrixZ2linkage_dict_tuples ( Z ) :
+def matrixZ2linkage_dict_tuples ( Z :np.array ) -> dict :
     # from scipy.cluster.hierarchy import linkage
     from scipy.cluster.hierarchy import fcluster
     CL = {}
