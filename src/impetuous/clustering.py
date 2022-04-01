@@ -777,6 +777,22 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
+def lint2lstr ( seq:list[str] ) -> list[int] :
+    if isinstance ( seq,(list,tuple,set)) :
+        yield from ( str(x) for y in seq for x in unpack(y) )
+    else :
+        yield seq
+
+def linkages ( distm:np.array,method:str='min', bStrKeys:bool=True, bLegacy:bool=False ):
+    if bLegacy :
+        return ( linkage( distm = distm , method = method ) )
+    linkages = linkage_dict_tuples ( D = distm , method = method , bStrKeys = bStrKeys )
+    if bStrKeys :
+        L = {}
+        for item in linkages.items():
+            L['.'.join( lint2lstr(item[0])  )] = item[1]
+        linkages = L
+    return ( linkages )
 
 
 def linkage ( distm:np.array , command:str = 'max' ) -> dict :
