@@ -779,7 +779,7 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
 
 def lint2lstr ( seq:list[int] ) -> list[str] :
     if isinstance ( seq,(list,tuple,set)) :
-        yield from ( str(x) for y in seq for x in unpack(y) )
+        yield from ( str(x) for y in seq for x in lint2lstr(y) )
     else :
         yield seq
 
@@ -796,11 +796,7 @@ def linkages ( distm:np.array,method:str='min', bStrKeys:bool=True, bLegacy:bool
 
 
 def linkage ( distm:np.array , command:str = 'max' ) -> dict :
-    #
-    # CALUCULATES WHEN SAIGAS ARE LINKED
-    # MAX CORRESPONDS TO COMPLETE LINKAGE
-    # MIN CORRESPONDS TO SINGLE LINKAGE
-    #
+    print ( 'WARNING! LEGACY CODE!' )
     D = distm
     N = len(D)
 
