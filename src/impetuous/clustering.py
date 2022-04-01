@@ -783,16 +783,27 @@ def lint2lstr ( seq:list[int] ) -> list[str] :
     else :
         yield seq
 
-def linkages ( distm:np.array,method:str='min', bStrKeys:bool=True, bLegacy:bool=False ):
+def linkages ( distm:np.array , method:str='min',
+               bStrKeys:bool = True, bLegacy:bool=False,
+               bUseScipy:bool = False ) -> dict :
+    if bUseScipy:
+        from scipy.cluster.hierarchy import linkage as sclinks
+        from scipy.spatial.distance import squareform
+        from scipy.cluster.hierarchy import fcluster
+        from impetuous.hierarchical import matrixZ2linkage_dict_tuples
+        Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[method] )
+        linkages_ = matrixZ2linkage_dict_tuples ( Z )
+    else :
+        linkages_ = linkage_dict_tuples ( D = distm , method = method , bStrKeys = bStrKeys )
     if bLegacy :
+        print ( '!!!DONT USE THIS!!!' )
         return ( linkage( distm = distm , method = method ) )
-    linkages = linkage_dict_tuples ( D = distm , method = method , bStrKeys = bStrKeys )
     if bStrKeys :
         L = {}
-        for item in linkages.items():
+        for item in linkages_.items():
             L['.'.join( lint2lstr(item[0])  )] = item[1]
-        linkages = L
-    return ( linkages )
+        linkages_ = L
+    return ( linkages_ )
 
 
 def linkage ( distm:np.array , command:str = 'max' ) -> dict :
