@@ -788,7 +788,7 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
-def linkage_tiers ( D:np.array , method:str = 'min' ) -> dict :
+def linkage_tier ( D:np.array , method:str = 'min' ) -> dict :
     N   = len(D)
     dm  = np.max(D)*1.1
     idx = list()
