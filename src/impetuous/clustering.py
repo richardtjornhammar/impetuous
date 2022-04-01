@@ -733,13 +733,23 @@ def nppop(A:np.array, irow:int=None, jcol:int=None ) -> list[np.array] :
         M1   = M1-1
     return ( [rrow,rcol,A.reshape(M0,M1)] )
 
-def link1_ ( D:np.array , method:str = 'min' ) -> list :
-    def func( r:float,c:float,lab:str='min' ) -> float :
+def link1_ ( D:np.array , method:str = 'min' , bDA:bool = False ) -> list :
+    def func( r:float , c:float , lab:str='min' ) -> float :
         if lab == 'max' :
             return ( r if r > c else c )
         if lab == 'min' :
             return ( r if r < c else c )
-    nmind  = np.argmin(D)
+    #
+    nmind = np.argmin(D) # RECKLESS TIEBREAKER
+    if bDA :
+        planar_crds = lambda linear_crd,N : tuple( (int(linear_crd/N) , linear_crd%N) )
+        #
+        # HEURISTIC TIEBREAKER :: DENSITY APPROXIMATION
+        dr    = D.reshape(-1)
+        ties  = np.where(dr==dr[nmind])[0]
+        ties  = ties[:int(len(ties)/2)]
+        if len(ties) > 1 :
+            nmind = ties[np.argmin( [ np.sum( D[planar_crds(t,len(D))[0],:]) for t in ties ]) ]
     ( i,j )  = ( int(nmind/len(D)) , nmind%len(D) )
     k = j - int(i<j)
     l = i - int(j<i)
@@ -778,7 +788,7 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
-def linkage_hier ( D:np.array , method:str = 'min' ) -> dict :
+def linkage_tiers ( D:np.array , method:str = 'min' ) -> dict :
     N   = len(D)
     dm  = np.max(D)*1.1
     idx = list()
