@@ -758,8 +758,9 @@ def link1_ ( D:np.array , method:str = 'min' ) -> list :
 
 def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
     N   = len(D)
+    dm  = np.max(D)*1.1
     idx = list()
-    for i in range(N): D[i,i] = np.max(D)*1.1; idx.append(i)
+    for i in range(N): D[i,i] = dm; idx.append(i)
     cidx     = []
     sidx     = set()
     res      = [D]
@@ -783,20 +784,22 @@ def lint2lstr ( seq:list[int] ) -> list[str] :
     else :
         yield seq
 
-def linkages ( distm:np.array , method:str='min',
-               bStrKeys:bool = True, bLegacy:bool=False,
-               bUseScipy:bool = False ) -> dict :
-    if bUseScipy:
+def linkages ( distm:np.array , command:str='min' ,
+               bStrKeys:bool = True, bUseScipy:bool = False ,
+               bMemSec=True, bLegacy:bool=False ) -> dict :
+    if bMemSec :
+        distm = distm.copy()
+    if bUseScipy :
         from scipy.cluster.hierarchy import linkage as sclinks
         from scipy.spatial.distance import squareform
         from scipy.cluster.hierarchy import fcluster
         from impetuous.hierarchical import matrixZ2linkage_dict_tuples
-        Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[method] )
+        Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
         linkages_ = matrixZ2linkage_dict_tuples ( Z )
     else :
-        linkages_ = linkage_dict_tuples ( D = distm , method = method )
+        linkages_ = linkage_dict_tuples ( D = distm , method = command )
     if bLegacy :
-        return ( linkage( distm = distm , method = method ) )
+        return ( linkage( distm = distm , command = command ) )
     if bStrKeys :
         L = {}
         for item in linkages_.items():
@@ -804,8 +807,7 @@ def linkages ( distm:np.array , method:str='min',
         linkages_ = L
     return ( linkages_ )
 
-
-def linkage ( distm:np.array , command:str = 'max' ) -> dict :
+def linkage ( distm:np.array , command:str = 'min' ) -> dict :
     print ( 'WARNING! LEGACY CODE!' )
     D = distm
     N = len(D)
