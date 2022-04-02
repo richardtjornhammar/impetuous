@@ -660,7 +660,6 @@ import numpy as np
 import sklearn.datasets
 import umap
 import umap.plot
-import umap.utils as utils
 import umap.aligned_umap
 
 import matplotlib.pyplot as plt
@@ -722,6 +721,10 @@ and finally save the image as an `svg`
 It is readily viewable below and we can see that the UMAP and Distance Geometry algorithms both cluster the data. But that the UMAP was able to discriminate better, forcing the solution into tighter clusters. Some of the clusters in the right hand side figure however separate in the third dimension (not shown).
 
 ![teaser](https://gist.githubusercontent.com/richardtjornhammar/997e179a5e773fe054d2f8edcdb5cd72/raw/78ec4e67ffa4585918ca7e117c5a080b6188447b/myscatter_comparison.svg)
+
+# Example 14: Connectivity, hierarchies and linkages
+
+In the `impetuous.clustering` module you will find several codes for assessing if distance matrices are connected at some distance or not. `connectivity` and `connectedness` are two methods for establishing the amount of clusters in the binary Neighbour matrix <img src="https://render.githubusercontent.com/render/math?math=N_{ij}=A_{ij}<\epsilon">. "Connection" algorithms, such as the two mentioned evaluates every distance and connects them if there is any distance overlap for a specific distance. "Link" algorithms try to determine the amount of clusters for all unique distances by reducing and ignoring connections to already linked constituents of the system. The "Link" codes are more efficient at creating a link hierarchy of the data but generally can be thought of as throwing away information at every linking step as well as determining the new cluster distance to the rest of the points using a heuristic. The "Link" method is thereby not useful for deterministic treatment of a particle system where the true connections in it are important, such as in a water bulk system when you really want your quantum mechanical waters to all be treated at the same level of theory. This is indeed why my `connectivity` algorithm was invented by me in 2009. If you are only doing black box statstics then this distinction is not important and the efficiency probably is what you care about. You can construct hierarchies from both algorithm types but the connection algorithm will always produce the unique and well determined, in terms of structure, while the link algorithms will be unique but structurally dependent on how ties sare resolved and which heuristic is employed for construction. The connection hierarchy is exact and deterministic, but slow to construct, while the link hierarchies are heuristic and non deterministic, but fast to cosntruct. We will study this more in the following code example.
 
 # Notes
 
