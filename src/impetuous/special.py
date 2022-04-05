@@ -40,6 +40,11 @@ isItPrime
 # https://gist.github.com/richardtjornhammar/ef1719ab0dc683c69d5a864cb05c5a90
 Fibonacci
 F_truth
+
+clustering:
+lint2lstr
+unpack
+rem
 """
 
 import numpy as np
@@ -213,6 +218,12 @@ def Fibonacci(n):
 def F_truth(i): # THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2i+1
     return ( Fibonacci(i)**2+Fibonacci(i+1)**2 == Fibonacci(2*i+1))
 
+
+def lint2lstr ( seq:list[int] ) -> list[str] :
+    if isinstance ( seq,(list,tuple,set)) :
+        yield from ( str(x) for y in seq for x in lint2lstr(y) )
+    else :
+        yield seq
 
 def unpack ( seq ) : # seq:Union -> Union
     if isinstance ( seq,(list,tuple,set)) :
