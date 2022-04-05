@@ -118,6 +118,38 @@ def HierarchicalEnrichment (
     df = df.dropna()
     return ( df )
 
+def hierarchy_matrix ( distance_matrix:np.array = None ,
+                       coordinates:np.array     = None ) :
+    from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
+    import operator
+    if not operator.xor( coordinates is None , distance_matrix is None ) :
+        print ( "ONLY COORDINATES OR A DISTANCE MATRIX" )
+        print ( "calculate_hierarchy_matrix FAILED" )
+        print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
+        exit(1)
+    if not coordinates is None :
+        distance_matrix = absolute_coordinates_to_distance_matrix(coordinates)
+
+    nmt_ = np.shape(distance_matrix)
+    uco_v = sorted(list(set(distance_matrix.reshape(-1))))
+    level_distance_lookup = {}
+    hsers = []
+    for icut in range(len(uco_v)) :
+        cutoff = uco_v[icut]
+        # clustercontacts : clusterid , particleid relation
+        # clustercontent : clusterid to number of particles in range
+        #from clustering import connectivity # LOCAL TESTING
+        clustercontent , clustercontacts = connectivity ( distance_matrix , cutoff )
+        #
+        # internal ordering is a range so this does not need to be a dict
+        level_distance_lookup[icut] = [ icut , cutoff , np.mean(clustercontent) ]
+        hsers.append(clustercontacts[:,0])
+        if len( set(clustercontacts[:,0]) ) == 1 : # DON'T DO HIGHER COMPLETE SYSTEM VALUES
+            break
+    return ( np.array(hsers) , level_distance_lookup )
+
+
+
 def calculate_hierarchy_matrix ( data_frame = None ,
                                  distance_matrix = None ,
                                  bVerbose = False,
