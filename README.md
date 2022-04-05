@@ -864,14 +864,14 @@ We know by heart that a triagonal mesh with a link length of one is fully connec
         Rs = np.array( [ a*n+b*m for n,m in zip(Nx.reshape(-1),My.reshape(-1)) ] )
         return ( Rs )
         
-        from clustering import absolute_coordinates_to_distance_matrix as c2D
-        D = c2D( generate_plaque(N=3))
-        #
-        # CONNECTIVITY CONSTRUCTION
-        print ( imph.reformat_hierarchy_matrix_results ( *imph.hierarchy_matrix( D ).values() ) )
-        #
-        # SCIPY LINKAGE CONSTRUCTION
-        print ( scipylinkages(D,'min',bStrKeys=False) )
+    from clustering import absolute_coordinates_to_distance_matrix as c2D
+    D = c2D( generate_plaque(N=3))
+    #
+    # CONNECTIVITY CONSTRUCTION
+    print ( imph.reformat_hierarchy_matrix_results ( *imph.hierarchy_matrix( D ).values() ) )
+    #
+    # SCIPY LINKAGE CONSTRUCTION
+    print ( scipylinkages(D,'min',bStrKeys=False) )
 ```
 which readily tells us that
 ```
