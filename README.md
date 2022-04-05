@@ -731,11 +731,32 @@ The "Link" codes are more efficient at creating a link hierarchy of the data but
 The "Link" method is thereby not useful for the deterministic treatment of a particle system where all the true connections in it are important, such as in a water bulk system when you want all your quantum-mechanical waters to be treated at the same level of theory based on their connectivity. This is indeed why my connectivity algorithm was invented by me in 2009. If you are only doing black box statistics then this distinction is not important and computational efficiency is probably what you care about. You can construct hierarchies from both algorithm types but the connection algorithm will always produce a unique and well-determined structure while the link algorithms will be unique but structurally dependent on how ties are resolved and which heuristic is employed for construction. The connection hierarchy is exact and deterministic, but slow to construct, while the link hierarchies are heuristic dependent and non-deterministic, but fast to construct. We will study this more in the following code example as well as the case when they are equivalent.
 
 ## Link hierarhy construction 14.1
-The following code produces two distance matrices. One has distance ties and the other one does not. The second matrix is well known and the correct minimal linkage hierarchy is well known. Lets see if we or scipy gets it right.
+The following code produces two distance matrices. One has distance ties and the other one does not. The second matrix is well known and the correct minimal linkage hierarchy is well known. Lets see compare the results between scipy and our method.
 ```
 import numpy as np
 from impetuous.clustering import absolute_coordinates_to_distance_matrix
-from impetuous.clustering import linkages
+from impetuous.clustering import linkages,lint2lstr
+
+def scipylinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
+    from scipy.cluster.hierarchy import linkage as sclinks
+    Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
+    from scipy.cluster.hierarchy import fcluster
+    CL = {}
+    for d in Z[:,2] :
+        row = fcluster ( Z ,d, 'distance' )
+        sv_ = sorted(list(set(row)))
+        cl  = {s:[] for s in sv_}
+        for i in range( len( row ) ) :
+            cl[row[i]].append(i)
+        for v_ in list( cl.values() ) :
+            if tuple(v_) not in CL:
+                CL[tuple(v_)] = d
+    if bStrKeys :
+        L = {}
+        for item in CL.items():
+            L['.'.join( lint2lstr(item[0])  )] = item[1]
+        CL = L
+    return ( CL )
 
 if __name__ == '__main__' :
     
@@ -751,7 +772,7 @@ if __name__ == '__main__' :
 
     print ( tied_D )
     lnx1 = linkages ( tied_D.copy() , command='min' )
-    lnx2 = linkages ( tied_D.copy() , command='min' , bUseScipy = True )
+    lnx2 = scipylinkages(tied_D,'min')
 
     print ( '\n',lnx1 ,'\n', lnx2 )
     
@@ -760,11 +781,10 @@ if __name__ == '__main__' :
     print ('\n', np.array(D) )
 
     lnx1 = linkages ( D , command='min' )
-    lnx2 = linkages ( D , command='min' , bUseScipy = True )
+    lnx2 = scipylinkages( D,'min')
 
     print ( '\n',lnx1 ,'\n', lnx2 )
 ```
-The `linkages` method interfaces `scipy` and constructs the clusters using `scipy` `linkage` and `fcluster` if the `bUseScipy` flag is set `True`. Otherwise the method calls our own `impetuous` `linkages`.
 
 We study the results below
 ```
@@ -776,6 +796,7 @@ We study the results below
  [64 45 17 13 18  0]]
 
  {'2.3': 2, '1.4': 9.0, '1.4.0': 13.0, '2.3.5': 13.0, '2.3.5.1.4.0': 17.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0} 
+ {'1': 2.0, '4': 2.0, '0': 2.0, '2.3': 2.0, '5': 2.0, '1.4': 9.0, '0.1.4': 13.0, '2.3.5': 13.0, '0.1.2.3.4.5': 17.0}
 
  [[ 0  9  3  6 11]
  [ 9  0  7  5 10]
@@ -783,8 +804,12 @@ We study the results below
  [ 6  5  9  0  8]
  [11 10  2  8  0]]
 
- {'2.4': 2, '2.4.0': 3.0, '1.3': 5.0, '1.3.2.4.0': 6.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0} 
+ {'2.4': 2, '2.4.0': 3.0, '1.3': 5.0, '1.3.2.4.0': 6.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0}
+ {'2.4': 2.0, '0': 2.0, '1': 2.0, '3': 2.0, '0.2.4': 3.0, '1.3': 5.0, '0.1.2.3.4': 6.0}
 ```
+We see that the only difference for these two examples are how the unclustered indices are treated. In our method they are set to the identity distance value of zero while scipy attributes them the lowest non diagonal value in the distance matrix.
+
+## Connectivity construction
 
 # Notes
 
