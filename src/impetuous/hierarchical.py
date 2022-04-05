@@ -121,7 +121,7 @@ def HierarchicalEnrichment (
 
 
 def hierarchy_matrix ( distance_matrix:np.array = None ,
-                       coordinates:np.array     = None ) :
+                       coordinates:np.array     = None ) -> dict :
     from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
     import operator
     if not operator.xor( coordinates is None , distance_matrix is None ) :
@@ -148,7 +148,7 @@ def hierarchy_matrix ( distance_matrix:np.array = None ,
         hsers.append(clustercontacts[:,0])
         if len( set(clustercontacts[:,0]) ) == 1 : # DON'T DO HIGHER COMPLETE SYSTEM VALUES
             break
-    return ( np.array(hsers) , level_distance_lookup )
+    return ( { 'hierarchy matrix':np.array(hsers) , 'lookup':level_distance_lookup} )
 
 def reformat_hierarchy_matrix_results ( hierarchy_matrix:np.array , lookup:dict=None ) :
     CL = {}
@@ -510,8 +510,8 @@ def matrixZ2linkage_dict_tuples ( Z :np.array ) -> dict :
         for v_ in list( cl.values() ) :
             CL[tuple(v_)] = d
     return ( CL )
-    
-    
+
+
 if __name__ == '__main__' :
 
     if False :
