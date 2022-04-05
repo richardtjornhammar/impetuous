@@ -599,8 +599,8 @@ if __name__=='__main__' :
     t0 = time.time()
     links = linkage( D, command='min')
     dt = time.time()-t0
-    print ('min>', linkage( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
-    print ('max>', linkage( D, command='max') )     # COMPLETE LINKAGE
+    print ('min>', linkages( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
+    print ('max>', linkages( D, command='max') )     # COMPLETE LINKAGE
 
     import impetuous.convert as gg
 
@@ -626,9 +626,9 @@ if __name__=='__main__' :
     D = np.array([[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ])
     print ( np.array(D) )
     t0 = time.time()
-    links = linkage( D, command='min')
+    links = linkages( D, command='min')
     dt = time.time()-t0
-    print ('min>', linkage( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
+    print ('min>', linkages( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
 
     import impetuous.convert as gg
 
