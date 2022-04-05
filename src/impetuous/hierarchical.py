@@ -118,6 +118,8 @@ def HierarchicalEnrichment (
     df = df.dropna()
     return ( df )
 
+
+
 def hierarchy_matrix ( distance_matrix:np.array = None ,
                        coordinates:np.array     = None ) :
     from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
@@ -148,6 +150,21 @@ def hierarchy_matrix ( distance_matrix:np.array = None ,
             break
     return ( np.array(hsers) , level_distance_lookup )
 
+def reformat_hierarchy_matrix_results ( hierarchy_matrix:np.array , lookup:dict=None ) :
+    CL = {}
+    for i in range(len(hierarchy_matrix)):
+        row = hierarchy_matrix[i]
+        d = i
+        if not lookup is None :
+            d   = lookup[i][1]
+        sv_ = sorted(list(set(row)))
+        cl  = {s:[] for s in sv_}
+        for i in range( len( row ) ) :
+            cl[row[i]].append(i)
+        for v_ in list( cl.values() ) :
+            if tuple(v_) not in CL :
+                CL[ tuple(v_) ] = d
+    return ( CL )
 
 
 def calculate_hierarchy_matrix ( data_frame = None ,
