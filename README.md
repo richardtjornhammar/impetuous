@@ -850,6 +850,77 @@ with the result
 ```
 which is well aligned with the previous results, but the `connectivity` approach is slower to employ for constructing a hierarchy.
 
+## Comparing hierarchies of an equidistant plaque
+
+We know by heart that a triagonal mesh with a link length of one is fully connected at only that distance. So lets study what the hierarchical clustering results will yield.
+```
+    def generate_plaque(N) :
+        L,l = 1,1
+        a  = np.array( [l*0.5, np.sqrt(3)*l*0.5] )
+        b  = np.array( [l*0.5,-np.sqrt(3)*l*0.5] )
+        x_ = np.linspace( 1,N,N )
+        y_ = np.linspace( 1,N,N )
+        Nx , My = np.meshgrid ( x_,y_ )
+        Rs = np.array( [ a*n+b*m for n,m in zip(Nx.reshape(-1),My.reshape(-1)) ] )
+        return ( Rs )
+        
+        from clustering import absolute_coordinates_to_distance_matrix as c2D
+        D = c2D( generate_plaque(N=3))
+        #
+        # CONNECTIVITY CONSTRUCTION
+        print ( imph.reformat_hierarchy_matrix_results ( *imph.hierarchy_matrix( D ).values() ) )
+        #
+        # SCIPY LINKAGE CONSTRUCTION
+        print ( scipylinkages(D,'min',bStrKeys=False) )
+```
+which readily tells us that
+```
+{(0,): 0.0, (1,): 0.0, (2,): 0.0, (3,): 0.0, (4,): 0.0, (5,): 0.0, (6,): 0.0, (7,): 0.0, (8,): 0.0, (0, 1, 3, 4): 0.9999999999999999, (2, 5): 0.9999999999999999, (6, 7): 0.9999999999999999, (0, 1, 2, 3, 4, 5, 6, 7, 8): 1.0}
+
+{(6, 7): 0.9999999999999999, (0, 1, 3, 4): 0.9999999999999999, (2, 5): 0.9999999999999999, (8,): 0.9999999999999999, (0, 1, 2, 3, 4, 5, 6, 7, 8): 1.0}
+```
+and we see that everything is connected at the distance `1` and that the numerical treatment seems to have confused both algorithms in a similar fashion, but that `scipy` is assigning single index clusters the distance `1`
+
+we measure the time it takes for both to complete ever large meshes
+```
+    from clustering import absolute_coordinates_to_distance_matrix as c2D
+    T = []
+    for N in range(3,40,2):
+        D = c2D( generate_plaque(N=N))
+        t0=time.time()
+        r1= imph.reformat_hierarchy_matrix_results ( *imph.hierarchy_matrix( D ).values() )
+        t1=time.time()
+        r2= scipylinkages(D,'min',bStrKeys=False)
+        t2=time.time()
+        if N>2:
+            T.append([N,t1-t0,t2-t1])
+
+    for t in T:
+        print(t)
+```
+and find the timing to be:
+```
+[4, 0.00019979476928710938, 0.0009992122650146484]
+[6, 0.00045108795166015625, 0.003519296646118164]
+[8, 0.0009257793426513672, 0.00949406623840332]
+[10, 0.001996755599975586, 0.021444082260131836]
+[12, 0.003604412078857422, 0.04308891296386719]
+[14, 0.006237030029296875, 0.0793461799621582]
+[16, 0.010350704193115234, 0.13524317741394043]
+[18, 0.015902042388916016, 0.2159280776977539]
+[20, 0.030185699462890625, 0.3255939483642578]
+[22, 0.03534746170043945, 0.47675514221191406]
+[24, 0.07047271728515625, 0.67844557762146]
+[26, 0.06810998916625977, 0.929694652557373]
+[28, 0.13647937774658203, 1.2459971904754639]
+[30, 0.12457752227783203, 1.705310583114624]
+[32, 0.1785578727722168, 2.111368417739868]
+[34, 0.3048675060272217, 2.662834644317627]
+[36, 0.27133679389953613, 3.3377525806427]
+[38, 0.34802937507629395, 4.12202787399292]
+```
+So it is clear that a linkage method is more efficient for constructing complete hierarchies while a single `connectivity` calculation will be faster if you only want the clusters at a predetermined distance. Because in that case you don't need to calculate the entire hierarchy.
+
 # Notes
 
 These examples were meant as illustrations of some of the codes implemented in the impetuous-gfa package. 
