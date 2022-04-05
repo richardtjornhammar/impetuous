@@ -866,9 +866,9 @@ The final complete clustering results can be obtained in this alternative way fo
 ```
 with the result
 ```
-{'0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '2.4': 2, '0.2.4': 3, '1.3': 5, '0.1.2.3.4': 6}
+{(0,): 0, (1,): 0, (2,): 0, (3,): 0, (4,): 0, (2, 4): 2, (0, 2, 4): 3, (1, 3): 5, (0, 1, 2, 3, 4): 6}
 ```
-which is well algined with the previous results, but the `connectivity` approach is slower to employ for constructing a hierarchy.
+which is well aligned with the previous results, but the `connectivity` approach is slower to employ for constructing a hierarchy.
 
 # Notes
 
