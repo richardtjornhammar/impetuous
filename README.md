@@ -735,28 +735,8 @@ The following code produces two distance matrices. One has distance ties and the
 ```
 import numpy as np
 from impetuous.clustering import absolute_coordinates_to_distance_matrix
-from impetuous.clustering import linkages,lint2lstr
-
-def scipylinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
-    from scipy.cluster.hierarchy import linkage as sclinks
-    Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
-    from scipy.cluster.hierarchy import fcluster
-    CL = {}
-    for d in Z[:,2] :
-        row = fcluster ( Z ,d, 'distance' )
-        sv_ = sorted(list(set(row)))
-        cl  = {s:[] for s in sv_}
-        for i in range( len( row ) ) :
-            cl[row[i]].append(i)
-        for v_ in list( cl.values() ) :
-            if tuple(v_) not in CL:
-                CL[tuple(v_)] = d
-    if bStrKeys :
-        L = {}
-        for item in CL.items():
-            L['.'.join( lint2lstr(item[0])  )] = item[1]
-        CL = L
-    return ( CL )
+from impetuous.clustering import linkages, scipylinkages
+from impetuous.special import lint2lstr
 
 if __name__ == '__main__' :
     
