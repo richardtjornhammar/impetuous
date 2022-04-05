@@ -816,18 +816,35 @@ def lint2lstr ( seq:list[int] ) -> list[str] :
     else :
         yield seq
 
+def scipylinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
+    from scipy.spatial.distance  import squareform
+    from scipy.cluster.hierarchy import linkage as sclinks
+    from scipy.cluster.hierarchy import fcluster
+    Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
+    CL = {}
+    for d in Z[:,2] :
+        row = fcluster ( Z ,d, 'distance' )
+        sv_ = sorted(list(set(row)))
+        cl  = {s:[] for s in sv_}
+        for i in range( len( row ) ) :
+            cl[row[i]].append(i)
+        for v_ in list( cl.values() ) :
+            if tuple(v_) not in CL:
+                CL[tuple(v_)] = d
+    if bStrKeys :
+        L = {}
+        for item in CL.items():
+            L['.'.join( lint2lstr(item[0])  )] = item[1]
+        CL = L
+    return ( CL )
+
 def linkages ( distm:np.array , command:str='min' ,
                bStrKeys:bool = True, bUseScipy:bool = False ,
                bMemSec=True, bLegacy:bool=False ) -> dict :
     if bMemSec :
         distm = distm.copy()
     if bUseScipy :
-        from scipy.cluster.hierarchy import linkage as sclinks
-        from scipy.spatial.distance  import squareform
-        from scipy.cluster.hierarchy import fcluster
-        from impetuous.hierarchical  import matrixZ2linkage_dict_tuples
-        Z = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
-        linkages_ = matrixZ2linkage_dict_tuples ( Z )
+        linkages_ = scipylinkages ( distm ,command=command , bStrKeys = False ) 
     else :
         linkages_ = linkage_dict_tuples ( D = distm , method = command )
     if bLegacy :
