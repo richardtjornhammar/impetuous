@@ -726,9 +726,68 @@ In the `impetuous.clustering` module you will find several codes for assessing i
 
 "Connection" algorithms, such as the two mentioned, evaluate every distance and add them to the same cluster if there is any true overlap for a specific distance cutoff. ["Link" algorithms](https://online.stat.psu.edu/stat555/node/85/) try to determine the number of clusters for all unique distances by reducing and ignoring some connections to already linked constituents of the system in accord with a chosen heuristic. 
 
-The "Link" codes are more efficient at creating a link hierarchy of the data but can be thought of as throwing away information at every linking step. The lost information is deemed unuseful by the heuristic. The full link algorithm determines the new cluster distance to the rest of the points in a self consistent fashion by employing the same heuristic. Using simple linkage, or `min` value distance assignment, will produce an equivalent [hierarchy](https://online.stat.psu.edu/stat555/node/86/) as compared to the one deduced by a connection algorithm. Except for the case when there are distance ties in the link evaluation. This is a computational quirk that does not affect "connection" based hierarchy construction.
+The "Link" codes are more efficient at creating a link hierarchy of the data but can be thought of as throwing away information at every linking step. The lost information is deemed unuseful by the heuristic. The full link algorithm determines the new cluster distance to the rest of the points in a self consistent fashion by employing the same heuristic. Using simple linkage, or `min` value distance assignment, will produce an equivalent [hierarchy](https://online.stat.psu.edu/stat555/node/86/) as compared to the one deduced by a connection algorithm. Except for some of the cases when there are distance ties in the link evaluation. This is a computational quirk that does not affect "connection" based hierarchy construction.
 
 The "Link" method is thereby not useful for the deterministic treatment of a particle system where all the true connections in it are important, such as in a water bulk system when you want all your quantum-mechanical waters to be treated at the same level of theory based on their connectivity. This is indeed why my connectivity algorithm was invented by me in 2009. If you are only doing black box statistics then this distinction is not important and computational efficiency is probably what you care about. You can construct hierarchies from both algorithm types but the connection algorithm will always produce a unique and well-determined structure while the link algorithms will be unique but structurally dependent on how ties are resolved and which heuristic is employed for construction. The connection hierarchy is exact and deterministic, but slow to construct, while the link hierarchies are heuristic dependent and non-deterministic, but fast to construct. We will study this more in the following code example as well as the case when they are equivalent.
+
+## Link hierarhy construction 14.1
+The following code produces two distance matrices. One has distance ties and the other one does not. The second matrix is well known and the correct minimal linkage hierarchy is well known. Lets see if we or scipy gets it right.
+```
+import numpy as np
+from impetuous.clustering import absolute_coordinates_to_distance_matrix
+from impetuous.clustering import linkages
+
+if __name__ == '__main__' :
+    
+    xds = np.array([ [5,2],
+                   [8,4],
+                   [4,6],
+                   [3,7],
+                   [8,7],
+                   [5,10]
+                  ])
+
+    tied_D = np.array([ np.sum((p-q)**2) for p in xds for q in xds ]).reshape(len(xds),len(xds))
+
+    print ( tied_D )
+    lnx1 = linkages ( tied_D.copy() , command='min' )
+    lnx2 = linkages ( tied_D.copy() , command='min' , bUseScipy = True )
+
+    print ( '\n',lnx1 ,'\n', lnx2 )
+    
+    D = np.array([[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ])
+
+    print ('\n', np.array(D) )
+
+    lnx1 = linkages ( D , command='min' )
+    lnx2 = linkages ( D , command='min' , bUseScipy = True )
+
+    print ( '\n',lnx1 ,'\n', lnx2 )
+```
+The `linkages` method interfaces `scipy` and constructs the clusters using `scipy` `linkage` and `fcluster` if the `bUseScipy` flag is set `True`. Otherwise the method calls our own `impetuous` `linkages`.
+
+We study the results below
+```
+[[ 0 13 17 29 34 64]
+ [13  0 20 34  9 45]
+ [17 20  0  2 17 17]
+ [29 34  2  0 25 13]
+ [34  9 17 25  0 18]
+ [64 45 17 13 18  0]]
+
+ {'2.3': 2, '1.4': 9.0, '1.4.0': 13.0, '2.3.5': 13.0, '2.3.5.1.4.0': 17.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0} 
+ {'1': 2.0, '4': 2.0, '0': 9.0, '2.3': 9.0, '5': 9.0, '1.4': 9.0, '0.1.4': 13.0, '2.3.5': 13.0, '0.1.2.3.4.5': 17.0}
+
+ [[ 0  9  3  6 11]
+ [ 9  0  7  5 10]
+ [ 3  7  0  9  2]
+ [ 6  5  9  0  8]
+ [11 10  2  8  0]]
+
+ {'2.4': 2, '2.4.0': 3.0, '1.3': 5.0, '1.3.2.4.0': 6.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0} 
+ {'2.4': 2.0, '0': 2.0, '1': 3.0, '3': 3.0, '0.2.4': 5.0, '1.3': 5.0, '0.1.2.3.4': 6.0}
+```
+We can see that scipy, being the second dictionary output assigns the `values >0` to idendities that are unclustered (single digit strings). Furthermore we see the results are different for the well known hierarchy. The clusters `'2.4'`,`'1.3'` and `'1.3.2.4.0'` are the same whereas `'2.4.0'` differ. Know we need to figure out which one is correct. Reference tells us that `scipy` failed, but we will figure it out for our selves.
 
 # Notes
 
