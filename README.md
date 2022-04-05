@@ -789,8 +789,8 @@ We study the results below
 ```
 We see that the only difference for these two examples are how the unclustered indices are treated. In our method they are set to the identity distance value of zero while scipy attributes them the lowest non diagonal value in the distance matrix.
 
-## 14.2 Connectivity construction
-Now we employ the `connectivity` algorithm for construction. In the below code segment the first loop calls the function directly and the second calls the `impetuous.hierarchy_matrix` function
+## 14.2 Connectivity hierarchy construction
+Now we employ the `connectivity` algorithm for construction of the hierarchy. In the below code segment the first loop calls the function directly and the second calls the `impetuous.hierarchy_matrix` function
 ```
     import impetuous.hierarchical as imph
     from impetuous.clustering import connectivity
