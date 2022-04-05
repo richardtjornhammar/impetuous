@@ -776,7 +776,6 @@ We study the results below
  [64 45 17 13 18  0]]
 
  {'2.3': 2, '1.4': 9.0, '1.4.0': 13.0, '2.3.5': 13.0, '2.3.5.1.4.0': 17.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0} 
- {'1': 2.0, '4': 2.0, '0': 9.0, '2.3': 9.0, '5': 9.0, '1.4': 9.0, '0.1.4': 13.0, '2.3.5': 13.0, '0.1.2.3.4.5': 17.0}
 
  [[ 0  9  3  6 11]
  [ 9  0  7  5 10]
@@ -785,9 +784,7 @@ We study the results below
  [11 10  2  8  0]]
 
  {'2.4': 2, '2.4.0': 3.0, '1.3': 5.0, '1.3.2.4.0': 6.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0} 
- {'2.4': 2.0, '0': 2.0, '1': 3.0, '3': 3.0, '0.2.4': 5.0, '1.3': 5.0, '0.1.2.3.4': 6.0}
 ```
-We can see that scipy, being the second dictionary output assigns the `values >0` to idendities that are unclustered (single digit strings). Furthermore we see the results are different for the well known hierarchy. The clusters `'2.4'`,`'1.3'` and `'1.3.2.4.0'` are the same whereas `'2.4.0'` differ. Know we need to figure out which one is correct. Reference tells us that `scipy` failed, but we will figure it out for our selves.
 
 # Notes
 
