@@ -730,7 +730,7 @@ The "Link" codes are more efficient at creating a link hierarchy of the data but
 
 The "Link" method is thereby not useful for the deterministic treatment of a particle system where all the true connections in it are important, such as in a water bulk system when you want all your quantum-mechanical waters to be treated at the same level of theory based on their connectivity. This is indeed why my connectivity algorithm was invented by me in 2009. If you are only doing black box statistics then this distinction is not important and computational efficiency is probably what you care about. You can construct hierarchies from both algorithm types but the connection algorithm will always produce a unique and well-determined structure while the link algorithms will be unique but structurally dependent on how ties are resolved and which heuristic is employed for construction. The connection hierarchy is exact and deterministic, but slow to construct, while the link hierarchies are heuristic dependent and non-deterministic, but fast to construct. We will study this more in the following code example as well as the case when they are equivalent.
 
-## Link hierarhy construction 14.1
+##  14.1 Link hierarchy construction
 The following code produces two distance matrices. One has distance ties and the other one does not. The second matrix is well known and the correct minimal linkage hierarchy is well known. Lets see compare the results between scipy and our method.
 ```
 import numpy as np
@@ -809,7 +809,66 @@ We study the results below
 ```
 We see that the only difference for these two examples are how the unclustered indices are treated. In our method they are set to the identity distance value of zero while scipy attributes them the lowest non diagonal value in the distance matrix.
 
-## Connectivity construction
+## 14.2 Connectivity construction
+Now we employ the `connectivity` algorithm for construction. In the below code segment the first loop calls the function directly and the second calls the `impetuous.hierarchy_matrix` function
+```
+    import impetuous.hierarchical as imph
+    from impetuous.clustering import connectivity
+
+    unique_distances = sorted(list(set(D.reshape(-1))))
+    for u in unique_distances :
+        results = connectivity(D,u)
+        print ( u , results )
+        if len(results[0]) == 1 :
+            break
+
+    res = imph.hierarchy_matrix ( D )
+    print ( res )
+```
+with the results
+```
+0 ([1, 1, 1, 1, 1], array([[0, 0],
+       [1, 1],
+       [2, 2],
+       [3, 3],
+       [4, 4]]))
+2 ([1, 1, 1, 2], array([[0, 0],
+       [1, 1],
+       [3, 2],
+       [2, 3],
+       [3, 4]]))
+3 ([1, 1, 3], array([[2, 0],
+       [0, 1],
+       [2, 2],
+       [1, 3],
+       [2, 4]]))
+5 ([2, 3], array([[1, 0],
+       [0, 1],
+       [1, 2],
+       [0, 3],
+       [1, 4]]))
+6 ([5], array([[0, 0],
+       [0, 1],
+       [0, 2],
+       [0, 3],
+       [0, 4]]))
+{'hierarchy matrix':(array([[0, 1, 2, 3, 4],
+       [0, 1, 3, 2, 3],
+       [2, 0, 2, 1, 2],
+       [1, 0, 1, 0, 1],
+       [0, 0, 0, 0, 0]]),'lookup':{0: [0, 0, 1.0], 1: [1, 2, 1.25], 2: [2, 3, 1.6666666666666667], 3: [3, 5, 2.5], 4: [4, 6, 5.0]}}
+```
+and we see that the system has 5 unique levels. The hierarchy matrix increase in distance as you traverse down. The first row is level `0` with distance `0` and all items are assigned to each own cluster. The third row, level `2`, contains three clusters at distance `3` and the three clusters are `0.2.4` as well as `1` and `3`. We see that they become joined at level `3` corresponding to distance `5`.
+
+The final complete clustering results can be obtained in this alternative way for the `connectivity` hierarchy
+```
+    print ( imph.reformat_hierarchy_matrix_results ( res['hierarchy matrix'],res['lookup'] ) )
+```
+with the result
+```
+{'0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '2.4': 2, '0.2.4': 3, '1.3': 5, '0.1.2.3.4': 6}
+```
+which is well algined with the previous results, but the `connectivity` approach is slower to employ for constructing a hierarchy.
 
 # Notes
 
