@@ -841,8 +841,9 @@ def scipylinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
     return ( CL )
 
 def linkages ( distm:np.array , command:str='min' ,
-               bStrKeys:bool = False , bUseScipy:bool = False ,
+               bStrKeys:bool = True , bUseScipy:bool = False ,
                bMemSec=True, bLegacy:bool=False ) -> dict :
+    distm = np.array(distm)
     if bMemSec :
         distm = distm.copy()
     if bUseScipy :
