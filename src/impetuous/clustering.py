@@ -740,11 +740,11 @@ def link1_ ( D:np.array , method:str = 'min' , bDA:bool = False ) -> list :
         if lab == 'min' :
             return ( r if r < c else c )
     #
-    nmind = np.argmin(D) # RECKLESS TIEBREAKER
+    nmind = np.argmin(D) # SIMPLE TIEBREAKER
     if bDA :
         planar_crds = lambda linear_crd,N : tuple( (int(linear_crd/N) , linear_crd%N) )
         #
-        # HEURISTIC TIEBREAKER :: DENSITY APPROXIMATION
+        # HEURISTIC TIEBREAKER
         dr    = D.reshape(-1)
         ties  = np.where(dr==dr[nmind])[0]
         ties  = ties[:int(len(ties)/2)]
@@ -788,7 +788,7 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
-def linkage_tier ( D:np.array , method:str = 'min' ) -> dict :
+def linkages_tiers ( D:np.array , method:str = 'min' ) -> dict :
     N   = len(D)
     dm  = np.max(D)*1.1
     idx = list()
@@ -811,6 +811,8 @@ def linkage_tier ( D:np.array , method:str = 'min' ) -> dict :
     return ( linkages )
 
 def lint2lstr ( seq:list[int] ) -> list[str] :
+    #
+    # DUPLICATED IN special.lint2lstr
     if isinstance ( seq,(list,tuple,set)) :
         yield from ( str(x) for y in seq for x in lint2lstr(y) )
     else :
@@ -839,14 +841,14 @@ def scipylinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
     return ( CL )
 
 def linkages ( distm:np.array , command:str='min' ,
-               bStrKeys:bool = True, bUseScipy:bool = False ,
+               bStrKeys:bool = False , bUseScipy:bool = False ,
                bMemSec=True, bLegacy:bool=False ) -> dict :
     if bMemSec :
         distm = distm.copy()
     if bUseScipy :
-        linkages_ = scipylinkages ( distm ,command=command , bStrKeys = False ) 
+        linkages_ = scipylinkages ( distm ,command=command , bStrKeys = False )
     else :
-        linkages_ = linkage_dict_tuples ( D = distm , method = command )
+        linkages_ = linkages_tiers ( D = distm , method = command )
     if bLegacy :
         return ( linkage( distm = distm , command = command ) )
     if bStrKeys :
@@ -855,6 +857,7 @@ def linkages ( distm:np.array , command:str='min' ,
             L['.'.join( lint2lstr(item[0])  )] = item[1]
         linkages_ = L
     return ( linkages_ )
+
 
 def linkage ( distm:np.array , command:str = 'min' ) -> dict :
     print ( 'WARNING! LEGACY CODE!' )
