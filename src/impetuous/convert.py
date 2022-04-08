@@ -234,9 +234,19 @@ class NodeGraph ( Neuron ) :
             print ( '\n' + str(item[0]) + '::' )
             item[1].show()
 
+
+    def unpack ( self, seq ) :
+        if isinstance ( seq,(list,tuple,set)) :
+            yield from ( x for y in seq for x in self.unpack(y) )
+        elif isinstance ( seq , dict ):
+            yield from ( x for item in seq.items() for y in item for x in self.unpack(y) )
+        else :
+            yield seq
+
     def ltup2lstr ( self, seq:tuple ) -> tuple :
         if isinstance ( seq,(tuple) ) :
-            yield from ( str(x) for y in seq for x in self.ltup2lstr(y) )
+            yield from ( str(x) for y in seq for x in self.unpack(y) )
+
 
     def assign_from_linkages_tiers( self , linkages:dict ) -> None :
         results = sorted([(v,k) for k,v in linkages.items()])
