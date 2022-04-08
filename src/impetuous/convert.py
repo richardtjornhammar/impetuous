@@ -106,21 +106,24 @@ class Node ( object ) :
     def description ( self ) -> str :
         return ( self.description_ )
 
+    def clear_links ( self , linktype:str )->None :
+        if linktype == 'links' :
+            self.links_ = list()
+        if linktype == 'ascendants' :
+            self.ascendants_= list()
+        if linktype == 'descendants' :
+            self.descendants_ = list()
+
     def add_link ( self, identification:str , bClear:bool = False , linktype:str = 'links' ) -> None :
-        edges = self.get_links( linktype )
         if bClear :
-            edges = list()
-        edges .append( identification )
-        self.links_ = list(set( edges ))
-    #
-    # NOTE : list[str] type declaration is not working in Python3.8
+            self.clear_links( linktype )
+        self.get_links( linktype ).append( identification )
+
     def add_links ( self, links:list[str], bClear:bool = False , linktype:str = 'links' ) -> None :
-        edges = self.get_links( linktype )
         if bClear :
-            edges = list()
+             self.clear_links( linktype )
         for e in links :
-            edges .append ( e )
-        self.links_ = list(set( edges ))
+            self.get_links( linktype ).append ( e )
 
     def get_links ( self , linktype:str='links' ) -> type(list(str())) :
         if not linktype in set([ 'links' , 'ascendants' , 'descendants' ]):
@@ -135,13 +138,13 @@ class Node ( object ) :
             return ( self.descendants_ )
 
     def show ( self ) -> None :
-        s_inf = "NODE [" + self.identification() \
+        s_inf = "NODE [" + str(self.identification()) \
                    + "," + self.label() + "] - " \
                    + self.description() + "\nEDGES:"
         for linktype in [ 'links' , 'ascendants' , 'descendants' ] :
             s_inf += '\n['+linktype+'] : '
             for l in self.get_links(linktype=linktype) :
-                s_inf += l + '\t'
+                s_inf += str(l) + '\t'
         for item in self.get_data().items() :
             s_inf += '\n'+str(item[0])+'\t'+str(item[1])
         print ( s_inf )
@@ -228,8 +231,29 @@ class NodeGraph ( Neuron ) :
     def show ( self ) -> None :
         print ( self.desc_ )
         for item in self.get_dag().items() :
-            print ( '\n' + item[0] + '::' )
+            print ( '\n' + str(item[0]) + '::' )
             item[1].show()
+
+    def ltup2lstr ( self, seq:tuple ) -> tuple :
+        if isinstance ( seq,(tuple) ) :
+            yield from ( str(x) for y in seq for x in unpack(y) )
+
+    def assign_from_linkages_tiers( self , nid:tuple , ascendant:str=None ) -> None :
+        reformat_id = lambda id : '.'.join(list(self.ltup2lstr(id)))
+        if  isinstance ( nid,(tuple) ) :
+            n = Node()
+            cid = reformat_id(nid)
+            n .set_id( cid )
+            links = [ reformat_id(item) for item  in nid ]
+            n.add_links ( links , linktype = 'descendants' )
+            if not ascendant is None :
+                n.add_link(ascendant,linktype='ascendants')
+                links = [*links,*[ascendant]]
+            n.add_links ( links , linktype = 'links' )
+            self.add( n )
+            for item in nid :
+                self.assign ( item , cid )
+
 
     def complete_lineage ( self , identification : str ,
                            order:str    = 'depth'      ,
