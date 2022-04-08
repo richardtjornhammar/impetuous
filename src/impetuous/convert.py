@@ -247,10 +247,20 @@ class NodeGraph ( Neuron ) :
         if isinstance ( seq,(tuple) ) :
             yield from ( str(x) for y in seq for x in self.unpack(y) )
 
-
     def assign_from_linkages_tiers( self , linkages:dict ) -> None :
-        results = sorted([(v,k) for k,v in linkages.items()])
-        self.assign_from_tuple_tiers( results[-1][1] )
+        results = sorted( [(v,k) for k,v in linkages.items()] )
+        self.assign_from_tuple_tiers ( results[-1][1] )
+        root_id_ = '.'.join(self.ltup2lstr(results[-1][1]))
+        self.set_root_id ( root_id_ )
+        graph_ = self.get_graph()
+        for item in results :
+            name_ = '.'.join( self.ltup2lstr( item[1] ) )
+            d_    = item[0]
+            node_ = graph_[name_]
+            level_= self.calculate_node_level( node_, stop_at = root_id_ )
+            node_.set_level(level_)
+            node_.set_metrics([d_])
+            node_.get_data()['distance']=d_
 
     def assign_from_tuple_tiers( self , nid:tuple , ascendant:str=None ) -> None :
         reformat_id = lambda id : '.'.join(list(self.ltup2lstr(id)))
