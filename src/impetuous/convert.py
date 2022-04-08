@@ -37,7 +37,7 @@ class Node ( object ) :
 
     def is_a_leaf( self, n:int=1 ) -> bool :
         return ( len( self.descendants_ ) < n )
-    
+
     def degree ( self , degree_type:str='descendants' )->int :
         #
         # UNDIRECTED NODE DEGREE
@@ -229,7 +229,7 @@ class NodeGraph ( Neuron ) :
         return ( self.graph_map_ )
 
     def show ( self ) -> None :
-        print ( self.desc_ )
+        #print ( self.desc_ )
         for item in self.get_dag().items() :
             print ( '\n' + str(item[0]) + '::' )
             item[1].show()
@@ -250,7 +250,7 @@ class NodeGraph ( Neuron ) :
 
     def assign_from_linkages_tiers( self , linkages:dict ) -> None :
         results = sorted([(v,k) for k,v in linkages.items()])
-        self.assign_from_tuple_tiers( results[-1] )
+        self.assign_from_tuple_tiers( results[-1][1] )
 
     def assign_from_tuple_tiers( self , nid:tuple , ascendant:str=None ) -> None :
         reformat_id = lambda id : '.'.join(list(self.ltup2lstr(id)))
@@ -782,7 +782,7 @@ class NodeGraph ( Neuron ) :
             of_ = open ( gmtfile , 'w' )
             print ( gmt_data_txt , file=of_)
         return ( gmt_data_txt )
-    
+
     def collect_linkages ( self ) -> dict :
         #
         links = dict()
@@ -796,7 +796,7 @@ class NodeGraph ( Neuron ) :
                     a_ = mets[0]
                 links[item[0]] = a_
         return ( links )
-    
+
     def write_linkages ( self , linkfile:str=None ) -> str :
         #
         links_ = [ "\"cluster\":"+str(k) + ", \"metric\":" + str(v) for k,v in self.collect_linkages().items() ]
