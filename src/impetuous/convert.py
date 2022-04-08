@@ -348,6 +348,18 @@ class NodeGraph ( Neuron ) :
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
 
+    def locate_value ( self, criterion:tuple , root_id:str=None , bOnlyFirst=True ) -> list :
+        id = root_id
+        if root_id is None :
+            id = self.get_root_id()
+        if criterion[1]( self.get_graph()[id].get_data()[criterion[0]] ) :
+            return ( id )
+        else :
+            for child in self.get_graph()[id].get_links('descendants'):
+                result = self.locate_value( criterion,child,bOnlyFirst )
+                if not result is None :
+                    return ( result )
+
     def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld:bool=True ) -> list :
         #
         # AN ALTERNATIVE METHOD
