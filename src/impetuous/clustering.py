@@ -788,27 +788,52 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
+
+
+def link0_ ( D:np.array , method:str = 'min' ) -> list :
+    def func( r:float , c:float , lab:str='min' ) -> float :
+        if lab == 'max' :
+            return ( r if r > c else c )
+        if lab == 'min' :
+            return ( r if r < c else c )
+
+    nmind = np.argmin(D) # SIMPLE TIEBREAKER
+    ( i,j )  = ( int(nmind/len(D)) , nmind%len(D) )
+    k = j - int(i<j)
+    l = i - int(j<i)
+
+    pop1 = nppop(D,i,j)
+    pop2 = nppop(pop1[-1],k,l)
+    lpr  = list(pop2[0])
+    d    = lpr.pop(l)
+    lpr  = np.array(lpr)
+    lpc  = pop2[1]
+    nvec = np.array([*[D[0,0]],*[ func(r,c,method) for (r,c) in zip(lpr,lpc) ]])
+    DUM  = np.eye(len(nvec))*0
+    DUM[ 0  , : ] = nvec
+    DUM[ :  , 0 ] = nvec
+    DUM[ 1: , 1:] = pop2[-1]
+    return ( [ DUM , (i,j) , d ]  )
+
 def linkages_tiers ( D:np.array , method:str = 'min' ) -> dict :
     N   = len(D)
     dm  = np.max(D)*1.1
     idx = list()
-    for i in range(N): D[i,i] = dm; idx.append(i)
+    for i in range(N):  D[i,i] = dm ; idx.append( tuple((i,)) )
     cidx     = []
     sidx     = set()
     res      = [D]
     linkages = dict()
     while ( len(res[0]) > 1 ) :
-        res   = link1_ ( res[0] , method )
-        oidx  = tuple( [ idx[i] for i in res[1] ])
-        unique_local_clusters = [ c for c in cidx if len( set(c) - set(unpack(oidx)) ) >0 ]
-        unique_local_clusters .append( oidx )
-        cidx  .append( oidx )
-        sidx  = sidx|set(unpack(oidx))
-        idx   = [*unique_local_clusters[::-1] , *[i for i in range(N) if not i in sidx ]]
-        linkages[ oidx ] = res[-1]
+        res          = link0_ ( res[0] , method )
+        found_cidx   = tuple( [ idx[i] for i in res[1] ])
+        idx = [ *[found_cidx], *[ix_ for ix_ in idx if not ix_ in set(found_cidx) ] ]
+        linkages[ found_cidx ] = res[-1]
     for i in range(N) :
         linkages[ (i,) ] = 0
     return ( linkages )
+
+
 
 def lint2lstr ( seq:list[int] ) -> list[str] :
     #
