@@ -407,6 +407,10 @@ class NodeGraph ( Neuron ) :
         return ( PClist )
 
     def linkages_to_graph_dag( self, links:dict ) -> None :
+        keys = list(links.keys())
+        if isinstance ( keys[0],(tuple) ) and isinstance ( keys[-1],(tuple) ) :
+            self.assign_from_linkages_tiers ( links )
+            return
         PClist = self.linkages_to_pclist ( links )
         for pc in PClist :
             self.add_ascendant_descendant ( pc[0], pc[1] )
