@@ -238,7 +238,11 @@ class NodeGraph ( Neuron ) :
         if isinstance ( seq,(tuple) ) :
             yield from ( str(x) for y in seq for x in self.ltup2lstr(y) )
 
-    def assign_from_linkages_tiers( self , nid:tuple , ascendant:str=None ) -> None :
+    def assign_from_linkages_tiers( self , linkages:dict ) -> None :
+        results = sorted([(v,k) for k,v in linkages.items()])
+        self.assign_from_tuple_tiers( results[-1] )
+
+    def assign_from_tuple_tiers( self , nid:tuple , ascendant:str=None ) -> None :
         reformat_id = lambda id : '.'.join(list(self.ltup2lstr(id)))
         if  isinstance ( nid,(tuple) ) :
             n = Node()
@@ -252,7 +256,7 @@ class NodeGraph ( Neuron ) :
             n.add_links ( links , linktype = 'links' )
             self.add( n )
             for item in nid :
-                self.assign ( item , cid )
+                self.assign_from_tuple_tiers ( item , cid )
 
 
     def complete_lineage ( self , identification : str ,
