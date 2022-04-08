@@ -831,6 +831,7 @@ def linkages_tiers ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ found_cidx ] = res[-1]
     for i in range(N) :
         linkages[ (i,) ] = 0
+        D[i,i] = 0
     return ( linkages )
 
 
