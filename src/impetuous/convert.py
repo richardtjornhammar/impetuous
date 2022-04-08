@@ -236,7 +236,7 @@ class NodeGraph ( Neuron ) :
 
     def ltup2lstr ( self, seq:tuple ) -> tuple :
         if isinstance ( seq,(tuple) ) :
-            yield from ( str(x) for y in seq for x in ltup2lstr(y) )
+            yield from ( str(x) for y in seq for x in self.ltup2lstr(y) )
 
     def assign_from_linkages_tiers( self , nid:tuple , ascendant:str=None ) -> None :
         reformat_id = lambda id : '.'.join(list(self.ltup2lstr(id)))
