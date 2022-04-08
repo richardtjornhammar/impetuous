@@ -350,24 +350,26 @@ class NodeGraph ( Neuron ) :
 
     def locate_value ( self, criterion:tuple , root_id:str=None , bOnlyFirst:bool=True , bHelp:bool=False, R:list=None) -> list :
         if bHelp :
-            print ( "HELP: GRAPH.locate_value( criterion = ( 'distance', lambda x:x<6 ) , root_id = '1.3.2.4.0' , bOnlyFirst=True )" )
+            print ( "HELP: GRAPH.locate_value( criterion = ( 'distance', lambda x:x==0 ) , root_id = '1.3.2.4.0' , bOnlyFirst=True )" )
             exit ( 1 )
         if R is None :
             R = list()
         id = root_id
         if root_id is None :
             id = self.get_root_id()
-        if criterion[1]( self.get_graph()[id].get_data()[criterion[0]] ) :
-            if bOnlyFirst :
-                return ( id )
-            else :
-                R.append( id )
-        else :
-            for child in self.get_graph()[id].get_links('descendants') :
-                result = self.locate_value( criterion,child,bOnlyFirst,bHelp,R )
-                if not result is None :
-                    if bOnlyFirst :
-                        return ( result )
+        if len(id) > 0 :
+            bCheck = criterion[1]( self.get_graph()[id].get_data()[criterion[0]] )
+            if bCheck :
+                if bOnlyFirst :
+                    return ( id )
+                else :
+                    R.append( id )
+            if not bCheck or not bOnlyFirst :
+                for child in self.get_graph()[id].get_links('descendants') :
+                    result = self.locate_value( criterion,child,bOnlyFirst,bHelp,R )
+                    if not result is None :
+                        if bOnlyFirst :
+                            return ( result )
         return ( R )
 
     def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld:bool=True ) -> list :
