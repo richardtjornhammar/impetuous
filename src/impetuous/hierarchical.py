@@ -137,7 +137,7 @@ def hierarchy_matrix ( distance_matrix:np.array   = None ,
     if linkage_distances is None :
         uco_v = sorted(list(set(distance_matrix.reshape(-1))))
     else :
-        uco_v = linkage_distances.reshape(-1)
+        uco_v = sorted(list(set(linkage_distances.reshape(-1))))
 
     level_distance_lookup = {}
     hsers = []
