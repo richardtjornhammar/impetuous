@@ -120,8 +120,9 @@ def HierarchicalEnrichment (
 
 
 
-def hierarchy_matrix ( distance_matrix:np.array = None ,
-                       coordinates:np.array     = None ) -> dict :
+def hierarchy_matrix ( distance_matrix:np.array   = None ,
+                       coordinates:np.array       = None ,
+                       linkage_distances:np.array = None ) -> dict :
     from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
     import operator
     if not operator.xor( coordinates is None , distance_matrix is None ) :
@@ -133,7 +134,11 @@ def hierarchy_matrix ( distance_matrix:np.array = None ,
         distance_matrix = absolute_coordinates_to_distance_matrix(coordinates)
 
     nmt_ = np.shape(distance_matrix)
-    uco_v = sorted(list(set(distance_matrix.reshape(-1))))
+    if linkage_distances is None :
+        uco_v = sorted(list(set(distance_matrix.reshape(-1))))
+    else :
+        uco_v = linkage_distances.reshape(-1)
+
     level_distance_lookup = {}
     hsers = []
     for icut in range(len(uco_v)) :
