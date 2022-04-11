@@ -176,6 +176,9 @@ def calculate_hierarchy_matrix ( data_frame = None ,
                                  distance_matrix = None ,
                                  bVerbose = False,
                                  coarse_grain_structure = 0 ) :
+
+    print ( "WARNING:LEGACY METHOD. CHECK IF hierarchy_matrix MIGHT SUIT YOU BETTER" )
+
     info__ = """ This is the saiga/pelican/panda you are looking for RICEARD"""
     # print (info__ )
     from impetuous.clustering import connectivity , absolute_coordinates_to_distance_matrix
