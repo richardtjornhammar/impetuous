@@ -173,8 +173,51 @@ maptool2.cc around line 646
         optimum = 0.5*( c+d )
     return ( optimum )
 
-def isosurface_optimisation():
-    print ( "ISOOPT..." )
+
+def GRS (        data:np.array                                           ,
+                 aux_data:np.array       = None                          ,
+                 coordinates:np.array    = None                          ,
+                 unimodal_function       = lambda x:kurtosis(x)          ,
+                 transform               = lambda xi,R:convolve(xi,R)    ,
+                 length_scales:list      = None                          ,
+                 extremes:list           = None                          ,
+                 power:float             = 2                             ,
+                 tol:float               = 1e-6                          ) -> float :
+    #
+    information__ = """
+Adapted from impetuous.optimisation import golden_ration_phasetransition_search
+see my github.com/richardtjornhammar/MapTool repo i.e. file
+maptool.cc  around line 845 or
+maptool2.cc around line 646
+"""
+    R = [ data ]
+    if coordinates is None and not length_scales is None :
+        coordinates = get_coordinates(data,length_scales)
+        R = [ coordinates,*R ]
+
+    if not aux_data is None :
+        R = [ *R , aux_data ]
+    #
+    golden_ratio    = ( 5.0**0.5-1.0 )*0.5
+    a , b , fa, fb , fc , fd = np.min(np.min(R[0])), np.max(np.max(R[0])), 0.0, 0.0, 0.0, 0.0
+    if not extremes is None :
+        a = extremes[0]
+        b = extremes[1]
+
+    c , d =  b-golden_ratio*(b-a), a+golden_ratio*(b-a)
+    metric, optimum = 0.0 , 0.0
+    while ( d-c > tol ) :
+        fc = ( unimodal_function( transform ( c, R ) ) )**power
+        fd = ( unimodal_function( transform ( d, R ) ) )**power
+        if( fc >= fd or fd == fb ) :
+            b , d = d , c
+            c = b - golden_ratio * ( b - a )
+        else :
+            a , c = c , d
+            d = a + golden_ratio * ( b - a )
+        fa , fb = fc , fd
+        optimum = 0.5 * ( c+d )
+    return ( optimum )
 
 if __name__ == '__main__':
     data = pd.read_csv( "rich.dat","\t",index_col=0 )
