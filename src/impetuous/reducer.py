@@ -479,6 +479,45 @@ def hyper_rdf ( df_ , label = 'generic' , sep = ',' , power=1. ,
     else :
         return ( rdf_ )
 
+def inplace_dimred ( x , n=2 , bSamples=True , dimr_type = 'PCA' ) :
+    rownames    = x.index.values
+    colnames    = x.columns.values
+    names       = rownames
+
+    if dimr_type == 'PCA' :
+        from sklearn.decomposition import PCA
+        ndims       = 2
+        pca         = PCA ( ndims )
+        if bSamples :
+            in_crds = x.iloc[:,:-1].T.values
+        else :
+            in_crds = x.iloc[:,:-1].values
+            names = colnames
+            colnames = rownames
+            rownames = names
+
+        crds = pca.fit_transform ( in_crds )
+        crds = pca.components_.T
+
+    if dimr_type == 'UMAP' :
+        import umap
+        umappad = umap.UMAP()
+        if bSamples :
+            crds    = umappad.fit_transform( x.values )
+        else :
+            crds    = umappad.fit_transform( x.T.values )
+            names = colnames
+            colnames = rownames
+            rownames = names
+
+    if True :
+        glab = x.iloc[0,-1]
+        colnames = [ *[ 'C'+str(i) for i in range(n) ], *['Name']]
+        book = pd.concat( [ pd.DataFrame( crds ).T , pd.DataFrame( [names] ) ] ).T
+        book.columns = colnames
+        book.index   = rownames
+    return ( book.dropna() )
+
 
 if __name__ == '__main__' :
     #
