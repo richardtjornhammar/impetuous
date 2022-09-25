@@ -271,6 +271,8 @@ def calculate_alignment_properties ( encoding_df , quantx, quanty, scorex,
                   index = use_labels , columns=analyte_df.index.values )
     #
     # print ( 'P VALUES ALIGNED TO PLS AXES' )
+    #print ( proj_df )
+    #exit(1)
     for idx in proj_df.index :
         proj_p,proj_rho = quantify_density_probability ( proj_df.loc[idx,:].values )
         proj_df = proj_df.rename( index = {idx:idx+',r'} )
@@ -511,8 +513,6 @@ def regression_assessment ( model , X , y , bLog = False ) :
     #
     return ( mstat )
 
-
-
 def proj_c ( P ) :
     # P CONTAINS MUTUTALLY ORTHOGONAL COMPONENTS ALONG THE COLUMNS
     # THE CS CALCULATION MIGHT SEEM STRANGE BUT FULLFILS THE PURPOSE
@@ -523,7 +523,6 @@ def proj_c ( P ) :
     CYL = pd.concat( [RHO*CS['cos'],RHO*CS['sin']],axis=1 )
     CYL.columns = ['X','Y']
     return ( CYL )
-
 
 def multivariate_factorisation ( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
@@ -764,8 +763,6 @@ class Qvalues ( object ) :
         self.qvalues = np.array([q[0] for q in qs_])
         return np.array(qs_)
 
-
-
 class Pvalues ( object ) :
     def __init__( self, data_values:np.array , method:str = "RANK DERIV E" ) :
         from scipy.stats import rankdata
@@ -805,7 +802,7 @@ class Pvalues ( object ) :
 
     def sgn ( self, x:float) -> int :
         return( - int(x<0) + int(x>=0) )
-    
+
     def nn ( self, N:int , i:int , n:int=1 )->list :
         t = [(i-n)%N,(i+n)%N]
         if i-n<0 :
@@ -818,7 +815,7 @@ class Pvalues ( object ) :
 
     def normal_pvalues ( self, v:np.array , bReturnDerivatives:bool=False  ) -> np.array :
         ds = v # TRY TO ACT LIKE YOU ARE NORMAL ...
-        N = len(v) 
+        N = len(v)
         M_ , Var_ = np.mean(ds) , np.std(ds)**2
         from scipy.special import erf as erf_
         loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
@@ -1225,19 +1222,6 @@ def mycov( x , full_matrices=0 ):
     return C / (x.shape[0]-1)
 
 from scipy.special import chdtrc as chi2_cdf
-def p_value_merger ( pvalues_df , p_label=',p' , axis = 0 ) :
-    #
-    print( " REQUIRED READING: doi: 10.1093/bioinformatics/btw438" )
-    print( " ALSO MAKE SURE TO ADD THAT ARTICLE AS ADDITIONAL CITATION" )
-    print( " IF THIS METHOD IS EMPLOYED" )
-    print( " READ ABOVE ! " )
-    print( " YOU CALLED A FUNCTION FOR MERGING P-VALUES" )
-    print( " THIS METHOD IS NO LONGER SUPPORTED " )
-    print( " FOR IMPETUOUS VERSIONS > 0.84.0 " )
-    print( " THE METHOD merge_significance COULD BE EMPLOYED INSTEAD ")
-    print( " BUT IT IS NOT RECOMMENDED " )
-    print( " FATAL : WILL TERMINATE NOW " )
-    exit(1)
 
 def parse_test ( statistical_formula, group_expression_df , journal_df , test_type = 'random' ) :
     #
@@ -1290,24 +1274,6 @@ def prune_journal ( journal_df , remove_units_on = '_' ) :
         nmr_journal.index = [ idx.split(remove_units_on)[0] for idx in nmr_journal.index ]
     journal_df = pd.concat( [nmr_journal,str_journal] )
     return( journal_df )
-
-def merge_significance ( significance_df , distance_type='euclidean' ) :
-    # TAKES P VALUES OR Q VALUES
-    # TRANSFORMS INTO A MERGED P OR Q VALUE VIA
-    # THE DISTANCE SCORE
-    # THE DATA DOMAIN SIGNIFICANCE IS ALONG COLUMNS AND
-    # GROUPS ALONG INDICES
-    # EX: pd.DataFrame( np.random.rand(20).reshape(5,4) , columns=['bio','cars','oil','money']).apply( lambda x: -1.*np.log10(x) ).T.apply( lambda x: np.sqrt(np.sum(x**2)) )
-    #
-    distance = lambda x : np.sqrt(np.sum(x**2))
-    if distance_type == 'euclidean' : # ESTIMATE
-        distance = lambda x : np.sqrt(np.sum(x**2))
-    if distance_type == 'extreme' :   # ANTI-CONSERVATIVE ESTIMATE
-        distance = lambda x : np.max(x)
-    if distance_type == 'mean' :      # MEAN ESTIMATE
-        distance = lambda x : np.mean(x)
-    get_pvalue = lambda x : 10**(-x)
-    return ( significance_df.apply( lambda x: -1.*np.log10(x) ).T.apply(distance).apply(get_pvalue) )
 
 def group_significance( subset , all_analytes_df = None ,
                         tolerance = 0.05 , significance_name = 'pVal' ,
@@ -1371,10 +1337,6 @@ def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t
     return ( edf.T )
 
 class APCA ( object ) :
-    #
-    # THIS CLASS PERFORMS A SPARSE PCA IF REQUESTED
-    # IT THEN USES THE SPARSE SVD ALGORITHM FOUND IN SCIPY
-    # THE STANDARD IS TO USE THE NUMPY SVD
     #
     def __init__ ( self , X = None , k =-1 , fillna = None , transcending = True , not_sparse = True ) :
         from scipy.sparse import csc_matrix
@@ -1487,6 +1449,15 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
     return ( edf.T )
 
 from scipy.stats import combine_pvalues
+def correlation_distance ( agg_df , decimal_power = 10000 ):
+    import scipy.stats as ss
+    spearman_df = ss.spearmanr( agg_df )[0]
+    distm       = pd.DataFrame( np.sqrt( 1 - spearman_df ) ,
+                                    index   = agg_df.columns.values ,
+                                    columns = agg_df.columns.values )
+    distm = distm.apply(lambda x: np.round(x*decimal_power)/decimal_power )
+    return ( distm )
+
 
 def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                     grouping_dictionary = dict() , synonyms = None ,
@@ -1678,6 +1649,74 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     ddf = ddf.sort_values('Dist', ascending = False )
     return ( ddf )
 
+def single_fc_compare ( df:pd.DataFrame, what:str, levels:list[str] = None, bVerbose:str=True ,
+                    sep:str=', ' , bRanked:bool = False , bLogFC:bool=False , bVerbose=False ) :
+
+        from scipy.stats import mannwhitneyu
+        from scipy.stats import ttest_ind
+
+        if levels is None :
+            levels = df .loc[ what,: ].values
+
+        if len ( levels ) == 1 :
+            levels .append( 'Background' )
+            df .loc[what] = [ levels[0] if levels[0] in v else 'Background' for v in df.loc[what].values ]
+            if bVerbose:
+                print ( df.loc[what] )
+                print ( 'HERE' , levels )
+                from collections import Counter
+                print ( Counter( df.loc[what].values.tolist() ) )
+
+        ddf = df.iloc[[ not what in i for i in df.index.values],:]
+        C0 = []
+        C1 = []
+        C2 = []
+        C3 = []
+
+        level1 = levels[0]
+        level2 = levels[1]
+
+        compared = str(level1)+sep+str(level2)
+        C3.append(compared)
+
+        X = []
+        Y = []
+        Z = []
+        df1 = ddf.iloc[ :, [level1 == v for v in df.loc[what,:].values] ]
+        df2 = ddf.iloc[ :, [level2 == v for v in df.loc[what,:].values] ]
+
+        if level1 == level2 :
+            for i_ in range( len(ddf) ) :
+                X.append( 0 )
+                Y.append( 1 )
+                Z.append( 0 )
+        else :
+            for i_ in range(len(ddf)):
+                v = df1.iloc[i_,:].values
+                w = df2.iloc[i_,:].values
+                if bRanked :
+                    stats = mannwhitneyu( x=v.tolist() , y=w.tolist() )
+                    if bLogFC : # WARNING SHOULD NOT BE FORCED
+                        f = np.log2( np.mean(v)+1 ) - np.log2( np.mean(w)+1 )
+                    else :
+                        f = np.median(v) - np.median(w)
+                else :
+                    stats = ttest_ind(  v.tolist() , w.tolist()  )
+                    if bLogFC : # WARNING SHOULD NOT BE FORCED
+                        f = np.log2( np.mean(v)+1 )-np.log2( np.mean(w)+1 )
+                    else :
+                        f = np.mean( v ) - np.mean( w )
+                s = stats[0]
+                p = stats[1]
+                X.append(s)
+                Y.append(p)
+                Z.append(f)
+        C0.append(X)
+        C1.append(Y)
+        C2.append(Z)
+        return ( {'statistic':C0, 'p-value':C1, 'contrast':C2, 'comparison':C3, 'index':ddf.index.values} )
+
+
 def add_kendalltau( analyte_results_df , journal_df , what='M' , sample_names = None, ForceSpearman=False ) :
     # ADD IN CONCORDANCE WITH KENDALL TAU
     if what in set(journal_df.index.values) :
@@ -1725,6 +1764,99 @@ def quality_metrics ( TP:int , FP:int , FN:int , TN:int , alternative:str='two-s
                 'NLR'         : ( FN / TN ) * ( FP + TN ) / ( TP + FN )   # NEGATIVE LIKELIHOOD RATIO
         }
     return ( results_lookup )
+
+def invert_dict ( dictionary ) :
+    inv_dictionary = dict()
+    if True :
+        for item in dictionary.items() :
+            if item[1] in inv_dictionary :
+                inv_dictionary[item[1]] .append(item[0])
+            else :
+                inv_dictionary[item[1]] = [item[0]]
+    return ( inv_dictionary )
+
+def confusion_matrix ( dict_row , dict_col , bSwitchKeyValues=True, bCheck=False ) :
+    if bSwitchKeyValues :
+        dict_row = invert_dict(dict_row)
+        dict_col = invert_dict(dict_col)
+    all_interactions = list(dict_row.keys())
+    if bCheck:
+        all_interactions = sorted(list(set( dict_row.keys() ) | set( dict_col.keys() )))
+    num_p = len(all_interactions)
+    confusion = np.zeros(num_p*num_p).reshape(num_p,num_p)
+    for i in range(num_p) :
+        for j in range(num_p) :
+            confusion[i,j] = len( set(dict_row[all_interactions[i]]) & set(dict_col[all_interactions[j]]) )
+    return ( pd.DataFrame(confusion,columns=all_interactions,index=all_interactions) )
+
+def scaler_transform( df,i=0 ) :
+            from impetuous.special import zvals
+            z_analytes_df = df
+            if (i+1)%2 == 0 :
+                z_analytes_df = z_analytes_df.T
+            z_analytes_df = pd.DataFrame( zvals(z_analytes_df.values)['z'] ,
+                         columns = z_analytes_df.columns, index=z_analytes_df.index )
+            z_analytes_df = z_analytes_df[~z_analytes_df.isin([np.inf,np.nan,-np.inf]).any(1)]
+            if (i+1)%2 == 0 :
+                z_analytes_df = z_analytes_df.T
+            return ( z_analytes_df )
+
+
+def local_pca ( df, ndims = None  ) :
+    from sklearn.decomposition import PCA
+    pca     = PCA ( ndims )
+    scores  = pca.fit_transform( df.values )
+    weights = pca.components_.T
+    return ( scores , weights , df.index, df.columns )
+
+
+def multivariate_aligned_pca ( analytes_df , journal_df ,
+                sample_label = 'Sample ID', align_to = 'Modulating group' , n_components=None ,
+                add_labels = ['Additional information'] , e2s=None , color_lookup=None ) :
+    # SAIGA PROJECTIONS
+    what                = align_to
+    analytes_df         = analytes_df.loc[:,journal_df.columns.values]
+    dict_actual         = { sa:di for sa,di in zip(*journal_df.loc[[sample_label,what],:].values) }
+    sample_infos        = []
+    if not add_labels is None :
+        for label in add_labels :
+            sample_infos.append( tuple( (label, { sa:cl for cl,sa in zip(*journal_df.loc[[label,sample_label]].values) } ) ) )
+    #
+    N_P = n_components
+    if n_components is None:
+        N_P = np.min(np.shape(analytes_df))
+    scores,weights,nidx,ncol = local_pca( scaler_transform( analytes_df.copy() ) , ndims = N_P )
+    #
+    pcaw_df = pd.DataFrame(weights , columns=['PCA '+str(i+1) for i in range(N_P) ] , index=ncol )
+    pcas_df = pd.DataFrame( scores , columns=['PCA '+str(i+1) for i in range(N_P) ] , index=nidx )
+
+    from scipy.stats import rankdata
+    corr_r = rankdata(pcas_df.T.apply(lambda x:np.sum(x**2)).values)/len(pcas_df.index)
+
+    pcaw_df .loc[:,what] = [ dict_actual[s] for s in pcaw_df.index.values ]
+    projection_df       = pcaw_df.groupby(what).apply(np.mean)
+    projection_df       = ( projection_df.T / np.sqrt(np.sum(projection_df.values**2,1)) ).T
+    projected_df        = pd.DataFrame( np.dot(projection_df,pcas_df.T), index=projection_df.index, columns=pcas_df.index )
+    owners  = projected_df.index.values[projected_df.apply(np.abs).apply(np.argmax).values]
+    pcas_df .loc[:,'Owner'] = owners
+    pcaw_df = pcaw_df.rename( columns={what:'Owner'} )
+    pcas_df.loc[:,'Corr,r'] = corr_r
+
+    if not color_lookup is None :
+        pcas_df.loc[:, 'Color'] = [ color_lookup[o] for o in pcas_df.loc[:,'Owner'] ]
+        pcaw_df.loc[:, 'Color'] = [ color_lookup[o] for o in pcaw_df.loc[:,'Owner'] ]
+
+    if not e2s is None :
+        pcas_df.loc[:,'Symbol'] = [ (e2s[g] if not 'nan' in str(e2s[g]).lower() else g) if g in e2s else g for g in pcas_df.index.values ]
+    #
+    if len( sample_infos ) > 0 :
+        for label_tuple in sample_infos :
+            label = label_tuple[0]
+            sample_lookup = label_tuple[1]
+            if not sample_lookup is None :
+                pcaw_df.loc[ :, label ] = [ sample_lookup[s] for s in pcaw_df.index.values ]
+    return ( pcas_df , pcaw_df )
+
 
 def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
     #
@@ -1845,7 +1977,6 @@ def calculate_rates( journal_df:pd.DataFrame , inferred_df:pd.DataFrame ,
 
     return ( results_lookup )
 
-
 def assign_quality_measures( journal_df , result_dfs ,
                              formula , inference_label='owner' ,
                              plabel = ',p' , qlabel = ',q' ) :
@@ -1898,7 +2029,6 @@ if __name__ == '__main__' :
     journal_df = prune_journal( pd.read_csv(journal_file,'\t', index_col=0 ) )
 
     print ( quantify_groups( analyte_df, journal_df, 'Group ~ Var + C(Cat) ', grouping_file ) )
-
 
     import impetuous.quantification as impq
     import sys
