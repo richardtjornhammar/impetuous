@@ -67,6 +67,10 @@ smoothbinred  = lambda x,eta,varpi : 0.5*(1+np.tanh((x-eta)/varpi))*(np.sqrt(x*e
 smoothmax     = lambda x,eta,varpi : x * self.smoothbinred(x-np.min(x),eta-np.min(x),varpi)
 sabsmax       = lambda x,eta,varpi : x * self.smoothbinred(np.abs(x),np.abs(eta),varpi)
 
+from collections import Counter
+def counts ( A:list ) -> list :
+    return ( list(Counter(A).values()) )
+
 def frac_procentile ( vals=[12.123, 1.2, 1000, 4] ):
     vals = np.array(vals).copy()
     N = len( vals );
@@ -110,10 +114,8 @@ def invfactorial ( n ) :
     return ( 1/m )
 
 def zernicke ( r , theta , n , m ) :
-    print ( 'WARNING: THIS FUNCTION IS STILL UNDER EVALUATION' )
     if ( not (r >= 0 and r <= 1)) or (m > n) :
         return ( 0 )
-
     def zer_R ( n , m , r ) :
         ip,im = ( n+m )/2 , ( n-m )/2
         z = 0
@@ -122,12 +124,8 @@ def zernicke ( r , theta , n , m ) :
             if f > 0 :
                 z = z + (-1)**k * f * r**( n-2*k )
         return ( z )
-
     Rnm  = zer_R ( n,m,r )
-    Zeve = Rnm * np.cos ( m*theta )
-    Zodd = Rnm * np.sin ( m*theta )
-
-    return ( [ Zeve,Zodd ] )
+    return ( Rnm )
 
 def error ( self , errstr , severity=0 ):
     print ( errstr )
@@ -205,31 +203,9 @@ def isItPrime( N , M=None,p=None,lM05=None ) :
            return ( True )
        return ( isItPrime(N-1,M=M,p=p+1,lM05=lM05) )
 
-# FIRST APPEARENCE:
-# https://gist.github.com/richardtjornhammar/ef1719ab0dc683c69d5a864cb05c5a90
-def Fibonacci(n):
-    if n-2>0:
-        return ( Fibonacci(n-1)+Fibonacci(n-2) )
-    if n-1>0:
-        return ( Fibonacci(n-1) )
-    if n>0:
-       return ( n )
-
-def F_truth(i): # THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2i+1
-    return ( Fibonacci(i)**2+Fibonacci(i+1)**2 == Fibonacci(2*i+1))
-
-
 def lint2lstr ( seq:list[int] ) -> list[str] :
     if isinstance ( seq,(list,tuple,set)) :
         yield from ( str(x) for y in seq for x in lint2lstr(y) )
-    else :
-        yield seq
-
-def unpack ( seq ) : # seq:Union -> Union
-    if isinstance ( seq,(list,tuple,set)) :
-        yield from ( x for y in seq for x in unpack(y) )
-    elif isinstance ( seq , dict ):
-        yield from ( x for item in seq.items() for y in item for x in unpack(y) )
     else :
         yield seq
 
@@ -251,28 +227,79 @@ def smom ( v:np.array , p:int ) -> np.array :
             X.append( np.sum(z**q)/n )
     return ( np.array(X)[:p] )
 
+def unpack ( seq ) :
+    if   type(seq) == type( list()) or type(seq) == type(set()) or \
+         type(seq) == type(tuple()) or type(seq) == type(np.array([])) :
+        yield from ( x for y in seq for x in unpack(y) )
+    elif type(seq) == type(dict()) :
+        yield from ( x for item in seq.items() for y in item for x in unpack(y) )
+    else :
+        yield seq
 
+def bagscore(s1:str,s2:str)->int:
+        return len( set(s1.lower().split(' '))&set(s2.lower().split(' ')) )
 
-if __name__ == '__main__' :
-    print ( sign(-10) )
-    print (  abs(-10) , abs(10) )
-    print ( factorial ( 3 ) )
-    print ( factorial ( 0 ) )
-    print ( factorial (-3 ) )
+def fuzzy_locate( w , fuzzy_s1, exact_loc ) :
+    I = []
+    j = None
+    for i in range(len(w)) :
+        fuzzy_s2 = ' '.join(w.iloc[i,:].tolist())
+        I.append( tuple( (bagscore(fuzzy_s1,fuzzy_s2),i) ) )
+        if exact_loc in fuzzy_s2 :
+            j = i
+            break
+    if j is None :
+        j = sorted(I)[-1][1]
+    return ( j )
 
-    x = np.array( [ a for a in range(20) ] )
-    Y = all_conts(x)
-    Y = all_conts(1/x)
+def GEOMAV ( A:float , B:float ) -> float :
+    return ( A*B/(A+B) )
 
-    Y = all_conts( np.exp( -((x-5)/3)**2 )  )
+def geomav ( x:np.array ) -> float :
+    return ( GEOMAV ( x[0] , x[1] ) )
 
+def G0 ( x:np.array, N:int ) -> float:
+    return ( geomav( x ) - N/(N+1) )
 
-    print ( arr_contrast(x) )
-    print ( seqdiff(x) )
-    print ( np.diff(x) )
-    print ( seqsum(x) )
+def rename_order(A:list) ->list :
+    S = sorted(list(set(A)))
+    a0 = None
+    R = dict()
+    for a in A :
+        if a0 is None :
+            R[a] = 0
+            a0   = 0
+            continue
+        if not a in R :
+            R[a] = a0+1
+            a0 = a0+1
+    return ( [R[a] for a in A] )
 
-    import matplotlib.pyplot as plt
-    plt.figure(1).clear()
-    plt.plot(x,-Y, 'b'  )
-    plt.show()
+def zvals ( data:np.array , axis:int = 0 , bKeepRange=False ) -> dict :
+    data = data.T
+    if axis == 1 :
+        data = data.T
+    m = np.mean( data, axis = 0 )
+    s = np.std ( data, axis = 0 )
+    z = data - m
+    if not bKeepRange :
+        z = z / s
+    z = z.T
+    if axis == 1 :
+        z = z.T
+    return ( {'z':z , 'mean':m , 'std':s } )
+
+def rename_order(A:list) ->list :
+    S = sorted(list(set(A)))
+    a0 = None
+    R = dict()
+    for a in A :
+        if a0 is None :
+            R[a] = 0
+            a0   = 0
+            continue
+        if not a in R :
+            R[a] = a0+1
+            a0 = a0+1
+    return ( [R[a] for a in A] )
+
