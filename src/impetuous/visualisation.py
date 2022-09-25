@@ -25,7 +25,7 @@ import matplotlib._color_data as mcd
 
 from bokeh.layouts import row, layout, column
 from bokeh.models import Column, CustomJS, Div, ColumnDataSource, HoverTool, Circle, Range1d, DataRange1d, Row
-from bokeh.models import MultiSelect
+from bokeh.models import MultiSelect, TapTool
 from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead, Line
 from bokeh.models.widgets import TextInput, Toggle
 from bokeh.plotting import figure, output_file, show, save
@@ -56,6 +56,12 @@ nice_colors = list( set( [ '#c5c8c6' , '#1d1f21' , '#282a2e' , '#373b41' , '#a54
                 '#85678f' , '#b294bb' , '#5e8d87' , '#8abeb7' , '#707880' ] ) )
 
 make_hex_colors = lambda c : '#%02x%02x%02x' % (c[0]%256,c[1]%256,c[2]%256)
+
+def color_indices ( N=100 , M=256 , bRandom=False ) :
+    idx = [ int(np.floor( i*M/N )) for i in range(N) ]
+    if bRandom :
+        idx = list( np.random.randint(0,M,N) )
+    return ( idx )
 
 def bscatter ( X , Y , additional_dictionary=None , title='' , color='#ff0000' , p=None, legend_label = None , alpha=1 , axis_labels = None ) :
     from bokeh.plotting import figure, output_file, ColumnDataSource
@@ -362,7 +368,8 @@ def histogram_plot (    nbins=100, color=None, label=None,
 
 def make_text_search_wb (   name , title='Input name:', variable_name='tval' ,
                             args=None , dep_code = None , triggercode=".change.emit();",
-                            bDebug=False ) :
+                            bDebug=False , what_extra = tuple(('y','q-value significance')) ) :
+    what=what_extra
     ecode0 = """
             var ind_str = """+variable_name+""".value ;
             var dat = source.data;
@@ -395,7 +402,7 @@ def make_text_search_wb (   name , title='Input name:', variable_name='tval' ,
             if '= pat[' in line and '[ind]' in line:
                 add_code = [
                     '        var stats = left.data;',
-                    '        var confidence = stats[\'y\'];',
+                    '        var confidence = stats[\''+what[0]+'\'];',
                     '        var path_names = pat[\'pathways\'];',
                     '        var path_descr = pat[\'descriptions\'];',
                     '        if ( path_descr == undefined ) {',
@@ -415,7 +422,7 @@ def make_text_search_wb (   name , title='Input name:', variable_name='tval' ,
                     '                resArray.push([ confidence[i],"[ "+path_names[i]+" ] : < "+confidence[i]+" > : [ "+path_descr[i]+" ] <br>" , i]); ',
                     '            }',
                     '        }',
-                    '        div.text = "<b>" + "Group ID : < Significance q (left,y-axis) > : Group description" + "</b><br>" ; var first = 1;',
+                    '        div.text = "<b>" + "Group ID : < '+ what[1] +'  > : Group description" + "</b><br>" ; var first = 1;',
                     '        resArray.sort( function(a,b){ return a[0]-b[0] } );',
                     '        for ( var i=0 ; i<resArray.length ; i++ ) {',
                     '                if (first==1) { div.text += "<b>" ; }',
@@ -436,7 +443,6 @@ def make_text_search_wb (   name , title='Input name:', variable_name='tval' ,
         ecode = ecode0
     else :
         ecode = '\n'.join(new_code)
-    #button.js_on_event(ButtonClick , CustomJS(code='console.warn("JS:Click")') )
     button.js_on_event(ButtonClick,  CustomJS( args={**arguments,**dict(div=div)}, code=ecode ) )
     if bDebug :
         print ( dep_code )
@@ -446,7 +452,6 @@ def make_text_search_wb (   name , title='Input name:', variable_name='tval' ,
         print ( '\n'.join(new_code) )
     wbox = Column ( text_input , button )
     return ( column(wbox,div) )
-
 
 
 def scatter2boxplot(    pathways, x1, y1, variables, patients, pathway2patient_x, patient_y, patient_type,
@@ -1418,6 +1423,439 @@ def set_scatter2boxplot_style ( plots ,
         #p.yaxis.axis_label  = yaxis_label
         p.yaxis.axis_label_text_font_size  = minor_label_text_font_size[0]
         p.yaxis.major_label_text_font_size = minor_label_text_font_size[1]
+
+
+def Grid2Scatter(    pathways, x1, y1, variables , patients, pathway2patient_x, patient_y, patient_type,
+                     axis_labels = None, out_file_name = "callback.html", category_override = 'Time',
+                     dynamic_labelx = None, dynamic_labely = None, pathway2patient_y = None ,title_l=None, title_r=None,
+                     patient_pos = None, category_pos = None, categories = None, xLtype='auto', yLtype='auto',
+                     chart_dicts = None, bShow = False, chart_titles = None , with_input_search = True , bDebug=False ,
+                     bReturnFigureHandle = True, GridF = None ,
+                     search_field_what_extra = None ) :
+
+    triggercode = ".change.emit();"
+    if legacy :
+        triggercode = ".trigger('change');"
+    if not 'None' in str(type(categories)) :
+        spacer = np.max([ len(ck) for ck in [categories[ck] for ck in list(categories.keys())] ])*10
+    else :
+        spacer = 0
+    #
+    patient_names = [ p[patient_pos] for p in patients ]
+    if not 'None' in str(type(category_pos)) and not categories is None:
+        patient_times = [ categories[p[category_pos]] for p in patients ]
+    else :
+        patient_times = [ p[category_pos] for p in patients ]
+    #
+    num_cats = [i for i in range(len(patients))]
+    if not categories is None:
+        cat2num  = { v:int(k) for k,v in categories.items() }
+        num_cats = [ int(cat2num[cval])+0.5 for cval in patient_times ]
+    reg_cats = patient_times
+    #
+    assert( not np.isnan(x1).any() )
+    assert( not np.isnan(y1).any() )
+    #
+    output_file(out_file_name)
+    if axis_labels == None:
+        axis_labels = {'x1': 'x-label' , 'y1': 'y-label' ,
+                       'x2': 'x-label' , 'y2': 'y-label' ,
+                       0: ('healthy',"blue"),1: ('sick','red') }
+
+    src_dict = dict( x=x1, y=y1, pathways=pathways )
+    if not variables is None and '1' in variables :
+        src_dict .update( variables['1'] )
+    #
+    hover_txt = {
+        '1': [ ("Index", "$index") ,
+          ( axis_labels['x1'] , "@x1" ) ,
+          ( axis_labels['y1'] , "@y1" ) ] ,
+        '2': [ ("Index", "$index") ,
+          ( axis_labels['x2'] , "@x2" ) ,
+          ( axis_labels['y2'] , "@y2" ) ] }
+    #
+    if not variables is None :
+        for variables_on in variables.keys():
+            for key in variables[variables_on].keys():
+                hover_txt[variables_on].append((str(key),"@"+str(key)))
+    #
+    left_pane_data_source = ColumnDataSource(data=src_dict)
+    tw = 0
+    if not 'None' in str(type(title_l)):
+        tw = len(title_l)-40
+
+    if GridF is None :
+        left_figure = a_plot( left_pane_data_source,'x','y',['hover','tap','box_zoom','wheel_zoom','pan','reset','save'], axis_labels['x1'], axis_labels['y1'],
+                          hover_txt['1'], False, title=title_l, alpha=[0.75,1.0,0.25], color=['red','blue'] ,
+                          xLtype=xLtype , yLtype=yLtype )
+    else :
+        left_figure = GridF
+        left_figure.tools[0].tooltips = [ ("Index", "$index"),
+        ("( x , y ) "  , "( @columns , @index )"  ) ,
+        ("Value"   , "@value"  ) ]
+        #if variables_on == '1' :
+        #    if not variables is None :
+        #        for key in variables.keys():
+        #            hover_txt[variables_on].append((str(key),"@"+str(key)))
+
+    patient_data = dict(x = [y for y in patient_y], y = patient_y,
+                        patients = patients,
+                        cat = [axis_labels[pat_type][0] for pat_type in patient_type],
+                        col = [axis_labels[pat_type][1] for pat_type in patient_type] )
+    #
+    path_data = dict( pathways=pathways , pathway2patient_x=pathway2patient_x, numcats=num_cats , cats = reg_cats)
+    if not pathway2patient_y is None :
+        path_data['pathway2patient_y'] = pathway2patient_y
+
+    bHaveDesc = False
+    if 'list' in str( type(title_r) ) :
+        if len(title_r) == len(pathways) :
+            bHaveDesc = True
+            path_data['descriptions'] = title_r
+            title_r = 'Description'
+        else :
+            title_r = title_r[0]
+    #
+    pathway_data_source = ColumnDataSource( path_data )
+    #
+    if pathway2patient_y is None :
+        box_orig_data = dict()
+        box_orig_data['vals'] = [] ; box_orig_data['ncats'] = [] ;
+        additional_data_source = ColumnDataSource ( box_orig_data )
+
+        box_patient_data = dict()
+        box_patient_data['cats'] = [] ; box_patient_data['us']  = [] ; box_patient_data['ls']  = []
+        box_patient_data['q1s']  = [] ; box_patient_data['q2s'] = [] ; box_patient_data['q3s'] = []
+
+        if not variables is None and '2' in variables :
+            box_patient_data .update( variables['2'] )
+
+        right_pane_data_source = ColumnDataSource ( box_patient_data )
+
+        right_figure = box_plot (   right_pane_data_source ,
+                                categories = [categories[ck] for ck in list(categories.keys())] , not_empty = False,
+                                with_line = False , title = title_r, score=pathways[0] , plot_pane_height = spacer+400 ,
+                                tools=['tap','box_zoom','wheel_zoom','pan','reset','save'], scatter_data_source = additional_data_source
+                            )
+    else :
+        orig_data = dict()
+        orig_data['valsx'] = [] ; orig_data['valsy'] = [] ; orig_data['ncats'] = [] ;
+        additional_data_source = ColumnDataSource ( orig_data )
+        """
+        def a_plot( ds, xvar, yvar, tools, xlab, ylab,
+            hover_txt=None, multiple_series=None,
+            plot_pane_width=400, plot_pane_height = 400,
+            color_label=None, legend_label=None, title=None, legend_location=None,
+            alpha=0.25, size=7, color=None, xLtype='auto' , yLtype='auto' ):
+        """
+        patient_data = dict()
+        patient_data[ 'x2' ] = [] ; patient_data['y2']  = []
+
+        if not variables is None and '2' in variables :
+            patient_data .update( variables['2'] )
+
+        right_pane_data_source = ColumnDataSource ( patient_data )
+        right_figure = a_plot( ds = right_pane_data_source , xvar = 'x2' , yvar = 'y2' ,
+                               plot_pane_width=400, plot_pane_height = 400,
+                               xlab = axis_labels['x2'] , ylab = axis_labels['y2'],
+                               hover_txt=hover_txt['2'] , tools=['box_zoom','reset'],
+                               title = title_r , alpha = 0.5  )
+
+    add_right_figure = None
+
+    vb_tail_scripts = list(); vb_charts = list() ; vb_chart_dicts = list()
+    if 'list' in str( type( chart_dicts ) ):
+        for cnum in range(len( chart_dicts )):
+            chart_dict = chart_dicts[cnum]
+            if 'dict' in str(type( chart_dict )) :
+                pathway_gene_dict = chart_dict
+                NUMBER = 2+cnum ;
+
+                crop = set([key for key in pathway_gene_dict.keys() if ( ('_ids' in key) or ('_values' in key) )])
+                an_id = list(crop)[0].split('_')[0]
+
+                adict = pathway_gene_dict
+                ndict = {k:adict[k] for k in crop if k in adict}
+                gene_bar_ds = ColumnDataSource( data = ndict )
+                add_right_data_source = ColumnDataSource( dict(  x=ndict[an_id+'_ids'], y=ndict[an_id+'_values'], ids=ndict[an_id+'_ids'] ) )
+                ctitle = None
+                if not 'None' in chart_titles:
+                    if len(chart_titles) > cnum :
+                        if not 'None' in chart_titles[ cnum ]:
+                            ctitle = chart_titles[ cnum ]
+                add_right_figure = vbar_plot ( bar_source = add_right_data_source, init_range=list(ndict[an_id+'_ids']),
+                                        title=ctitle, tools=['box_zoom','tap','wheel_zoom','pan','reset','save'] )
+                vb_add_dict = dict ( {'source'+str(NUMBER):add_right_data_source, 'fig'+str(NUMBER):add_right_figure, 'genes'+str(NUMBER):gene_bar_ds} )
+                vb_charts .append(add_right_figure)
+                vb_chart_dicts .append(vb_add_dict)
+
+                vb_add_script = """ """
+                if 'None' in str(type(ctitle)):
+                    vb_tail_script = """fig"""+str(NUMBER)+"""['title'].text = path_name ;
+                    """
+                else :
+                    vb_tail_script = """ """
+
+                vb_tail_script += """
+                ymax = 0 ; ymin = 0 ;
+                for( var i=0 ; i<genes"""+str(NUMBER)+""".data[ path_name+'_values' ].length ; i++ ) {
+                    if( genes"""+str(NUMBER)+""".data[ path_name+'_values' ][i]>ymax ) {
+                        ymax = genes"""+str(NUMBER)+""".data[ path_name+'_values' ][i]
+                    }
+                    if(genes"""+str(NUMBER)+""".data[ path_name+'_values' ][i]<ymin ) {
+                        ymin = genes"""+str(NUMBER)+""".data[ path_name+'_values' ][i]
+                    }
+                }
+                fig"""+str(NUMBER)+"""['y_range']['start'] = ymin - 1.0
+                fig"""+str(NUMBER)+"""['y_range']['end'] = ymax + 1.0
+                """
+                vb_tail_script += """
+                fig"""+str(NUMBER)+"""['below'][0]['axis_label'] = path_name ;
+                fig"""+str(NUMBER)+"""['x_range'].start = """ + str(legacy_dict[legacy]) + """;
+                fig"""+str(NUMBER)+"""['x_range'].end = genes"""+str(NUMBER)+""".data[ path_name+'_ids' ].length + """ + str(legacy_dict[legacy]) + """;
+                fig"""+str(NUMBER)+"""['x_range'].factors = genes"""+str(NUMBER)+""".data[ path_name+'_ids' ]
+                fig"""+str(NUMBER)+triggercode+"""
+                var inf"""+str(NUMBER)+""" = source"""+str(NUMBER)+""".data;
+                inf"""+str(NUMBER)+"""['x'] = new Array( genes"""+str(NUMBER)+""".data[ path_name+'_ids' ].length);
+                for(var i=0;i<inf"""+str(NUMBER)+"""['x'].length;i++) {
+                    inf"""+str(NUMBER)+"""['x'][i] = i + """ + str(0.5+legacy_dict[legacy]) + """
+                }
+                inf"""+str(NUMBER)+"""['ids'] = genes"""+str(NUMBER)+""".data[ path_name+'_ids'];
+                inf"""+str(NUMBER)+"""['y'] = genes"""+str(NUMBER)+""".data[ path_name+'_values' ];
+                source"""+str(NUMBER)+triggercode+"""
+                """
+                vb_tail_scripts.append(vb_tail_script)
+    else :
+        vb_add_script = '' ; vb_add_dict = dict() ; vb_tail_script = '';
+        vb_tail_scripts = list(vb_tail_script)
+        vb_charts = None
+        vb_chart_dicts = list(vb_add_dict)
+
+    add_functions = """
+function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+}
+function median(values){
+    var mvals = values.slice()
+    mvals.sort( function(a,b) {return a - b;} );
+    var half = Math.floor(mvals.length*0.5);
+    var med;
+    if ( mvals.length % 2 )
+        med = mvals[half];
+    else
+        med = (mvals[half-1] + mvals[half]) * 0.5;
+    return( med );
+}
+function quartileBounds(values,groups) {
+    var uvals = groups.filter(onlyUnique)
+    var dict = {}
+    var LS=Array() ; var Q1=Array() ; var Q2=Array() ;
+    var Q3=Array() ; var US=Array() ; var G =Array() ;
+    for ( var i=0 ; i<uvals.length ; i++ ) {
+        var gvalues = Array();
+        for ( var j=0 ; j < values.length ; j++ ) {
+            if( groups[j]==uvals[i] ) {
+                gvalues.push(values[j]);
+            }
+        }
+        var medi = median(gvalues);
+        var lowerHalf = gvalues.filter(function(f){ return f < medi });
+        var upperHalf = gvalues.filter(function(f){ return f >= medi });
+        var q1s  = median(lowerHalf);
+        var q2s  = medi;
+        var q3s  = median(upperHalf);
+        var iqr  =  q3s - q1s ;
+        var iqru = (q3s - q2s) ;
+        var iqrd = (q2s - q1s) ;
+        var lowq = q1s - 1.5*iqrd ;
+        var uppq = q3s + 1.5*iqru ;
+        US.push(uppq) ; LS.push(lowq) ; G.push(uvals[i])
+        Q1.push(q1s) ; Q2.push(q2s) ; Q3.push(q3s)
+    }
+    return ( Array( LS.slice() , Q1.slice() , Q2.slice() , Q3.slice() , US.slice() , G.slice() ) ) ;
+}
+    """
+    # var ind  = cb_obj.selected['1d'].indices[0];
+    bokeh_script = add_functions + """
+        var ind  = cb_obj.indices[0];
+        var dat  = source.data;
+        var dats = sources.data;
+        var pat  = pw.data;
+        var path_name = pat['pathways'][ind];
+        var nums   = pat['pathway2patient_x'][ind];
+        var groups = pat['numcats'];
+        var qs = quartileBounds(nums,groups)
+
+        dat[ 'ls' ] = qs[0];
+        dat['q1s' ] = qs[1];
+        dat['q2s' ] = qs[2];
+        dat['q3s' ] = qs[3];
+        dat[ 'us' ] = qs[4];
+        dat['cats'] = qs[5];
+
+        dats['ncats'] = pat['numcats'];
+        dats['vals' ] = pat['pathway2patient_x'][ind];
+    """
+
+    bokeh_script2xy = add_functions + """
+        var ind  = cb_obj.indices[0];
+        var dat  = source.data;
+        var pat  = pw.data;
+        var path_name = pat['pathways'][ind];
+        //window.alert(path_name) 
+        var nums_x   = pat['pathway2patient_x'][ind];
+        var nums_y   = pat['pathway2patient_y'][ind];
+        var groups   = pat['numcats'];
+        dat[ 'x2' ]  = nums_x;
+        dat[ 'y2' ]  = nums_y;
+    """
+    if not pathway2patient_y is None :
+        bokeh_script = bokeh_script2xy
+
+    if bHaveDesc :
+        bokeh_script += """
+        var path_desc = pat['descriptions'][ind];
+        """
+    bokeh_script += """
+        source"""+triggercode+"""
+        sources"""+triggercode+"""
+    """
+    if bHaveDesc:
+        bokeh_script += """
+        fig['title'].text = path_desc;\n
+        fig['title']"""+triggercode+"""\n
+    """
+    # print(bokeh_script); exit(1)
+    if not 'None' in np.str(type(dynamic_labely)) :
+            bokeh_script += "fig['left'][0]['axis_label'] = '"+dynamic_labely[0]+"' + path_name + '"+dynamic_labely[1]+"';\n"
+            bokeh_script += "fig['left'][0]" + triggercode+"\n"
+    if not 'None' in np.str(type(dynamic_labelx)) :
+            bokeh_script += "fig['below'][0]['axis_label'] = '"+dynamic_labelx[0]+"' + path_name + '"+dynamic_labelx[1]+"';\n"
+            bokeh_script += "fig['below'][0]" + triggercode+"\n"
+    else :
+        bokeh_script += "fig['left' ][0]['axis_label'] = yYy ;\n" # STATIC OR DYNAMIC : 'yYy' or yYy
+        bokeh_script += "fig['below'][0]['axis_label'] = xXx ;\n" # STATIS OR DYNAMIC : 'xXx' or xXx
+        bokeh_script += "fig['left' ][0]" + triggercode + "\n"
+        bokeh_script += "fig['below'][0]" + triggercode + "\n"
+
+    for vb_tail_script in vb_tail_scripts:
+        bokeh_script += vb_tail_script
+
+    # HERE
+    arg_dict = dict(    source=right_pane_data_source, fig = right_figure, pw = pathway_data_source ,
+                        sources=additional_data_source )
+    arguments = arg_dict
+
+    for vd_add_dict in vb_chart_dicts:
+        arguments.update(vd_add_dict)
+    if bDebug:
+        print([item for item in arguments.keys()],bokeh_script)
+    #
+    # print(dir(left_figure))
+    if not GridF is None :
+        #
+        # NON HOME MADE FIGURE
+        # SHOW THE ALLOCATED GLYPH RENDERERS
+        for renderer in left_figure.renderers:
+            if hasattr(renderer, 'glyph'):
+                if False :
+                    print ( renderer )
+                    print ( renderer.data_source )
+                    print ( renderer.data_source.data )
+                callback = CustomJS(args = dict(source = renderer.data_source ), code = bokeh_script )
+                #left_figure.tools[1] = TapTool()
+                left_figure.add_tools( TapTool(callback = callback) )
+                renderer.data_source.js_on_event('indices',  CustomJS( args=arguments, code=bokeh_script) )
+                break
+    else :
+        #
+        # HOME MADE FIGURE
+        left_pane_data_source.selected.js_on_change('indices',  CustomJS( args=arguments, code=bokeh_script) )
+    #
+    if not vb_charts is None :
+        all_plots = [ left_figure, right_figure ]
+        for chart in vb_charts:
+            all_plots.append( chart )
+        lo = gridplot( all_plots, ncols=2, inner_plot_width=400, inner_plot_height=400, merge_tools=False )
+    else :
+        lo = row( left_figure, right_figure )
+    #
+    if with_input_search :
+        arguments.update(dict(left=left_pane_data_source))
+        if search_field_what_extra is None:
+            text_wb = make_text_search_wb ( 'Name of group', variable_name='uinp', args=arguments, dep_code=bokeh_script )
+        else:
+            text_wb = make_text_search_wb ( 'Name of group', variable_name='uinp',
+                                            args=arguments, dep_code=bokeh_script,
+                                            what_extra = search_field_what_extra)
+        clo = row(text_wb,lo)
+    else :
+        clo = lo
+    #
+    if bReturnFigureHandle :
+        return ( clo )
+
+    if bShow :
+        show ( clo )
+    else :
+        save ( clo )
+
+
+def simple_bokeh_dendrogram ( distm , labels=None , label_types=None , linkage='single' , axis_labels = None , hover_txt=None,
+                        tools = ['box_zoom','pan','reset','save'] , sep = '-', angle=np.pi/2,
+                        plt_kws = { 'plot_width' : 500 , 'plot_height' : 500,
+                                    'tools' : None, 'title' : None , 'x_axis_type' : None,
+                                    'y_axis_type' : None } ) :
+    if axis_labels == None :
+        axis_labels = {'x1': 'x','y1': 'y',
+                       'x2': 'x','y2': 'y',
+                       'icoord':'x','dcoord':'y',
+                        0: ('group1',"blue"), 1: ('group2','red')}
+    #
+    from scipy.cluster import hierarchy
+    from scipy.spatial.distance import squareform
+
+    pdi = squareform ( distm )
+    Z   = hierarchy.linkage( pdi , linkage )
+    if labels is None:
+        labels = ['LID'+str(i) for i in range(len(distm)) ]
+
+    dn  = hierarchy.dendrogram( Z ,labels=labels )
+    mi  = np.min(dn['icoord'])
+    ma  = np.max(dn['icoord'])
+    n   = len( dn['ivl'] )
+
+    crd_transform = lambda crd,ma,mi,n: (crd-mi)/(ma-mi)*(n-1)+0.5
+
+    if hover_txt is None:
+        hover_txt = [ ("index", "$index") ,
+            (axis_labels['dcoord'], "@dcoord") ]
+
+    variables = dict()
+    if not label_types is None :
+        variables = {**variables,'Type':None}
+    for key in variables.keys():
+        hover_txt.append((str(key),"@"+str(key)))
+    #
+    if hover_txt :
+        tools.append( HoverTool( tooltips=hover_txt ) )
+    #
+    fig = figure( x_range=dn['ivl'] , tools=tools , plot_width=plt_kws['plot_width'] , plot_height = plt_kws['plot_height'] )
+    #
+    for crdx,crdy,i in zip( dn['icoord'] , dn['dcoord'] , range(len(dn['icoord'])) ) :
+        crds    = crd_transform(crdx,ma,mi,n)
+        di = { 'icoord'  : crds , 'dcoord' : crdy ,
+               'order'   : [i for j in range(len(crdx)) ] }
+
+        cdsl = ColumnDataSource ( di )
+        fig .line( 'icoord', 'dcoord' , source=cdsl , color = 'black'  )
+
+    fig.xaxis.major_label_orientation = angle
+    fig.xgrid.grid_line_color = None
+    fig.ygrid.grid_line_color = None
+
+    return ( fig )
+
 
 
 if __name__=='__main__':
