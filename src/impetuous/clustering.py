@@ -175,7 +175,7 @@ if bUseNumba :
                 #
                 # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
                 # ADDED TO RICHTOOLS HERE: https://github.com/richardtjornhammar/RichTools/commit/74b35df9c623bf03570707a24eafe828f461ed90#diff-25a6634263c1b1f6fc4697a04e2b9904ea4b042a89af59dc93ec1f5d44848a26
-                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY 
+                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
                 #
                 nr_sq,mr_sq = np.shape(B)
                 if nr_sq != mr_sq :
@@ -788,8 +788,6 @@ def linkage_dict_tuples ( D:np.array , method:str = 'min' ) -> dict :
         linkages[ (i,) ] = 0
     return ( linkages )
 
-
-
 def link0_ ( D:np.array , method:str = 'min' ) -> list :
     def func( r:float , c:float , lab:str='min' ) -> float :
         if lab == 'max' :
@@ -834,8 +832,6 @@ def linkages_tiers ( D:np.array , method:str = 'min' ) -> dict :
         D[i,i] = 0
     return ( linkages )
 
-
-
 def lint2lstr ( seq:list[int] ) -> list[str] :
     #
     # DUPLICATED IN special.lint2lstr
@@ -844,7 +840,56 @@ def lint2lstr ( seq:list[int] ) -> list[str] :
     else :
         yield seq
 
-def scipylinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
+def sclinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
+    #
+    # FROM impetuous.clustering
+    # RETURN TYPE DIFFERS
+    #
+    from scipy.spatial.distance  import squareform
+    from scipy.cluster.hierarchy import linkage as sclinks
+    from scipy.cluster.hierarchy import fcluster
+    Z  = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
+    CL = {}
+    F  = {} # NEW
+    for d in Z[:,2] :
+        row  = fcluster ( Z ,d, 'distance' )
+        F[d] = row # NEW
+        sv_ = sorted(list(set(row)))
+        cl  = {s:[] for s in sv_}
+        for i in range( len( row ) ) :
+            cl[row[i]].append(i)
+        for v_ in list( cl.values() ) :
+            if tuple(v_) not in CL:
+                CL[tuple(v_)] = d
+    if bStrKeys :
+        L = {}
+        for item in CL.items():
+            L['.'.join( lint2lstr(item[0])  )] = item[1]
+        CL = L
+    return ( {'CL':CL , 'F':F} )
+
+
+def cluster_connections (       distm:np.array  , d:np.array ,
+                                command = 'min' , Z:np.array=None ,
+                                bReturnZ = False ) -> np.array :
+    #
+    from scipy.spatial.distance  import squareform
+    from scipy.cluster.hierarchy import linkage as sclinks
+    from scipy.cluster.hierarchy import fcluster
+    if Z is None :
+        Z       = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
+    row         = fcluster ( Z ,d, 'distance' )
+    if bReturnZ :
+        return ( Z )
+    return ( row )
+
+def CCA_DBSCAN ( eps:float, A:np.array , min_samples=1 ) -> np.array :
+    # SKLEARN DBSCAN WORKS ON COORDINATES NOT THE DISTANCE MATRIX AS INPUT
+    from sklearn.cluster import DBSCAN
+    clustering = DBSCAN( eps=eps , min_samples=min_samples ).fit(A)
+    return ( clustering.labels_ )
+
+def scipylinkages ( distm , command='min' , bStrKeys=True ) -> dict :
     from scipy.spatial.distance  import squareform
     from scipy.cluster.hierarchy import linkage as sclinks
     from scipy.cluster.hierarchy import fcluster
@@ -886,74 +931,7 @@ def linkages ( distm:np.array , command:str='min' ,
     return ( linkages_ )
 
 
-def linkage ( distm:np.array , command:str = 'min' ) -> dict :
-    print ( 'WARNING! LEGACY CODE!' )
-    D = distm
-    N = len(D)
-    sidx = [ str(i)+'-'+str(j) for i in range(N) for j in range(N) if i<j ]
-    pidx = [ [i,j] for i in range(N) for j in range(N) if i<j ]
-    R = [ D[idx[0]][idx[1]] for idx in pidx ]
-    label_order = lambda i,k: i+'-'+k if '.' in i else k+'-'+i if '.' in k else  i+'-'+k if int(i)<int(k) else k+'-'+i
-    if command == 'max':
-        func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]>R[j] else [(R[j],j),(R[i],i)]
-    if command == 'min':
-        func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]<R[j] else [(R[j],j),(R[i],i)]
-    LINKS = {}
-    cleared = set()
-    for I in range( N**2 ) : # WORST CASE SCENARIO
-        clear = []
-        if len(R) == 0 :
-            break
-        nar   = np.argmin( R )
-        clu_idx = sidx[nar].replace('-','.')
-        LINKS = { **{ clu_idx : R[nar] } , **LINKS }
-        lp    = {}
-        for l in range(len(sidx)) :
-            lidx = sidx[l]
-            lp [ lidx ] = l
-        pij   = sidx[nar].split('-')
-        cidx  = set( unpack( [ s.split('-') for s in [ s for s in sidx if len(set(s.split('-'))-set(pij)) == 1 ] ] ) )-set(pij)
-        ccidx = set( [ s for s in [ s for s in sidx if len(set(s.split('-'))-set(pij)) == 1 ] ] )
-        found = {}
-        i   = pij[0]
-        j   = pij[1]
-        for k in cidx :
-            h0 , h1 , h2 , q0, J = None , None , None , None, 0
-            if k == j or k == i :
-                continue
-            la1 = label_order(i,k)
-            if la1 in lp :
-                J+=1
-                h1 = lp[ label_order(i,k) ]
-                h0 = h1 #; q0 = i
-            la2 = label_order(j,k)
-            if la2 in lp :
-                J+=1
-                h2 = lp[ label_order(j,k) ]
-                h0 = h2 #; q0 = j
-            if J == 2 :
-                Dijk = func ( R , h1 , h2 )
-            elif J == 1 :
-                Dijk = [[ R[h0],h0 ]]
-            else :
-                continue
-            nidx = [ s for s in sidx[Dijk[0][1]].split('-') ]
-            nidx = list( set(sidx[Dijk[0][1]].split('-'))-set(pij) )[0]
-            nclu_idx = clu_idx + '-' + nidx
-            found[ nclu_idx ] = Dijk[0][0]
-        clear = [*[ lp[c] for c in ccidx ],*[nar]]
-        cleared = cleared | set( unpack( [ sidx[c].split('-') for c in clear ]) )
-        R = rem(R,clear)
-        sidx = rem(sidx,clear)
-        for label,d in found.items() :
-            R.append(d)
-            sidx.append(label)
-    for c in sorted( [ (v,k) for k,v in LINKS.items() ] )[-1][1].split('.'):
-        LINKS[c] = 0
-    return ( LINKS )
-
-
-if __name__=='__main__' :
+if __name__ == '__main__' :
 
     D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
     print ( np.array(D) )
@@ -980,9 +958,8 @@ if __name__=='__main__' :
                         [9.00, 9.00, 9.00, 0.00, 0.10, 0.10],
                         [9.10, 9.00, 9.00, 0.10, 0.00, 0.15],
                         [9.10, 9.00, 9.00, 0.10, 0.15, 0.00] ] )
-        print ( connectivity(A,0.11) ) # 
+        print ( connectivity(A,0.11) )
         print ( dbscan(distance_matrix=pd.DataFrame(A).values,eps=0.11,minPts=2) )
-
 
     import time
     print ( 'HERE' )
