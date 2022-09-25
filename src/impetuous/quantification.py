@@ -1650,7 +1650,7 @@ def differential_analytes ( analyte_df , cols = [['a'],['b']] ):
     return ( ddf )
 
 def single_fc_compare ( df:pd.DataFrame, what:str, levels:list[str] = None, bVerbose:str=True ,
-                    sep:str=', ' , bRanked:bool = False , bLogFC:bool=False , bVerbose=False ) :
+                    sep:str=', ' , bRanked:bool = False , bLogFC:bool=False ) :
 
         from scipy.stats import mannwhitneyu
         from scipy.stats import ttest_ind
