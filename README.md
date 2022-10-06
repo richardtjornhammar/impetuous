@@ -919,7 +919,7 @@ and find the timing to be:
 [36, 0.27133679389953613, 3.3377525806427]
 [38, 0.34802937507629395, 4.12202787399292]
 ```
-So it is clear that a linkage method is more efficient for constructing complete hierarchies while a single `connectivity` calculation will be faster if you only want the clusters at a predetermined distance. Because in that case you don't need to calculate the entire hierarchy.
+So it is clear that a linkage method is more efficient for constructing complete hierarchies while a single `connectivity` calculation might be faster if you only want the clusters at a predetermined distance. Because in that case you don't need to calculate the entire hierarchy.
 
 # Notes
 
