@@ -883,6 +883,31 @@ def cluster_connections (       distm:np.array  , d:np.array ,
         return ( Z )
     return ( row )
 
+
+def nearest_neighbor_graph_matrix ( distm:np.array, nn:int , bCheckSolution=False )->np.array:
+    desc__ = """
+     SLOW METHOD FOR CONSTRUCTING A NEAREST NEIGHBOR GRAPH
+     REPRESENTATION OF A DISTANCE MATRIX GIVEN THAT EACH
+     NODE SHOULD ONLY BE CONNECTED TO N NEIHGBOURS
+     A ROW CORRESPONDS TO A SPECIFIC NODES NEIGHBOURS
+     NOTE : THIS CREATES A NON-SYMMETRIC DISTANCE MATRIX
+    """
+    from scipy.spatial.distance import squareform
+    if len(np.shape(distm)) == 1 :
+        distm = squareform ( distm )
+    nn_distm = []
+    global_cval = -np.inf
+    for row in distm :
+        cval = sorted(row)[nn-1]
+        if cval > global_cval :
+            global_cval = cval
+        nrow = np.array([ rval if rval<=cval else np.inf for rval in row ])
+        nn_distm.append( nrow )
+    if bCheckSolution :
+        print (desc__ , '\n' , np.sum(np.array(nn_distm)<np.inf,1)  )
+    return ( np.array(nn_distm), global_cval )
+
+
 def CCA_DBSCAN ( eps:float, A:np.array , min_samples=1 ) -> np.array :
     # SKLEARN DBSCAN WORKS ON COORDINATES NOT THE DISTANCE MATRIX AS INPUT
     from sklearn.cluster import DBSCAN
