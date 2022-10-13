@@ -588,6 +588,23 @@ def associations ( M , W = None , bRanked = True ) :
     res = PQ/R2
     return ( res )
 
+def spearmanrho ( xs , ys ) :
+    from scipy.stats import rankdata
+    xs_ = np.array( [ rankdata(x,'average') for x in xs] )
+    ys_ = np.array( [ rankdata(y,'average') for y in ys] )
+    return ( correlation_core(xs_,ys_) )
+
+def pearsonrho ( xs , ys ) :
+    return ( correlation_core ( xs , ys ) )
+
+def correlation_core ( xs , ys ) :
+    x_means = xs.mean(axis=1)
+    y_means = ys.mean(axis=1)
+    xms = xs - (x_means*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T # THIS CAN BE IMPROVED
+    yms = ys - (y_means*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T # THIS CAN BE IMPROVED
+    r = np.dot( yms , xms.T ) / np.sqrt( (yms*yms).sum(axis=1).reshape(len(yms),1) @ (xms*xms).sum(axis=1).reshape(1,len(xms))  )
+    return ( r )
+
 
 crop = lambda x,W:x[:,:W]
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
