@@ -346,6 +346,226 @@ else :
                     L .append( ids )
             return ( L )
 
+if bUseNumba :
+        @jit(nopython=True)
+        def connectivity_boolean ( B , bVerbose=False ) :
+                description = """ This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becom>
+m. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems."""
+                if bVerbose :
+                        print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
+                # PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # AROUND LINE 2277
+                # CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
+                # A LOT FASTER
+                # FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
+                # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+                #
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # ADDED TO RICHTOOLS HERE: https://github.com/richardtjornhammar/RichTools/commit/74b35df9c623bf03570707a24eafe828f461ed90#diff-25a6634263c1b>
+                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
+                #
+                nr_sq,mr_sq = np.shape(B)
+                if nr_sq != mr_sq :
+                        print ( 'ERROR: FAILED' )
+                N = mr_sq
+                res , nvisi, s, NN, ndx, C = [0], [0], [0], [0], [0], 0
+                res .append(0)
+                for i in range(N) :
+                        nvisi.append(i+1)
+                        res.append(0); res.append(0)
+                        ndx.append(i)
+
+                res   = res[1:]
+                nvisi = nvisi[1:]
+                ndx   = ndx[1:]
+                while ( len(ndx)>0 ) :
+                        i = ndx[-1] ; ndx = ndx[:-1]
+                        NN = []
+                        if ( nvisi[i]>0 ) :
+                                C-=1
+                                for j in range(N) :
+                                        if ( B[i,j] ) :
+                                                NN.append(j)
+                                while ( len(NN)>0 ) :
+                                        # back pop_back
+                                        k = NN[-1]; NN = NN[:-1]
+                                        nvisi[k] = C
+                                        for j in range(N):
+                                                if ( B[j,k] ) :
+                                                        for q in range(N) :
+                                                                if ( nvisi[q] == j+1 ) :
+                                                                        NN.append(q)
+                if bVerbose : # VERBOSE
+                        print ( "INFO "+str(-1*C) +" clusters" )
+                Nc = [ 0 for i in range(-1*C) ]
+                for q in range(N) :
+                        res[  q*2+1 ] = q;
+                        res[  q*2   ] = nvisi[q]-C;
+                        Nc [res[q*2]]+= 1;
+                        if bVerbose :
+                                print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
+                if bVerbose:
+                        for i in range(-1*C) :
+                                print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
+                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+else:
+        def connectivity_boolean ( B , bVerbose=False ) :
+                description = """ This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becom>
+m. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems."""
+                if bVerbose :
+                        print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
+                # PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # AROUND LINE 2277
+                # CONSIDER COMPILING AND USING THAT AS A MODULE INSTEAD OF THIS SINCE IT IS
+                # A LOT FASTER
+                # FOR A DESCRIPTION READ PAGE 30 (16 INTERNAL NUMBERING) of:
+                # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
+                #
+                # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
+                # ADDED TO RICHTOOLS HERE: https://github.com/richardtjornhammar/RichTools/commit/74b35df9c623bf03570707a24eafe828f461ed90#diff-25a6634263c1b>
+                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
+                #
+                nr_sq,mr_sq = np.shape(B)
+                if nr_sq != mr_sq :
+                        print ( 'ERROR: FAILED' )
+                N = mr_sq
+                res , nvisi, s, NN, ndx, C = [0], [0], [0], [0], [0], 0
+                res .append(0)
+                for i in range(N) :
+                        nvisi.append(i+1)
+                        res.append(0); res.append(0)
+                        ndx.append(i)
+
+                res   = res[1:]
+                nvisi = nvisi[1:]
+                ndx   = ndx[1:]
+                while ( len(ndx)>0 ) :
+                        i = ndx[-1] ; ndx = ndx[:-1]
+                        NN = []
+                        if ( nvisi[i]>0 ) :
+                                C-=1
+                                for j in range(N) :
+                                        if ( B[i,j] ) :
+                                                NN.append(j)
+                                while ( len(NN)>0 ) :
+                                        # back pop_back
+                                        k = NN[-1]; NN = NN[:-1]
+                                        nvisi[k] = C
+                                        for j in range(N):
+                                                if ( B[j,k] ) :
+                                                        for q in range(N) :
+                                                                if ( nvisi[q] == j+1 ) :
+                                                                        NN.append(q)
+                if bVerbose : # VERBOSE
+                        print ( "INFO "+str(-1*C) +" clusters" )
+                Nc = [ 0 for i in range(-1*C) ]
+                for q in range(N) :
+                        res[  q*2+1 ] = q;
+                        res[  q*2   ] = nvisi[q]-C;
+                        Nc [res[q*2]]+= 1;
+                        if bVerbose :
+                                print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
+                if bVerbose:
+                        for i in range(-1*C) :
+                                print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
+                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+
+
+def clustering_bounds ( distm:np.array ) -> tuple :
+    #
+    # RETURN THE BOUNDS FOR WHEN THE CLUSTERING SOLUTION IS
+    # DISCONNECTED CONTRA FULLY CONNECTED
+    #
+    d = distm.copy()
+    ma = np.min(np.max(d,0))
+    for i in range(len(d)):
+        d[i,i] = np.inf
+    return ( np.min(d) , ma )
+
+
+def pidx2lidx ( n:int,i:int,j:int )->int :
+    from scipy.special import binom
+    p = i if i>j else j
+    i = i if i<j else j
+    j = p
+    return ( int ( binom(n,2) - binom(n-i,2) + ( j-i-1 ) )  )
+
+def linear2coord ( N:int, bType=0 ) -> dict :
+    if bType == 0 :
+        return ( { pidx2lidx(N,i,j):(i,j)  for i in range(N) for j in range(N) if j>i } )
+    from scipy.spatial.distance import squareform
+    tmpsq =  squareform ( [ i for i in range(int( N*(N-1)*0.5 )) ] )
+    return (  { tmpsq[i,j]:(i,j) for i in range(N) for j in range(N) if j>i } )
+
+if True :
+    #@njit #@jit( nopython=True )
+    def link_clustering_core ( pdp:np.array , N:int ) :
+        pdp  = sorted(pdp)[::-1]
+        idxs = [ tuple([n]) for n in range(N) ]
+        ids0 = idxs.copy()
+        cluster_ledger = [ [ 0, idxs ] ]
+        for i in range(len(pdp)) :
+            p_ = pdp.pop()
+            m_ = set( p_[1] )
+            for j_ in range(len(idxs)) :
+                s_ = idxs.pop()
+                if len(m_&set(s_))>0:
+                    m_ = m_|set(s_)
+                else :
+                    idxs = [ s_,*idxs ]
+            idxs = [ tuple(sorted(m_)) ,*idxs ]
+            if set(idxs) == set(ids0) :
+                continue
+            cluster_ledger.append( [ p_[0] , idxs.copy() ] )
+            ids0 = idxs
+            if len(idxs) == 1 : # WE ARE FULLY CONNECTED
+                break
+        return ( cluster_ledger )
+
+def link_clustering ( input:np.array ) :
+    from scipy.spatial.distance import pdist,squareform
+    import time,gc
+    #
+    # INPUT CHECK
+    #
+    nm = np.shape(input)
+    if len(nm) == 1 : # ASSUME PDIST ARRAY
+        pdc = input.copy()
+        distm = squareform( pdc )
+    else :
+        if nm[0] == nm[1] : # ASSUME DISTANCE MATRIX
+            distm = input.copy()
+            pdc = squareform( input )
+        else : # ASSUME COORDINATES
+            pdc     = pdist ( input )
+            distm = squareform ( pdc )
+    nm = np.shape(distm)
+    N  = nm[0]
+    lookup  = linear2coord( N )
+    fully_connected_at = np.min(np.max( distm ,0 ))
+    del distm
+    gc.collect()
+    pdp     = [ (d,lookup[i] ) for d,i in zip(pdc,range(len(pdc))) if d <= fully_connected_at ]
+    del lookup
+    gc.collect()
+    del pdc
+    gc.collect()
+    results = link_clustering_core( pdp , N )
+    return ( results )
+
+
+def connectivity_clustering( distm:np.array, cutoff:float, bBool:bool=False ) -> tuple :
+    if bBool :
+        # THIS WILL BE FASTER AND MORE MEMORY EFFICIENT
+        # IF THE DISTM IS LARGE
+        distm_b = distm<=cutoff
+        res = connectivity_boolean( distm_b )
+    else :
+        res = connectivity( distm , cutoff )
+    return ( res )
+        
 
 clustering_algorithm = None
 clustering_algorithm = sc.KMeans(10) # CHOOSE SOMETHING YOU LIKE NOT THIS
