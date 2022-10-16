@@ -5,7 +5,7 @@ Several novel algorithms have been invented as of this repository by the [author
 
 These novel algorithms include but are not limited to:
 * A graph construction and graph searching class can be found in src/impetuous/convert.py (NodeGraph). It was developed and invented as a faster alternative for hierarchical DAG construction and searching.
-* A fast DBSCAN method utilizing [my](https://richardtjornhammar.github.io/) connectivity code as invented during my PhD.
+* A DBSCAN method utilizing [my](https://richardtjornhammar.github.io/) connectivity code as invented during my PhD.
 * Hierarchical enrichment routine with conservative or lax extinction of evidence already accounted for. Used for multiple hypothesis testing.
 * A q-value method for rank correcting p-values. The computation differs from other methods.
 * A NLP pattern matching algorithm useful for sequence alignment clustering
