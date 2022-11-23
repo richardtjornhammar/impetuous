@@ -1874,7 +1874,7 @@ def multivariate_aligned_pca ( analytes_df , journal_df ,
     corr_r = rankdata(pcas_df.T.apply(lambda x:np.sum(x**2)).values)/len(pcas_df.index)
 
     pcaw_df .loc[:,what] = [ dict_actual[s] for s in pcaw_df.index.values ]
-    projection_df       = pcaw_df.groupby(what).apply(np.mean)
+    projection_df       = pcaw_df.groupby(what).mean() #.apply(np.mean)
     projection_df       = ( projection_df.T / np.sqrt(np.sum(projection_df.values**2,1)) ).T
     projected_df        = pd.DataFrame( np.dot(projection_df,pcas_df.T), index=projection_df.index, columns=pcas_df.index )
     owners  = projected_df.index.values[projected_df.apply(np.abs).apply(np.argmax).values]
