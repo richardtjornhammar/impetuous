@@ -145,7 +145,7 @@ if bUseNumba :
                     xr = np.dot( Z.T,Vt )
                     return ( xr )
                 else:
-                    xr = np.tensordot( Z.T,Vt, axes=(0,1) )
+                    xr = np.dot( Z.T,Vt )
                     return ( xr.T )
 else :
         def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 , bLegacy=True ):
