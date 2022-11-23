@@ -173,7 +173,6 @@ def create_encoding_data_frame ( journal_df , formula , bVerbose = False ) :
                             journal_df.loc[ [ c.replace(' ','') for c in formula.split('~')[1].split('+') if not 'C(' in c] , : ] ]).T
     return ( encoding_df.apply(pd.to_numeric) )
 
-
 def interpret_problem ( analyte_df , journal_df , formula , bVerbose=False ) :
     #
     # THE JOURNAL_DF IS THE COARSE GRAINED DATA (THE MODEL)
@@ -1465,16 +1464,7 @@ def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synony
             edf.loc[l] = q
     return ( edf.T )
 
-from scipy.stats import combine_pvalues
-def correlation_distance ( agg_df , decimal_power = 10000 ):
-    import scipy.stats as ss
-    spearman_df = ss.spearmanr( agg_df )[0]
-    distm       = pd.DataFrame( np.sqrt( 1 - spearman_df ) ,
-                                    index   = agg_df.columns.values ,
-                                    columns = agg_df.columns.values )
-    distm = distm.apply(lambda x: np.round(x*decimal_power)/decimal_power )
-    return ( distm )
-
+from scipy.stats import combine_pvalues # IS THIS USED...
 
 def quantify_by_dictionary ( analyte_df , journal_df , formula , split_id=None,
                     grouping_dictionary = dict() , synonyms = None ,
@@ -1792,7 +1782,30 @@ def invert_dict ( dictionary ) :
                 inv_dictionary[item[1]] = [item[0]]
     return ( inv_dictionary )
 
-def confusion_matrix ( dict_row , dict_col , bSwitchKeyValues=True, bCheck=False ) :
+
+def correlation_distance ( agg_df:pd.DataFrame  , decimal_power:int = 10000 ,
+                           bLegacy:bool = False , correlation_type:str='spearman',
+                           correlation_transform = lambda x:x ) :
+    if bLegacy :
+        import scipy.stats as ss
+        spearman_df = ss.spearmanr( agg_df )[0]
+        distm       = pd.DataFrame( np.sqrt( 1 - spearman_df ) ,
+                                    index   = agg_df.columns.values ,
+                                    columns = agg_df.columns.values )
+        distm = distm.apply(lambda x: np.round(x*decimal_power)/decimal_power )
+    else :
+        if correlation_type == 'pearson' :
+            corr =  pearsonrho(agg_df.values,agg_df.values)
+        else :
+            corr = spearmanrho(agg_df.values,agg_df.values)
+
+        distm = pd.DataFrame( np.sqrt( 1 - correlation_transform(corr) ) ,
+                                    index   = agg_df.columns.values ,
+                                    columns = agg_df.columns.values )
+        distm = distm.apply(lambda x: np.round(x*decimal_power)/decimal_power )
+    return ( distm )
+
+def confusion_matrix_df ( dict_row:dict , dict_col:dict , bSwitchKeyValues:str=True, bCheck:str=False ) -> pd.DataFrame :
     if bSwitchKeyValues :
         dict_row = invert_dict(dict_row)
         dict_col = invert_dict(dict_col)
@@ -1818,7 +1831,6 @@ def scaler_transform( df,i=0 ) :
                 z_analytes_df = z_analytes_df.T
             return ( z_analytes_df )
 
-
 def local_pca ( df, ndims = None  ) :
     from sklearn.decomposition import PCA
     pca     = PCA ( ndims )
@@ -1826,10 +1838,21 @@ def local_pca ( df, ndims = None  ) :
     weights = pca.components_.T
     return ( scores , weights , df.index, df.columns )
 
+def compositional_analysis(x:np.array)->list[float]:
+    # https://doi.org/10.1093/bib/bbw008
+    # Tau, Gini, TSI, SPM
+    n           = len(x)
+    tau         = np.sum(1-x/np.max(x))/(n-1)
+    gini        = np.sum( np.array([np.abs(xi-xj) for xi in x for xj in x])/2/n**2/np.mean(x) )
+    geni        = gini*n/(n-1)
+    TSI         = np.max(x)/np.sum(x)
+    beta        = np.sum(1-x/np.max(x))/n # own version, works for single component compositions
+    return ( [beta , tau , gini , geni, TSI, (n-1)/n ] )
+
 
 def multivariate_aligned_pca ( analytes_df , journal_df ,
                 sample_label = 'Sample ID', align_to = 'Modulating group' , n_components=None ,
-                add_labels = ['Additional information'] , e2s=None , color_lookup=None ) :
+                add_labels = ['Additional information'] , e2s=None , color_lookup=None , ispec=None ) :
     # SAIGA PROJECTIONS
     what                = align_to
     analytes_df         = analytes_df.loc[:,journal_df.columns.values]
@@ -1855,9 +1878,14 @@ def multivariate_aligned_pca ( analytes_df , journal_df ,
     projection_df       = ( projection_df.T / np.sqrt(np.sum(projection_df.values**2,1)) ).T
     projected_df        = pd.DataFrame( np.dot(projection_df,pcas_df.T), index=projection_df.index, columns=pcas_df.index )
     owners  = projected_df.index.values[projected_df.apply(np.abs).apply(np.argmax).values]
+    if ispec is None :
+        ispec = int( len(projection_df)>1 )
+    specificity = projected_df.apply(np.abs).apply(lambda x:compositional_analysis(x)[ispec] ).values
+
     pcas_df .loc[:,'Owner'] = owners
     pcaw_df = pcaw_df.rename( columns={what:'Owner'} )
     pcas_df.loc[:,'Corr,r'] = corr_r
+    pcas_df.loc[:,'Spec,' + {0:'beta',1:'tau',2:'gini',3:'geni'}[ ispec ] ] = specificity
 
     if not color_lookup is None :
         pcas_df.loc[:, 'Color'] = [ color_lookup[o] for o in pcas_df.loc[:,'Owner'] ]
@@ -1873,6 +1901,116 @@ def multivariate_aligned_pca ( analytes_df , journal_df ,
             if not sample_lookup is None :
                 pcaw_df.loc[ :, label ] = [ sample_lookup[s] for s in pcaw_df.index.values ]
     return ( pcas_df , pcaw_df )
+
+def sort_matrix ( matrix:np.array , linkage:str='single' ) -> list[int] :
+    if linkage != 'dev' :
+        from scipy.cluster import hierarchy
+        from scipy.spatial.distance import squareform
+        distm   = absolute_coordinates_to_distance_matrix ( matrix )
+        pdi     = squareform ( distm )
+        Z       = hierarchy.linkage( pdi , linkage )
+        labels  = None
+        if labels is None :
+            labels = ['LID'+str(i) for i in range(len(distm)) ]
+        dn = hierarchy.dendrogram( Z ,labels=labels )
+        order = dn ['leaves']
+        return ( order )
+
+    if linkage == 'dev' :
+        # DEV
+        from scipy.stats import rankdata
+        order = rankdata( np.mean(matrix,1) ,'ordinal') - 1
+        return ( order )
+
+def jaccard ( A:set,B:set ) -> float :
+    return ( len( set(A)&set(B) )/ len( set(A)|set(B) ) )
+
+def jaccard_distance(A:set,B:set) -> float :
+    return ( ( len(set(A)|set(B)) - len(set(A)&set(B)) ) / len(set(A)|set(B)) )
+
+def blind_confusion ( v1:list[str] , v2:list[str] , sort_type:str=None , bAbsolute:bool = True ) -> list[np.array] :
+    CM,BM = [],[]
+    for i in range( len(v1) ) :
+        w,v = [],[]
+        for j in range( len(v2) ) :
+            w.append ( jaccard( set(v1[i]) , set(v2[j]) ) ) # WE DO DISTANCE SORTING LATER
+            v.append ( len(set(v1[i])&set(v2[j])) )
+        CM.append ( np.array(w) )
+        BM.append ( np.array(v) )
+    MAT = np.array( CM )
+    if bAbsolute :
+        QAT = np.array( BM )
+    if not sort_type is None :
+        something_ok = set(['single','dev','complete','ward','median'])
+        if not sort_type in something_ok :
+            print ( 'ERROR: SET sort_type TO' , something_ok , '\nSUGGEST USING: single' )
+        i_order = sort_matrix( MAT      ,       linkage = sort_type )
+        j_order = sort_matrix( MAT.T    ,       linkage = sort_type )
+        if bAbsolute :
+            QAT = np.array( [ QAT[ i,j ] for i in i_order for j in j_order ]).reshape( *np.shape(QAT) )
+        else :
+            MAT = np.array( [ MAT[ i,j ] for i in i_order for j in j_order ]).reshape( *np.shape(MAT) )
+    if bAbsolute :
+        return ( [ QAT,i_order,j_order ] )
+    else :
+        return ( [ MAT,i_order,j_order ] )
+
+def confusion_matrix ( dict_row:dict , dict_col:dict , bSwitchKeyValues:bool=True ) -> dict :
+    if bSwitchKeyValues :
+        dict_row = invert_dict(dict_row)
+        dict_col = invert_dict(dict_col)
+    all_interactions = list(dict_row.keys())
+    num_p = len(all_interactions)
+    confusion = np.zeros(num_p*num_p).reshape(num_p,num_p)
+    for i in range(num_p) :
+        for j in range(num_p) :
+            confusion[i,j] = len( set(dict_row[all_interactions[i]]) & set(dict_col[all_interactions[j]]) )
+    return ( {'confusion matrix':confusion,'index names':all_interactions } )
+
+def group_classifications ( df:pd.DataFrame     ,
+                det_limit:float         = 1.0   ,
+                log2FClim:float         = 2.0   ,
+                bLog2:bool              = True ) -> dict() :
+    #
+    first_quartile_rank  = lambda N:int(np.round( 1/4 * N ))
+    second_quartile_rank = lambda N:int(np.round( 1/2 * N ))
+    third_quartile_rank  = lambda N:int(np.round( 3/4 * N ))
+    #
+    n_  = len ( df.index  .values )
+    m_  = len ( df.columns.values )
+    agg_df = df
+    #
+    if ( bLog2 ) :
+        agg_df = df .apply( lambda x:np.log2(x+1) )
+    #
+    grp_type_0  = set( agg_df.index.values[ np.sum(agg_df,1) <= det_limit  ] )
+    grp_type_1  = set( agg_df.index.values[ np.sum(agg_df,1) >  det_limit  ] )
+    #
+    ran_df = agg_df.copy()
+    ran_df .columns = range(m_)
+    ran_df = ran_df.T.apply(sorted).T
+    #
+    max_n_group = m_ - third_quartile_rank( m_ )
+    grp_type_4  = set( ran_df.index.values[ ran_df.iloc[:,-1] - ran_df.iloc[:,-2] > log2FClim ])
+    grp_type_3  = set( ran_df.index.values[\
+        np.mean(ran_df.iloc[:,-max_n_group:],1) - np.max(ran_df.iloc[:,:-max_n_group],1) > log2FClim \
+        ]) - grp_type_4
+    #
+    max_n_group = second_quartile_rank(m_)
+    grp_type_2 = set( ran_df.index.values[\
+                    np.mean(ran_df.iloc[:,-max_n_group:],1) - np.mean(ran_df.iloc[:,:-max_n_group],1) > log2FClim \
+            ]) - (grp_type_3|grp_type_4)
+
+    grp_type_1  = grp_type_1 - (grp_type_4|grp_type_3|grp_type_2)
+    #
+    results_d =\
+    { '4' :  grp_type_4   ,
+      '3' :  grp_type_3   ,
+      '2' :  grp_type_2   ,
+      '1' :  grp_type_1   ,
+      '0' :  grp_type_0   }
+    return ( results_d )
+
 
 
 def pvalues_dsdr_n ( v:np.array , bReturnDerivatives:bool=False ) -> np.array :
@@ -2032,6 +2170,7 @@ def fibonacci(n:int) -> int :
 
 def f_truth(i:int) -> bool : #  THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI NUMBER ARE EQUAL TO THE FIBONACCI NUMBER AT POSITION 2I+1
     return ( fibonacci(i)**2+fibonacci(i+1)**2 == fibonacci(2*i+1))
+
 
 if __name__ == '__main__' :
 

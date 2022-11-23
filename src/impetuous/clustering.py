@@ -125,7 +125,7 @@ distance_matrix_to_geometry_conversion_notes = """
 
 if bUseNumba :
         @jit(nopython=True)
-        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 , bLegacy=True ) :
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**2.
@@ -139,10 +139,16 @@ if bUseNumba :
                 U,S,Vt = np.linalg.svd ( D , full_matrices = True )
                 S[DIM:] *= 0.
                 Z = np.diag(S**0.5)[:,:DIM]
-                xr = np.dot( Z.T,Vt )
-                return ( xr )
+                if bLegacy :
+                    print ( "YOU ARE RUNNING THE LEGACY IMPLEMENTATION. THE RETURN MATRIX WILL BE CHANGED TO ITS TRANSPOSE" )
+                    print ( "TO USE THE NEW VERSION SET bLegacy ARGUMENT TO FALSE" )
+                    xr = np.dot( Z.T,Vt )
+                    return ( xr )
+                else:
+                    xr = np.tensordot( Z.T,Vt, axes=(0,1) )
+                    return ( xr.T )
 else :
-        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 , bLegacy=True ):
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**2.
@@ -156,8 +162,14 @@ else :
                 U,S,Vt = np.linalg.svd ( D , full_matrices = True )
                 S[DIM:] *= 0.
                 Z = np.diag(S**0.5)[:,:DIM]
-                xr = np.dot( Z.T,Vt )
-                return ( xr )
+                if bLegacy :
+                    print ( "YOU ARE RUNNING THE LEGACY IMPLEMENTATION. THE RETURN MATRIX WILL BE CHANGED TO ITS TRANSPOSE" )
+                    print ( "TO USE THE NEW VERSION SET bLegacy ARGUMENT TO FALSE" )
+                    xr = np.dot( Z.T,Vt )
+                    return ( xr )
+                else:
+                    xr = np.tensordot( Z.T,Vt, axes=(0,1) )
+                    return ( xr.T )
 
 if bUseNumba :
         @jit(nopython=True)

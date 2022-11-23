@@ -171,6 +171,26 @@ def reformat_hierarchy_matrix_results ( hierarchy_matrix:np.array , lookup:dict=
                 CL[ tuple(v_) ] = d
     return ( CL )
 
+def build_snn_hierarchy ( distm:np.array ):
+    #
+    # print ( "BUILDING SYMMETRY BROKEN HIERARCHY" )
+    if True :
+        nnvec                   = []
+        hierarchy_matrix        = []
+        N                       = np.min( np.shape(distm) )
+        from impetuous.clustering import nearest_neighbor_graph_matrix , connectivity_boolean
+        for NN in range ( 1 , N ) :
+            nnvec .append( NN )
+            NN_bool     = nearest_neighbor_graph_matrix ( distm , NN )[0]<np.inf
+            solution    = connectivity_boolean ( NN_bool )
+            hierarchy_matrix .append( [ cid[0] for cid in solution[1] ] )
+            if len(solution[0])>1 :
+                continue
+            else :
+                break
+    else :
+        print ( "DONE AT" , N )
+    return ( hierarchy_matrix )
 
 def calculate_hierarchy_matrix ( data_frame = None ,
                                  distance_matrix = None ,
@@ -406,7 +426,7 @@ def build_pclist_word_hierarchy ( filename = None ,  # 'new_compartment_genes.gm
     bSingleChild = False , bSingleDescent = True ) :
 
     bSingleChild = bSingleChild or bSingleDescent # USER SHOULD SET THE bSingleDescent OPTION
-    
+
     bUseFile = not filename is None
     import operator
     error ( not operator.xor ( filename is None , ledger is None ), "YOU MUST SUPPLY A GMT FILE XOR A DICTIONARY" )
