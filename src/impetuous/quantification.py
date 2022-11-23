@@ -1800,8 +1800,8 @@ def correlation_distance ( agg_df:pd.DataFrame  , decimal_power:int = 10000 ,
             corr = spearmanrho(agg_df.values,agg_df.values)
 
         distm = pd.DataFrame( np.sqrt( 1 - correlation_transform(corr) ) ,
-                                    index   = agg_df.columns.values ,
-                                    columns = agg_df.columns.values )
+                                    index   = agg_df.index.values ,
+                                    columns = agg_df.index.values )
         distm = distm.apply(lambda x: np.round(x*decimal_power)/decimal_power )
     return ( distm )
 
