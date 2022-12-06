@@ -303,3 +303,16 @@ def rename_order(A:list) ->list :
             a0 = a0+1
     return ( [R[a] for a in A] )
 
+def read_rds_matrix ( filename = 'matrix.rds', bIsSquare=False ) :
+    import rpy2.robjects as robjects
+    from   rpy2.robjects import pandas2ri
+    from scipy.spatial.distance import pdist,squareform
+    pandas2ri.activate()
+    readRDS = robjects.r['readRDS']
+    #
+    if bIsSquare :
+        from scipy.spatial.distance import pdist,squareform
+        return ( squareform(	readRDS(filename) ) 	)
+    else :
+        return ( 		readRDS(filename)	)
+
