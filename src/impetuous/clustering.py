@@ -1201,7 +1201,7 @@ def create_cluster_lookups ( cluster_ids:list[int] ) -> dict :
             cid2pid[cid] = [pid]
     return ( {'c2p':cid2pid ,'p2c':pid2cid } )
 
-def pair_compactness (	distm:np.array , bSelected:bool = None	,
+def pair_compactness (	distm:np.array , bSelected:list[bool] = None	,
 			cluster1_indices:list[int]	= None	,
 			cluster2_indices:list[int]	= None  )	-> list[float] :
     if not bSelected is None :
