@@ -1906,6 +1906,7 @@ def sort_matrix ( matrix:np.array , linkage:str='single' ) -> list[int] :
     if linkage != 'dev' :
         from scipy.cluster import hierarchy
         from scipy.spatial.distance import squareform
+        from impetuous.clustering import absolute_coordinates_to_distance_matrix
         distm   = absolute_coordinates_to_distance_matrix ( matrix )
         pdi     = squareform ( distm )
         Z       = hierarchy.linkage( pdi , linkage )
@@ -1955,7 +1956,7 @@ def blind_confusion ( v1:list[str] , v2:list[str] , sort_type:str=None , bAbsolu
     else :
         return ( [ MAT,i_order,j_order ] )
 
-def confusion_matrix ( dict_row:dict , dict_col:dict , bSwitchKeyValues:bool=True ) -> dict :
+def confusion_matrix ( dict_row:dict , dict_col:dict , bSwitchKeyValues:bool=False ) -> dict :
     if bSwitchKeyValues :
         dict_row = invert_dict(dict_row)
         dict_col = invert_dict(dict_col)
