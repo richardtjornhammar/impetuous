@@ -1080,7 +1080,10 @@ def sclinkages ( distm ,command='min' , bStrKeys=True ) -> dict :
     from scipy.spatial.distance  import squareform
     from scipy.cluster.hierarchy import linkage as sclinks
     from scipy.cluster.hierarchy import fcluster
-    Z  = sclinks( squareform(distm) , {'min':'single','max':'complete'}[command] )
+    cmd = command
+    if command in set(['min','max']) :
+        cmd = {'min':'single','max':'complete'}[command]
+    Z  = sclinks( squareform(distm) , cmd )
     CL = {}
     F  = {} # NEW
     for d in Z[:,2] :
@@ -1186,6 +1189,93 @@ def linkages ( distm:np.array , command:str='min' ,
             L['.'.join( lint2lstr(item[0])  )] = item[1]
         linkages_ = L
     return ( linkages_ )
+
+def create_cluster_lookups ( cluster_ids:list[int] ) -> dict :
+    pid2cid = {}
+    cid2pid = {}
+    for pid,cid in zip ( range(len(cluster_ids)) , cluster_ids ) :
+        pid2cid[pid] = cid
+        if cid in cid2pid :
+            cid2pid[cid] .append(pid)
+        else :
+            cid2pid[cid] = [pid]
+    return ( {'c2p':cid2pid ,'p2c':pid2cid } )
+
+def pair_compactness (	distm:np.array , bSelected:bool = None	,
+			cluster1_indices:list[int]	= None	,
+			cluster2_indices:list[int]	= None  )	-> list[float] :
+    if not bSelected is None :
+        bNot = lambda x: [ not x_ for x_ in x ]
+        g1   = np.where(bSelected)[0]
+        g2   = np.where(bNot(bSelected))[0]
+    else :
+        g1   = cluster1_indices
+        g2   = cluster2_indices
+    #
+    # BELOW SELECTION MUST BE FASTER
+    allPairs = lambda A, v1, v2 : np.array([ A[i,j] for i in v1 for j in v2 ]) # THIS IS AN ORDER OF MAGNITUDE FASTER THAN BELOW
+    # allPairs = lambda A, v1, v2 : np.array([ A[(p,q)] for (p,q) in zip(*np.meshgrid(v1,v2)) ])
+    #
+    if len(g2) == 0 :
+        g2 = g1
+    if len(g1) == 0 :
+        g1 = g2
+    #
+    pS		= np.sum( allPairs(distm,g1,g1) )
+    qS		= np.sum( allPairs(distm,g2,g2) )
+    pqS		= np.sum( allPairs(distm,g1,g2) )
+    p1122	= 1/len(g1)**2 * pS + 1/len(g2)**2 * qS
+    p1212	= 2*1/len(g1) * 1/len(g2) * pqS # p2121 = p1212
+    score	=  p1212 - p1122
+    #
+    #	QUADRATURE	TORQUE
+    return ( [ p1212 - p1122 , pqS/len(g1)/len(g2) - (qS/len(g1)/2 + pS/len(g2)/2 )*0.5 ] )
+
+
+def complete_compactness_score ( distm:np.array , cluster_ids:np.array ) :
+    lucids = list(set(cluster_ids))
+    lookup = { j:i for i,j in zip( range(len(lucids)),lucids ) }	# DID THE USER USE STRANGE INTS?
+    res_l  = create_cluster_lookups( cluster_ids )			# YES WE NEED BOTH
+    Z      = np.zeros( len(lucids)*len(lucids) ).reshape( len(lucids),len(lucids) )
+    Y	   = np.zeros( len(lucids)*len(lucids) ).reshape( len(lucids),len(lucids) )
+    density_functional = lambda x:np.mean(x)
+    #
+    for cid1 in lucids :
+        for cid2 in lucids :
+            xid1 = lookup[cid1]
+            xid2 = lookup[cid2]
+            if xid1 < xid2:
+                cluster1_ids = res_l['c2p'][cid1]
+                cluster2_ids = res_l['c2p'][cid2]
+                res = pair_compactness ( distm ,	cluster1_indices=cluster1_ids , # BOTTLENECK
+							cluster2_indices=cluster2_ids ) # THIS CALULCATION IS SYMMETRIC
+                score = res[0]
+                erocs = res[1]
+            elif xid1 > xid2 :
+                score = Z[xid2,xid1]
+                erocs = Y[xid2,xid1]
+            else :
+                score = 0
+                erocs = 0
+            Z [ xid1 , xid2 ] = score
+            Y [ xid1 , xid2 ] = erocs
+    return ( [ Z , Y ] )
+
+def split_or_merge ( distm:np.array, cluster_ids:np.array ) -> dict :
+    density_functional = lambda x:np.mean(x)
+    res = complete_compactness_score ( distm , cluster_ids ) # BOTTLENECK
+    Z   = res[0]
+    density_cutoff = density_functional ( [ Z[i,j] for i in range(len(Z)) for j in range(len(Z)) if not i==j ] )
+    merge = Z[0]   <  density_cutoff
+    split = Z[0]   >= density_cutoff
+    keep  = res[1] >= 0
+    desc_ ="""
+    merge			- weak suggestion
+    split			- weak suggestion
+    compactness and torque	- all information retained
+    keep			- strong suggestion
+    """
+    return ( { 'merge':merge , 'split':split , 'compactness':Z, 'torque':res[1] , 'keep':keep ,'desc':desc_ } )
 
 
 if __name__ == '__main__' :
