@@ -1224,12 +1224,15 @@ def pair_compactness (	distm:np.array , bSelected:list[bool] = None	,
     pS		= np.sum( allPairs(distm,g1,g1) )
     qS		= np.sum( allPairs(distm,g2,g2) )
     pqS		= np.sum( allPairs(distm,g1,g2) )
+    FS          = np.sum( allPairs(distm,*[g1,g2],*[g1,g2]) )
     p1122	= 1/len(g1)**2 * pS + 1/len(g2)**2 * qS
     p1212	= 2*1/len(g1) * 1/len(g2) * pqS # p2121 = p1212
-    score	=  p1212 - p1122
+    score	= p1212 - p1122
+    norm_scores = np.array([pS,qS,pqS])/FS
+    norm_scores = np.append(norm_scores, norm_scores[0] + norm_scores[1] - norm_scores[2] )
     #
-    #	QUADRATURE	TORQUE
-    return ( [ p1212 - p1122 , pqS/len(g1)/len(g2) - (qS/len(g1)/2 + pS/len(g2)/2 )*0.5 ] )
+    #	"QUADRATURE"	"TORQUE"	"NORMED DIFF"
+    return ( [ p1212 - p1122 , pqS/len(g1)/len(g2) - (qS/len(g1)/2 + pS/len(g2)/2 )*0.5 , norm_scores ] )
 
 
 def complete_compactness_score ( distm:np.array , cluster_ids:np.array ) :
@@ -1238,6 +1241,7 @@ def complete_compactness_score ( distm:np.array , cluster_ids:np.array ) :
     res_l  = create_cluster_lookups( cluster_ids )			# YES WE NEED BOTH
     Z      = np.zeros( len(lucids)*len(lucids) ).reshape( len(lucids),len(lucids) )
     Y	   = np.zeros( len(lucids)*len(lucids) ).reshape( len(lucids),len(lucids) )
+    X	   = np.zeros( len(lucids)*len(lucids) ).reshape( len(lucids),len(lucids) )
     density_functional = lambda x:np.mean(x)
     #
     for cid1 in lucids :
@@ -1248,18 +1252,22 @@ def complete_compactness_score ( distm:np.array , cluster_ids:np.array ) :
                 cluster1_ids = res_l['c2p'][cid1]
                 cluster2_ids = res_l['c2p'][cid2]
                 res = pair_compactness ( distm ,	cluster1_indices=cluster1_ids , # BOTTLENECK
-							cluster2_indices=cluster2_ids ) # THIS CALULCATION IS SYMMETRIC
+							cluster2_indices=cluster2_ids ) # THIS CALCULATION IS SYMMETRIC
                 score = res[0]
                 erocs = res[1]
+		nosco = res[2][-1]
             elif xid1 > xid2 :
                 score = Z[xid2,xid1]
                 erocs = Y[xid2,xid1]
+		nosco = X[xid2,xid1]
             else :
                 score = 0
                 erocs = 0
+		nosco = 0
             Z [ xid1 , xid2 ] = score
             Y [ xid1 , xid2 ] = erocs
-    return ( [ Z , Y ] )
+            X [ xid1 , xid2 ] = nosco
+    return ( [ Z , Y , X ] )
 
 def split_or_merge ( distm:np.array, cluster_ids:np.array ) -> dict :
     density_functional = lambda x:np.mean(x)
@@ -1268,14 +1276,12 @@ def split_or_merge ( distm:np.array, cluster_ids:np.array ) -> dict :
     density_cutoff = density_functional ( [ Z[i,j] for i in range(len(Z)) for j in range(len(Z)) if not i==j ] )
     merge = Z[0]   <  density_cutoff
     split = Z[0]   >= density_cutoff
-    keep  = res[1] >= 0
+    keep  = res[2][-1] <= 0
     desc_ ="""
-    merge			- weak suggestion
-    split			- weak suggestion
-    compactness and torque	- all information retained
+    compactness, torque, normed scores	- all information retained
     keep			- strong suggestion
     """
-    return ( { 'merge':merge , 'split':split , 'compactness':Z, 'torque':res[1] , 'keep':keep ,'desc':desc_ } )
+    return ( { 'compactness':Z , 'torque':res[1] ,'normed scores':res[2][-1] , 'keep split':keep , 'desc':desc_ } )
 
 
 if __name__ == '__main__' :
