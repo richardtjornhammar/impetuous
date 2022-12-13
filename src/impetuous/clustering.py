@@ -1224,7 +1224,7 @@ def pair_compactness (  distm:np.array , bSelected:list[bool] = None,
     pS		= np.sum( allPairs(distm,g1,g1) )
     qS		= np.sum( allPairs(distm,g2,g2) )
     pqS		= np.sum( allPairs(distm,g1,g2) )
-    FS          = np.sum( allPairs(distm,*[g1,g2],*[g1,g2]) )
+    FS          = np.sum( allPairs(distm,[*g1,*g2],[*g1,*g2]) )
     p1122	= 1/len(g1)**2 * pS + 1/len(g2)**2 * qS
     p1212	= 2*1/len(g1) * 1/len(g2) * pqS # p2121 = p1212
     score	= p1212 - p1122
