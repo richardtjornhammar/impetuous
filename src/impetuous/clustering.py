@@ -577,7 +577,7 @@ def connectivity_clustering( distm:np.array, cutoff:float, bBool:bool=False ) ->
     else :
         res = connectivity( distm , cutoff )
     return ( res )
-        
+
 
 clustering_algorithm = None
 clustering_algorithm = sc.KMeans(10) # CHOOSE SOMETHING YOU LIKE NOT THIS
@@ -1201,9 +1201,9 @@ def create_cluster_lookups ( cluster_ids:list[int] ) -> dict :
             cid2pid[cid] = [pid]
     return ( {'c2p':cid2pid ,'p2c':pid2cid } )
 
-def pair_compactness (	distm:np.array , bSelected:list[bool] = None	,
-			cluster1_indices:list[int]	= None	,
-			cluster2_indices:list[int]	= None  )	-> list[float] :
+def pair_compactness (  distm:np.array , bSelected:list[bool] = None,
+                        cluster1_indices:list[int] = None ,
+                        cluster2_indices:list[int] = None  ) -> list[float] :
     if not bSelected is None :
         bNot = lambda x: [ not x_ for x_ in x ]
         g1   = np.where(bSelected)[0]
@@ -1251,19 +1251,19 @@ def complete_compactness_score ( distm:np.array , cluster_ids:np.array ) :
             if xid1 < xid2:
                 cluster1_ids = res_l['c2p'][cid1]
                 cluster2_ids = res_l['c2p'][cid2]
-                res = pair_compactness ( distm ,	cluster1_indices=cluster1_ids , # BOTTLENECK
-							cluster2_indices=cluster2_ids ) # THIS CALCULATION IS SYMMETRIC
+                res = pair_compactness ( distm , cluster1_indices=cluster1_ids , # BOTTLENECK
+                                                 cluster2_indices=cluster2_ids ) # THIS CALCULATION IS SYMMETRIC
                 score = res[0]
                 erocs = res[1]
-		nosco = res[2][-1]
+                nosco = res[2][-1]
             elif xid1 > xid2 :
                 score = Z[xid2,xid1]
                 erocs = Y[xid2,xid1]
-		nosco = X[xid2,xid1]
+                nosco = X[xid2,xid1]
             else :
                 score = 0
                 erocs = 0
-		nosco = 0
+                nosco = 0
             Z [ xid1 , xid2 ] = score
             Y [ xid1 , xid2 ] = erocs
             X [ xid1 , xid2 ] = nosco
