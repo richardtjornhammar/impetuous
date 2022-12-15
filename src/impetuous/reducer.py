@@ -518,7 +518,7 @@ def inplace_dimred ( x , n=2 , bSamples=True , dimr_type = 'PCA' ) :
         book.index   = rownames
     return ( book.dropna() )
 
-def remove_curse(cursed_distm:np.array, bRound=False ) -> np.array :
+def remove_curse(cursed_distm:np.array, nRound:int=None ) -> np.array :
     """SAIGA SPEAKING:
 REMOVE THE CURSE OF DIMENSIONALITY FROM
 A CURSED DISTANCE MATRIX BY PERFORMING A
@@ -533,8 +533,8 @@ REQUESTED"""
     rd_  = rankdata( cursed_distm.reshape(-1), 'average' )
     dmin,dmax = bounds( list(set(rd_)) )
     uncursed = (rd_/dmax-dmin/dmax).reshape(n,m)
-    if bRound:
-        decimal_power = int(np.log10(n)) + 4
+    if not nRound is None :
+        decimal_power = 10**(int(np.log10(n)) + nRound )
         uncursed = np.array( [ np.round(v*decimal_power)/decimal_power for v in uncursed.reshape(-1)] ).reshape(n,m)
         uncursed = uncursed*(1-np.eye(n))
     return(uncursed)
