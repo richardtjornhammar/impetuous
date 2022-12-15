@@ -518,6 +518,28 @@ def inplace_dimred ( x , n=2 , bSamples=True , dimr_type = 'PCA' ) :
         book.index   = rownames
     return ( book.dropna() )
 
+def remove_curse(cursed_distm:np.array, bRound=False ) -> np.array :
+    """SAIGA SPEAKING:
+REMOVE THE CURSE OF DIMENSIONALITY FROM
+A CURSED DISTANCE MATRIX BY PERFORMING A
+HISTOGRAM EQUALISATION ON ALL THE DISTANCES
+USING AVERAGE RANKING. THE DECIMAL ACCURACY
+MIGHT BE COMPROMISED IN THE UNCURSED DISTANCE
+MATRIX SO WE YIELD A DECIMAL PRUNED ONE IF
+REQUESTED"""
+    bounds = lambda rv:tuple((np.min(rv),np.max(rv)))
+    from scipy.stats import rankdata
+    n,m  = np.shape(cursed_distm)
+    rd_  = rankdata( cursed_distm.reshape(-1), 'average' )
+    dmin,dmax = bounds( list(set(rd_)) )
+    uncursed = (rd_/dmax-dmin/dmax).reshape(n,m)
+    if bRound:
+        decimal_power = int(np.log10(n)) + 4
+        uncursed = np.array( [ np.round(v*decimal_power)/decimal_power for v in uncursed.reshape(-1)] ).reshape(n,m)
+        uncursed = uncursed*(1-np.eye(n))
+    return(uncursed)
+
+
 
 if __name__ == '__main__' :
     #
