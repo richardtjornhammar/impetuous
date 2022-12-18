@@ -1322,7 +1322,6 @@ def generate_clustering_labels ( distm:np.array , cmd:str='min' , labels:list[st
         jhit = np.argmin([ np.abs(len(cluster_df.iloc[i])-2-n_clusters)\
                    for i in range(len(cluster_df)) ])
         clabels_n = hierarch_df.iloc[jhit,:].values.tolist()
-        print ( len(set(clabels_n)) , jhit ) ; exit(1)
     return ( clabels_n , clabels_o , hierarch_df , np.array( [level_values,screening] ) )
 
 
