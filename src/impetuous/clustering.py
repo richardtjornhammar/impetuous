@@ -1284,6 +1284,48 @@ def split_or_merge ( distm:np.array, cluster_ids:np.array ) -> dict :
     return ( { 'compactness':Z , 'torque':res[1] ,'normed scores':res[2][-1] , 'keep split':keep , 'desc':desc_ } )
 
 
+def cluster_appraisal( x:pd.Series , garbage_n = 0 , Sfunc = lambda x:np.mean(x,0)) -> list :
+    """
+Clustering Optimisation Method for Highly Connected Data
+Richard Tjörnhammar
+https://arxiv.org/abs/2208.04720v2
+    """
+    from collections import Counter
+    decomposition = [ tuple((item[1],item[0])) for item in Counter(x.values.tolist()).items() if item[1] > garbage_n ]
+    N     = len ( x )
+    A , B = 1 , N
+    if len(decomposition) > 0 :
+        A = Sfunc(decomposition)[0]
+        B = len(decomposition)
+    else :
+        decomposition = [ tuple( (0,0) ) ]
+    decomposition .append( tuple( ( B ,-garbage_n )) )
+    decomposition .append( tuple( ( A*B/(A+B) , None ) ) )
+    return ( decomposition )
+
+def generate_clustering_labels ( distm:np.array , cmd:str='min' , labels:list[str]=None ,
+                                 bExtreme:bool=False , n_clusters:int = None) -> tuple :
+    clabels_n , clabels_o = None , None
+    res         = sclinkages( distm , cmd )['F']
+    index       = list( res.keys() )
+    if labels is None :
+        labels = range(len(distm))
+    hierarch_df = pd.DataFrame ( res.values() , index=list(res.keys()) , columns = labels )
+    cluster_df  = hierarch_df .T .apply( lambda x: cluster_appraisal(x,garbage_n = 0) )
+    clabels_o , clabels_n = None , None
+    screening    = np.array( [ v[-1][0] for v in cluster_df.values ] )
+    level_values = np.array( list(res.keys()) )
+    if bExtreme :
+        imax            = np.argmax( screening )
+        clabels_o       = hierarch_df.iloc[imax,:].values.tolist()
+    if not n_clusters is None :
+        jhit = np.argmin([ np.abs(len(cluster_df.iloc[i])-2-n_clusters)\
+                   for i in range(len(cluster_df)) ])
+        clabels_n = hierarch_df.iloc[jhit,:].values.tolist()
+        print ( len(set(clabels_n)) , jhit ) ; exit(1)
+    return ( clabels_n , clabels_o , hierarch_df , np.array( [level_values,screening] ) )
+
+
 if __name__ == '__main__' :
 
     D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
@@ -1335,6 +1377,25 @@ if __name__ == '__main__' :
         Q = connectedness ( distm , alpha )
         T.append( time.time() )
         print ( len(R) , len( P[0] ) , len(Q) , np.diff(T) , alpha )
+
+
+    coordinates = np.array([ *np.random.randn(500,100) , *(np.random.randn(500,100) + 10) ])
+    print ( coordinates )
+    dm = distance_calculation( coordinates ,
+        distance_type = 'correlation,spearman' ,
+        #bRemoveCurse  = True , nRound=4 )
+        bRemoveCurse = False )
+    print ( dm )
+    print ( np.sum(np.diag(dm)) )
+    cln,clo,hdf,sol = generate_clustering_labels( dm , cmd='max' , bExtreme=True , n_clusters=80 )
+    imax = np.argmax( sol[1] )
+    print ( clo )
+    print ( sol[0] )
+    print ( sol[1] )
+    import matplotlib.pyplot as plt
+    plt.plot(sol[0],sol[1],'k')
+    plt.show()
+
 
     """    CONNECT +
  N  M  K   EDNESS LINEAR    IVITY JIT     EDNESS-JIT

@@ -1805,6 +1805,31 @@ def correlation_distance ( agg_df:pd.DataFrame  , decimal_power:int = 10000 ,
         distm = distm.apply(lambda x: np.round(x*decimal_power)/decimal_power )
     return ( distm )
 
+
+def distance_calculation ( coordinates:np.array ,
+                           distance_type:str , bRemoveCurse:bool=False ,
+                           nRound:int = None ) -> np.array :
+    crds = coordinates
+    if 'correlation' in distance_type :
+        if 'pearson' in distance_type :
+            corr =  pearsonrho( crds , crds )
+        else :
+            corr = spearmanrho( crds , crds )
+        corr = 0.5 * ( corr + corr.T ) # THIS SHOULD BE REMOVED ONCE DISC. LOCATED
+        if 'absolute' in distance_type :
+            corr = np.abs( corr )
+        if 'square' in distance_type :
+            corr = corr**2
+        distm = 1 - corr
+    else :
+        from scipy.spatial.distance import pdist,squareform
+        distm = squareform( pdist( crds , metric = distance_type ))
+    if bRemoveCurse : # EXPERIMENTAL
+        from impetuous.reducer import remove_curse
+        distm = remove_curse ( distm , nRound = nRound )
+    return ( distm )
+
+
 def confusion_matrix_df ( dict_row:dict , dict_col:dict , bSwitchKeyValues:str=True, bCheck:str=False ) -> pd.DataFrame :
     if bSwitchKeyValues :
         dict_row = invert_dict(dict_row)
