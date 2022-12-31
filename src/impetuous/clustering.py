@@ -1,5 +1,5 @@
 """
-Copyright 2022 RICHARD TJÖRNHAMMAR
+Copyright 2023 RICHARD TJÖRNHAMMAR
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1213,8 +1213,7 @@ def pair_compactness (  distm:np.array , bSelected:list[bool] = None,
         g2   = cluster2_indices
     #
     # BELOW SELECTION MUST BE FASTER
-    allPairs = lambda A, v1, v2 : np.array([ A[i,j] for i in v1 for j in v2 ]) # THIS IS AN ORDER OF MAGNITUDE FASTER THAN BELOW
-    # allPairs = lambda A, v1, v2 : np.array([ A[(p,q)] for (p,q) in zip(*np.meshgrid(v1,v2)) ])
+    allPairs = lambda A, v1, v2 : np.array([ A[i,j] for i in v1 for j in v2 ])
     #
     if len(g2) == 0 :
         g2 = g1

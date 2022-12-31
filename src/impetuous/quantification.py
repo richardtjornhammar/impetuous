@@ -1,5 +1,5 @@
 """
-Copyright 2022 RICHARD TJÖRNHAMMAR
+Copyright 2023 RICHARD TJÖRNHAMMAR
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -587,23 +587,26 @@ def associations ( M , W = None , bRanked = True ) :
     res = PQ/R2
     return ( res )
 
-def spearmanrho ( xs , ys ) :
+def spearmanrho ( xs:np.array , ys:np.array ) -> np.array :
     from scipy.stats import rankdata
     xs_ = np.array( [ rankdata(x,'average') for x in xs] )
     ys_ = np.array( [ rankdata(y,'average') for y in ys] )
     return ( correlation_core(xs_,ys_) )
 
-def pearsonrho ( xs , ys ) :
+def pearsonrho ( xs:np.array , ys:np.array ) -> np.array :
     return ( correlation_core ( xs , ys ) )
 
-def correlation_core ( xs , ys ) :
+def correlation_core ( xs:np.array , ys:np.array , TOL:float=1E-12 ) -> np.array :
     x_means = xs.mean(axis=1)
     y_means = ys.mean(axis=1)
     xms = xs - (x_means*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T # THIS CAN BE IMPROVED
     yms = ys - (y_means*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T # THIS CAN BE IMPROVED
     r = np.dot( yms , xms.T ) / np.sqrt( (yms*yms).sum(axis=1).reshape(len(yms),1) @ (xms*xms).sum(axis=1).reshape(1,len(xms))  )
+    if not TOL is None : # DEV
+        r = 1 - r
+        r = r * ( np.abs(r)>TOL )
+        r = 1 - r
     return ( r )
-
 
 crop = lambda x,W:x[:,:W]
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
@@ -659,7 +662,6 @@ def add_foldchanges ( df, information_df , group='', fc_type=0 , foldchange_inde
     FCdf = pd.DataFrame(FC,index=df.index,columns=[foldchange_indentifier+'-'.join(pair_values) ] )
     df = pd.concat([df.T,FCdf.T]).T
     return ( df )
-
 
 from statsmodels.stats.multitest import multipletests
 def adjust_p ( pvalue_list , method = 'fdr_bh' , alpha = 0.05,
@@ -1815,7 +1817,6 @@ def distance_calculation ( coordinates:np.array ,
             corr =  pearsonrho( crds , crds )
         else :
             corr = spearmanrho( crds , crds )
-        corr = 0.5 * ( corr + corr.T ) # THIS SHOULD BE REMOVED ONCE DISC. LOCATED
         if 'absolute' in distance_type :
             corr = np.abs( corr )
         if 'square' in distance_type :
@@ -1863,12 +1864,18 @@ def local_pca ( df, ndims = None  ) :
     weights = pca.components_.T
     return ( scores , weights , df.index, df.columns )
 
-def compositional_analysis(x:np.array)->list[float]:
+
+def compositional_analysis(x:np.array, bUniform:bool=True )->list[float]:
     # https://doi.org/10.1093/bib/bbw008
     # Tau, Gini, TSI, SPM
     n           = len(x)
     tau         = np.sum(1-x/np.max(x))/(n-1)
-    gini        = np.sum( np.array([np.abs(xi-xj) for xi in x for xj in x])/2/n**2/np.mean(x) )
+    t0 = time.time()
+    if not bUniform :
+        gini    = np.sum( np.array([np.abs(xi-xj) for xi in x for xj in x])/2/n**2/np.mean(x) )
+    else :
+        x = sorted(x)
+        gini    = 2*np.sum([ i*xi for i,xi in zip(x,range(len(x))) ]) /(n*np.sum(x)) - (n-1)/n
     geni        = gini*n/(n-1)
     TSI         = np.max(x)/np.sum(x)
     beta        = np.sum(1-x/np.max(x))/n # own version, works for single component compositions
