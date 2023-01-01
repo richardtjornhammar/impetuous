@@ -1870,7 +1870,6 @@ def compositional_analysis(x:np.array, bUniform:bool=True )->list[float]:
     # Tau, Gini, TSI, SPM
     n           = len(x)
     tau         = np.sum(1-x/np.max(x))/(n-1)
-    t0 = time.time()
     if not bUniform :
         gini    = np.sum( np.array([np.abs(xi-xj) for xi in x for xj in x])/2/n**2/np.mean(x) )
     else :
