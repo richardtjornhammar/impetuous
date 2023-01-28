@@ -1369,17 +1369,6 @@ def label_correspondances ( L1:list[str] , L2:list[str] , bSymmetric=False ) -> 
     return ( [I1,I2,I3,I4] )
 
 
-if __name__ == '__main__' :
-    print ( "THERE AND BACK AGAIN" )
-    I  = [ tuple([i]) for i in range(10) ]
-    L1 = [ str(i%5) for i in range(10) ]
-    L2 = [ str((i+10)%3) for i in range(10) ]
-    print ( pooke ( L1,L2,False ) )
-    #print ( sB(L1) )
-    #print ( sL(L1) )
-    #print ( sL(L2) )
-
-
 
 if __name__ == '__main__' :
 
