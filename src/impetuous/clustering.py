@@ -1303,14 +1303,14 @@ https://arxiv.org/abs/2208.04720v2
     return ( decomposition )
 
 def generate_clustering_labels ( distm:np.array , cmd:str='min' , labels:list[str]=None ,
-                                 bExtreme:bool=False , n_clusters:int = None) -> tuple :
+                                 bExtreme:bool=False , n_clusters:int = None, Sfunc = lambda x:np.mean(x,0) ) -> tuple :
     clabels_n , clabels_o = None , None
     res         = sclinkages( distm , cmd )['F']
     index       = list( res.keys() )
     if labels is None :
         labels = range(len(distm))
     hierarch_df = pd.DataFrame ( res.values() , index=list(res.keys()) , columns = labels )
-    cluster_df  = hierarch_df .T .apply( lambda x: cluster_appraisal(x,garbage_n = 0) )
+    cluster_df  = hierarch_df .T .apply( lambda x: cluster_appraisal(x , garbage_n = 0 , Sfunc=Sfunc ) )
     clabels_o , clabels_n = None , None
     screening    = np.array( [ v[-1][0] for v in cluster_df.values ] )
     level_values = np.array( list(res.keys()) )
@@ -1322,6 +1322,63 @@ def generate_clustering_labels ( distm:np.array , cmd:str='min' , labels:list[st
                    for i in range(len(cluster_df)) ])
         clabels_n = hierarch_df.iloc[jhit,:].values.tolist()
     return ( clabels_n , clabels_o , hierarch_df , np.array( [level_values,screening] ) )
+
+def sL( L:list[str] ) -> pd.DataFrame :
+    n = len(L)
+    m = n
+    K = np.meshgrid( range(n),range(m) ) [ 0 ] # WASTEFUL
+    return ( pd.DataFrame( np.array([ L[i] for i in K.reshape(-1) ]).reshape(n,m) ) +'.'+\
+             pd.DataFrame( np.array([ L[i] for i in K.reshape(-1) ]).reshape(n,m) ).T )
+
+def sB( L:list[str], logic=lambda a,b : a==b ) -> list[bool] :
+    n = len(L)
+    m = n
+    K = np.meshgrid( range(n),range(m) ) [ 0 ] # WASTEFUL
+    return (  logic( np.array([ L[i] for i in K.reshape(-1) ]).reshape(n,m) ,
+             np.array([ L[i] for i in K.reshape(-1) ]).reshape(n,m).T ) )
+
+def pdB( L:list[str] , logic = lambda a,b:a==b , type_function = lambda x:int(x) ) -> list[int] :
+    return ( pd.DataFrame( sB(L=L,logic=logic) ).apply(lambda x:x.apply(type_function) ) )
+
+def sB12( L1:list[str],L2:list[str] ) -> list[bool] :
+    n = len(L1)
+    m = len(L2)
+    K = np.meshgrid( range(n),range(m) )
+    return ( np.array([ L1[i] for i in K[0].reshape(-1) ]).reshape(n,m) ==\
+             np.array([ L2[i] for i in K[1].reshape(-1) ]).reshape(n,m).T )
+
+def label_correspondances ( L1:list[str] , L2:list[str] , bSymmetric=False ) -> list[int] :
+    if len(L1) != len(L2) :
+        print ( "WARNING : UNEQUAL LENGTHS DOESN'T MAKE SENSE" )
+        return ( [0,0,0,0] )
+    if bSymmetric : # SYMMETRY
+        S1 = sB ( L1 )
+        S2 = sB ( L2 )
+        I1 = np.sum( S2 == S1 )
+        I4 = len(L1)**2 - I1
+        I3 = 0
+        I2 = 0
+    else :
+        p_eS1 = pdB( L1 , logic = lambda a,b: a==b )
+        p_eS2 = pdB( L2 , logic = lambda a,b: a==b )
+        I1 = np.sum( np.sum( p_eS1 - p_eS2 == 0 ) )
+        I4 = len(L1)**2 - I1
+        I2 = np.sum( np.sum( p_eS1 - p_eS2  < 0 ) )
+        I3 = I4 - I2
+    # NOTE THAT GREATER THAN FE SHOULD BE EMPLOYED
+    return ( [I1,I2,I3,I4] )
+
+
+if __name__ == '__main__' :
+    print ( "THERE AND BACK AGAIN" )
+    I  = [ tuple([i]) for i in range(10) ]
+    L1 = [ str(i%5) for i in range(10) ]
+    L2 = [ str((i+10)%3) for i in range(10) ]
+    print ( pooke ( L1,L2,False ) )
+    #print ( sB(L1) )
+    #print ( sL(L1) )
+    #print ( sL(L2) )
+
 
 
 if __name__ == '__main__' :
