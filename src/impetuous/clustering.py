@@ -1347,27 +1347,26 @@ def sB12( L1:list[str],L2:list[str] ) -> list[bool] :
     return ( np.array([ L1[i] for i in K[0].reshape(-1) ]).reshape(n,m) ==\
              np.array([ L2[i] for i in K[1].reshape(-1) ]).reshape(n,m).T )
 
-def label_correspondances ( L1:list[str] , L2:list[str] , bSymmetric=False ) -> list[int] :
+def label_correspondances ( L1:list[str] , L2:list[str] ,
+                            bSymmetric:bool = False , bVerbose:bool = False,
+                            bSingleton:bool = True ) -> list[int] :
+    if bVerbose:
+        print ( "EVALUATES GROUPING INTERACTIONS SO SINGLETON LABELING CAN INCLUDED" )
+        print ( "INCLUDE IT BY SETTING bSingleton=True OR False TO EXCLUDE THE DIAGONAL" )
+    nssum = lambda x:np.sum(np.sum(x))
     if len(L1) != len(L2) :
         print ( "WARNING : UNEQUAL LENGTHS DOESN'T MAKE SENSE" )
         return ( [0,0,0,0] )
-    if bSymmetric : # SYMMETRY
-        S1 = sB ( L1 )
-        S2 = sB ( L2 )
-        I1 = np.sum( S2 == S1 )
-        I4 = len(L1)**2 - I1
-        I3 = 0
-        I2 = 0
-    else :
-        p_eS1 = pdB( L1 , logic = lambda a,b: a==b )
-        p_eS2 = pdB( L2 , logic = lambda a,b: a==b )
-        I1 = np.sum( np.sum( p_eS1 - p_eS2 == 0 ) )
-        I4 = len(L1)**2 - I1
-        I2 = np.sum( np.sum( p_eS1 - p_eS2  < 0 ) )
-        I3 = I4 - I2
-    # NOTE THAT GREATER THAN FE SHOULD BE EMPLOYED
-    return ( [I1,I2,I3,I4] )
-
+    E = 1 - np.eye(len(L1))
+    if bSingleton :
+        E = 1  
+    p_eS1 = pdB( L1 , logic = lambda a,b: a==b ) * E
+    p_eS2 = pdB( L2 , logic = lambda a,b: a==b ) * E
+    TP = nssum( ( p_eS1 ) * ( p_eS2 ) > 0)      # TP
+    FN = nssum( ( 1-p_eS1 ) * (p_eS2) > 0)      # FN
+    FP = nssum( ( p_eS1 ) * (1-p_eS2) > 0)      # FP
+    TN = nssum( ( 1-p_eS1 ) * (1-p_eS2) > 0)    # TN
+    return ( [TP,FP,FN,TN] )
 
 
 if __name__ == '__main__' :
