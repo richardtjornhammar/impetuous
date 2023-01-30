@@ -1331,6 +1331,8 @@ def sL( L:list[str] ) -> pd.DataFrame :
              pd.DataFrame( np.array([ L[i] for i in K.reshape(-1) ]).reshape(n,m) ).T )
 
 def sB( L:list[str], logic=lambda a,b : a==b ) -> list[bool] :
+    convert_labels = lambda T : [ {s:i for s,i in zip(  list(set(T)),range(len(set(T)))  ) }[l] for l in T ]
+    L = convert_labels(L)
     n = len(L)
     m = n
     K = np.meshgrid( range(n),range(m) ) [ 0 ] # WASTEFUL
@@ -1349,7 +1351,7 @@ def sB12( L1:list[str],L2:list[str] ) -> list[bool] :
 
 def label_correspondances ( L1:list[str] , L2:list[str] ,
                             bSymmetric:bool = False , bVerbose:bool = False,
-                            bSingleton:bool = True ) -> list[int] :
+                            bSingleton:bool = False ) -> list[int] :
     if bVerbose:
         print ( "EVALUATES GROUPING INTERACTIONS SO SINGLETON LABELING CAN INCLUDED" )
         print ( "INCLUDE IT BY SETTING bSingleton=True OR False TO EXCLUDE THE DIAGONAL" )
