@@ -1880,6 +1880,31 @@ def compositional_analysis(x:np.array, bUniform:bool=True )->list[float]:
     beta        = np.sum(1-x/np.max(x))/n # own version, works for single component compositions
     return ( [beta , tau , gini , geni, TSI, (n-1)/n ] )
 
+def composition_absolute( adf:pd.DataFrame , jdf:pd.DataFrame , label:str ) -> pd.DataFrame :
+    adf = adf .iloc[ np.inf != np.abs( 1.0/np.std(adf.values,1) ) ,
+                     np.inf != np.abs( 1.0/np.std(adf.values,0) ) ].copy()
+    jdf = jdf .loc[ : , adf.columns ]
+    adf .loc[ label ] = jdf .loc[ label ]
+    cdf = adf.T.groupby(label).apply(np.sum).T.iloc[:-1,:]
+    return ( cdf )
+
+def composition_piechart( cdf:pd.DataFrame ) -> pd.DataFrame :
+    return ( cdf.T.apply(lambda x:x/np.sum(x)) )
+
+def composition_sorted_fraction( cdf:pd.DataFrame ) -> pd.DataFrame :
+    fracpie_df = cdf.T.apply( lambda x : sorted([ tuple((x_,xi)) for (x_,xi) in zip(x/np.sum(x),x.index)  ]) )
+    fracpie_df.index = range(len( fracpie_df.idnex.values ))
+    return ( fracpie_df )
+
+def composition_calculate_case( adf:pd.DataFrame , jdf:pd.DataFrame , label:str ,
+                                comp_case:int=0  , metric_case:int=0 ) -> pd.DataFrame :
+    if comp_case==-1 or metric_case==-1 :
+        print ( "THE RICHIE SAIGA STRIKES AGAIN!" )
+    cdf             = composition_absolute( adf=adf , jdf=jdf , label=label )
+    fractions_df    = composition_piechart( cdf )
+    composition_metrics_df = cdf.T.apply(compositional_analysis).T
+    composition_metrics_df .columns = ['Gamma','Tau','Gini','Geni','TSI','Filling']
+    return ( composition_metrics_df , fractions_df )
 
 def multivariate_aligned_pca ( analytes_df , journal_df ,
                 sample_label = 'Sample ID', align_to = 'Modulating group' , n_components=None ,
