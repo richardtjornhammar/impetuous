@@ -1893,7 +1893,7 @@ def composition_piechart( cdf:pd.DataFrame ) -> pd.DataFrame :
 
 def composition_sorted_fraction( cdf:pd.DataFrame ) -> pd.DataFrame :
     fracpie_df = cdf.T.apply( lambda x : sorted([ tuple((x_,xi)) for (x_,xi) in zip(x/np.sum(x),x.index)  ]) )
-    fracpie_df.index = range(len( fracpie_df.idnex.values ))
+    fracpie_df.index = range(len( fracpie_df.index.values ))
     return ( fracpie_df )
 
 def composition_calculate_case( adf:pd.DataFrame , jdf:pd.DataFrame , label:str ,
@@ -1905,6 +1905,78 @@ def composition_calculate_case( adf:pd.DataFrame , jdf:pd.DataFrame , label:str 
     composition_metrics_df = cdf.T.apply(compositional_analysis).T
     composition_metrics_df .columns = ['Gamma','Tau','Gini','Geni','TSI','Filling']
     return ( composition_metrics_df , fractions_df )
+
+def composition_cumulative( x:pd.Series  ) -> pd.Series :
+    v0 =  set( [] )
+    w  = list(    )
+    for v in x.values[::-1] :
+        v0 = set( [v[1]] )|set(v0)
+        w.append( tuple((v[0],v0)) )
+    x = pd.Series(w,index=x.index)
+    return ( x )
+
+def compositon_label_transform ( x ) : # seq -> str
+    label_transform = lambda x:'.'.join(sorted( [str(x_) for x_ in list( x )] ))
+    return ( label_transform(x) )
+
+def composition_assign_label_ids ( x:pd.Series , label_to_lid:dict ,
+				   label_transform = lambda x:'.'.join(sorted( [str(x_) for x_ in list( x )] )) ) -> pd.Series :
+    w = []
+    for v in x.values :
+        w .append( tuple( (v[0],label_to_lid[ label_transform(v[1]) ]) ) )
+    x = pd.Series( w , index=x.index )
+    return ( x )
+
+def composition_create_contraction (  adf:pd.DataFrame , jdf:pd.DataFrame , label:str ) -> dict :
+        from impetuous.quantification import composition_absolute
+        #from impetuous.quantification import composition_sorted_fraction
+        cdf             = composition_absolute( adf=adf , jdf=jdf , label=alignment_label )
+        sf_df           = composition_sorted_fraction( cdf )
+        cumulative_cdf  = sf_df.T.apply( lambda x:composition_cumulative(x) )
+        label_transform = lambda x:'.'.join(sorted(list( x )))
+        all_combs = [ label_transform(v[1]) for v in cumulative_cdf.values.reshape(-1) ]
+        all_level_values = sorted(list(set([ v[0] for v in cumulative_cdf.values.reshape(-1) ])))
+        unique_labels = sorted( list( set(all_combs) ) )
+        label_to_lid = dict()
+        lid_to_label = dict()
+        I = 0
+        for ul in unique_labels :
+            lid_to_label [ 'lid.'+str(I) ] = ul
+            label_to_lid [ ul ] = 'lid.'+str(I)
+            I += 1
+        contracted_df           = cumulative_cdf.T.apply(lambda x:composition_assign_label_ids(x,label_to_lid) ).T
+        return ( {	'contraction':contracted_df	,	'all_level_values' : all_level_values ,
+			'id_to_label':lid_to_label	,	'label_to_id':label_to_lid } )
+
+def composition_contraction_to_hierarchy ( contracted_df , TOL=1E-10 ,
+	levels:list[str]        = [ 0.01,0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99 ] ,
+        default_label:str       = 'lid.unassigned' ) -> pd.DataFrame :
+    solution = []
+    I = 0
+    for level in levels:
+        if level>TOL:
+            level_segmentation      = [ q[0][1] if len(q)>1 else default_label for q in  [ v[ [w[0]>=level for w in v] ] for v in contracted_df.values ] ]
+            nlabels                 = len(set(level_segmentation))
+            #print ( nlabels , level ,contracted_df.index.values )
+            solution.append( pd.Series( [*level_segmentation,nlabels,level] , index = [*contracted_df.index.values,'h.N','h.lv'] ,
+					name = str(I) ) )
+            I += 1
+    return ( pd.DataFrame(solution).T )
+
+def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:str ,
+		levels:list[int] = None ) -> dict :
+        contr_d         = composition_create_contraction( adf=adf , jdf=jdf , label=alignment_label )
+        contracted_df   = contr_d['contraction']
+        lookup_l2i      = contr_d['label_to_id']
+        lookup_i2l      = contr_d['id_to_label']
+        if levels is None :
+            levels = contr_d['all_level_values']
+        res_df = composition_contraction_to_hierarchy ( contracted_df , levels=levels )
+        lmax = int(np.max( res_df .loc['h.N'].values.tolist() )) # UNRELIABLE AT LOW VALUES
+        lmin = int(np.min( res_df .loc['h.N'].values.tolist() )) # REDUNDANT AT HIGH VALUES
+        iA      = np.min(np.where( res_df.loc['h.N',:].values == lmax )[0])
+        iB      = np.min(np.where( res_df.loc['h.N',:].values == lmin )[0])
+        return ( { 'composition hierarchy':res_df.iloc[:,iA:iB+1] , 'id to label':lookup_i2l } )
 
 def multivariate_aligned_pca ( analytes_df , journal_df ,
                 sample_label = 'Sample ID', align_to = 'Modulating group' , n_components=None ,
