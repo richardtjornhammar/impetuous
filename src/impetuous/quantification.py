@@ -1928,9 +1928,7 @@ def composition_assign_label_ids ( x:pd.Series , label_to_lid:dict ,
     return ( x )
 
 def composition_create_contraction (  adf:pd.DataFrame , jdf:pd.DataFrame , label:str ) -> dict :
-        from impetuous.quantification import composition_absolute
-        #from impetuous.quantification import composition_sorted_fraction
-        cdf             = composition_absolute( adf=adf , jdf=jdf , label=alignment_label )
+        cdf             = composition_absolute( adf=adf , jdf=jdf , label=label )
         sf_df           = composition_sorted_fraction( cdf )
         cumulative_cdf  = sf_df.T.apply( lambda x:composition_cumulative(x) )
         label_transform = lambda x:'.'.join(sorted(list( x )))
@@ -1957,15 +1955,14 @@ def composition_contraction_to_hierarchy ( contracted_df , TOL=1E-10 ,
         if level>TOL:
             level_segmentation      = [ q[0][1] if len(q)>1 else default_label for q in  [ v[ [w[0]>=level for w in v] ] for v in contracted_df.values ] ]
             nlabels                 = len(set(level_segmentation))
-            #print ( nlabels , level ,contracted_df.index.values )
             solution.append( pd.Series( [*level_segmentation,nlabels,level] , index = [*contracted_df.index.values,'h.N','h.lv'] ,
 					name = str(I) ) )
             I += 1
     return ( pd.DataFrame(solution).T )
 
 def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:str ,
-		levels:list[int] = None ) -> dict :
-        contr_d         = composition_create_contraction( adf=adf , jdf=jdf , label=alignment_label )
+		levels:list[int] = None , bFull:bool=False ) -> dict :
+        contr_d         = composition_create_contraction( adf=adf , jdf=jdf , label=label )
         contracted_df   = contr_d['contraction']
         lookup_l2i      = contr_d['label_to_id']
         lookup_i2l      = contr_d['id_to_label']
@@ -1975,13 +1972,15 @@ def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:s
         lmax = int(np.max( res_df .loc['h.N'].values.tolist() )) # UNRELIABLE AT LOW VALUES
         lmin = int(np.min( res_df .loc['h.N'].values.tolist() )) # REDUNDANT AT HIGH VALUES
         iA      = np.min(np.where( res_df.loc['h.N',:].values == lmax )[0])
-        iB      = np.min(np.where( res_df.loc['h.N',:].values == lmin )[0])
-        return ( { 'composition hierarchy':res_df.iloc[:,iA:iB+1] , 'id to label':lookup_i2l } )
+        iB      = np.min(np.where( res_df.loc['h.N',:].values == lmin )[0]) + 1
+        if bFull :
+            iA,iB = 0,None
+        return ( { 'composition hierarchy':res_df.iloc[:,iA:iB] , 'id to label':lookup_i2l } )
 
 def multivariate_aligned_pca ( analytes_df , journal_df ,
                 sample_label = 'Sample ID', align_to = 'Modulating group' , n_components=None ,
                 add_labels = ['Additional information'] , e2s=None , color_lookup=None , ispec=None ) :
-    # SAIGA PROJECTIONS
+    # SAIGA PROJECTIONS RICHARD TJÖRNHAMMAR
     what                = align_to
     analytes_df         = analytes_df.loc[:,journal_df.columns.values]
     dict_actual         = { sa:di for sa,di in zip(*journal_df.loc[[sample_label,what],:].values) }
