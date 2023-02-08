@@ -1926,7 +1926,8 @@ def composition_assign_label_ids ( x:pd.Series , label_to_lid:dict ,
         w .append( tuple( (v[0],label_to_lid[ label_transform(v[1]) ]) ) )
     x = pd.Series( w , index=x.index )
     return ( x )
-
+#
+#
 def composition_create_contraction (  adf:pd.DataFrame , jdf:pd.DataFrame , label:str ) -> dict :
         cdf             = composition_absolute( adf=adf , jdf=jdf , label=label )
         sf_df           = composition_sorted_fraction( cdf )
@@ -1945,8 +1946,8 @@ def composition_create_contraction (  adf:pd.DataFrame , jdf:pd.DataFrame , labe
         contracted_df           = cumulative_cdf.T.apply(lambda x:composition_assign_label_ids(x,label_to_lid) ).T
         return ( {      'contraction':contracted_df     ,       'all_level_values' : all_level_values ,
                         'id_to_label':lid_to_label      ,       'label_to_id':label_to_lid } )
-
-def composition_contraction_to_hierarchy_red ( contracted_df:pd.DataFrame , TOL:float=1E-10 ,
+#
+def composition_contraction_to_hierarchy_red ( contracted_df , TOL=1E-10 ,
         levels:list[str]        = [ 0.01,0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99 ] ,
         default_label:int      = -1 ) -> pd.DataFrame :
     solution = []
@@ -1959,7 +1960,7 @@ def composition_contraction_to_hierarchy_red ( contracted_df:pd.DataFrame , TOL:
                                         name = str(I) ) )
             I += 1
     return ( pd.DataFrame(solution).T )
-
+#
 def composition_split_contraction ( contracted_df:pd.DataFrame ) -> tuple((np.array,np.array,int,int)) :
     na1 = np.array([ v[0] for v in contracted_df.values.reshape(-1) ])
     na2 = np.array([ v[1] for v in contracted_df.values.reshape(-1) ])
@@ -1969,6 +1970,7 @@ def composition_split_contraction ( contracted_df:pd.DataFrame ) -> tuple((np.ar
 #@jit( nopython=True ) # BROKEN AT THIS POINT
 def composition_contraction_to_hierarchy_ser ( na1:np.array , na2:np.array , n:int , m:int , index_values:list ,
         bWriteToDisc:bool	= True   ,
+        bFirstRep:bool          = True   ,
         output_directory:str    = './'   ,
         compression:str		= 'gzip' ,
         TOL			= 1E-10  ,
@@ -1981,6 +1983,10 @@ def composition_contraction_to_hierarchy_ser ( na1:np.array , na2:np.array , n:i
     I   = 0
     NA1 = na1 .reshape ( n,m )
     NA2 = na2 .reshape ( n,m )
+    FOUND = set([])
+    if bFirstRep :
+        if levels[0] <= levels[-1] :
+            levels = levels[::-1] # BE KIND REWIND
     for level in levels :
         if level>TOL :
             LS = []
@@ -1993,6 +1999,9 @@ def composition_contraction_to_hierarchy_ser ( na1:np.array , na2:np.array , n:i
                 LS.append(Q)
             level_segmentation	= LS
             nlabels		= len(set(level_segmentation))
+            if (nlabels in FOUND) and bFirstRep :
+                continue
+            FOUND = set([nlabels]) | FOUND
             sI = pd.Series( [*level_segmentation,nlabels,level] , index = [*[i for i in range(n)],'h.N','h.lv'] , name = str(I) )
             if not bWriteToDisc :
                 solution.append( pd.Series( [ *level_segmentation,nlabels,level] ,
@@ -2004,15 +2013,17 @@ def composition_contraction_to_hierarchy_ser ( na1:np.array , na2:np.array , n:i
     if bWriteToDisc :
         return ( pd.DataFrame( [ 'files stored as' , output_directory + 'I'.join(fname) , compression , I ] ) )
     else :
+        if bFirstRep :
+            print ( pd.DataFrame(solution[::-1]).T )
         return ( pd.DataFrame(solution).T )
 
-def composition_contraction_to_hierarchy ( contracted_df:pd.DataFrame , TOL:float=1E-10 ,
+def composition_contraction_to_hierarchy ( contracted_df , TOL=1E-10 ,
         levels:list[str]        = [ 0.01,0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99 ] ,
         default_label:int       = -1     ,
         bWriteToDisc:bool       = True   ,
         output_directory:str    = './'   ,
+        bFirstRep:bool          = True   ,
         compression:str         = 'gzip' ) -> pd.DataFrame :
-    # OMG RICHARD TJÖRNHAMMAR
     # return ( composition_contraction_to_hierarchy_red ( contracted_df ,levels=levels) )
     na1 , na2 , n , m = composition_split_contraction( contracted_df )
     res_df = composition_contraction_to_hierarchy_ser ( na1, na2, n, m ,
@@ -2020,12 +2031,12 @@ def composition_contraction_to_hierarchy ( contracted_df:pd.DataFrame , TOL:floa
 				 default_label		= default_label ,
 				 index_values		= contracted_df.index.values ,
 				 bWriteToDisc		= bWriteToDisc ,
+                                 bFirstRep              = bFirstRep ,
 				 output_directory	= output_directory ,
 				 compression		= compression )
     return ( res_df )
 
-def composition_collect_df ( res_df:pd.DataFrame, index_values:list ) -> pd.DataFrame :
-    # INTERNAL USE ONLY
+def composition_collect_df ( res_df:pd.DataFrame, index_values:list, bFirstRep:bool=True ) -> pd.DataFrame :
     Nfiles		= res_df.iloc[-1,-1]
     S_			= []
     template_name 	= res_df.iloc[1,-1]
@@ -2033,13 +2044,17 @@ def composition_collect_df ( res_df:pd.DataFrame, index_values:list ) -> pd.Data
     for I in range( Nfiles ) :
         fname = template_name.replace('.I.','.'+str(I)+'.')
         S_.append ( pd.read_csv(fname,sep='\t',index_col=0, compression=compression ) )
-    res_df = pd.concat(S_,axis=1)
+    if bFirstRep :
+        res_df = pd.concat(S_[::-1],axis=1)
+    else :
+        res_df = pd.concat(S_,axis=1)
     res_df .index = [ *index_values , *res_df.iloc[-2:].index.values.tolist() ]
     return ( res_df )
 
 def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:str ,
         levels:list[int] 	= None   ,
 	bFull:bool		= False  ,
+        bFirstRep:bool		= True	 ,
         default_label:int       = -1     ,
         bWriteToDisc:bool       = True   ,
         output_directory:str    = './'   ,
@@ -2047,7 +2062,7 @@ def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:s
     #
     # SAIGA KNOWLEDGE :
     #   A COMPOSITION HIERARCHY IS DEFINED VIA ABSOLUTE QUANTIFICATIONS
-    #   IT IS NOT RELATED TO A HIERARCHY STEMMING FROM A DISTANCE MATRIX
+    #   IT IS NOT A HIERARCHY STEMMING FROM A DISTANCE MATRIX CALCULATION
     #   OF ALL THE RELATIVE DISTANCES, I.E. AS IN WHAT IS DONE FOR
     #   AGGLOMARATIVE HIERARCHICAL CLUSTERING DERIVED HIERARCHIES
     #
@@ -2063,10 +2078,12 @@ def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:s
                                  bWriteToDisc           = bWriteToDisc		,
                                  output_directory       = output_directory	,
                                  compression            = compression		,
+                                 bFirstRep              = bFirstRep		,
                                  default_label		= default_label		)
     if bWriteToDisc :
         print ( 'MUST COLLECT DATA FRAME HERE' )
-        res_df =  composition_collect_df ( res_df ,
+        print ( res_df )
+        res_df =  composition_collect_df ( res_df , bFirstRep=bFirstRep ,
 			index_values = contracted_df.index.values.tolist() )
     #
     lmax = int( np.max( res_df .loc['h.N'].values )) # UNRELIABLE AT LOW VALUES
@@ -2077,6 +2094,14 @@ def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:s
         iA , iB = 0 , None
     return ( { 'composition hierarchy' : res_df.iloc[:,iA:iB] , 'id to label' : lookup_i2l } )
 
+def composition_write_hierarchy_results ( res_df:pd.DataFrame ,
+			lookup_filename = 'composition_lid_names.tsv',
+			composition_hierarchy_filename = 'composition_hierarchy.tsv' ) :
+        # DUMPS RESULTS FROM composition_create_hierarchy
+        of      = open( lookup_filename , 'w' )
+        for item in res_df['id to label'].items() :
+            print ( str(item[0]) + '\t' + str(item[1]) , file=of )
+        res_df['composition hierarchy'] .to_csv( composition_hierarchy_filename , sep='\t' )
 
 
 def multivariate_aligned_pca ( analytes_df , journal_df ,
