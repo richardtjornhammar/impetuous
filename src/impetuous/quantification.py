@@ -2017,7 +2017,7 @@ def composition_contraction_to_hierarchy_ser ( na1:np.array , na2:np.array , n:i
             print ( pd.DataFrame(solution[::-1]).T )
         return ( pd.DataFrame(solution).T )
 
-def composition_contraction_to_hierarchy ( contracted_df , TOL=1E-10 ,
+def composition_contraction_to_hierarchy ( contracted_df:pd.DataFrame , TOL:float=1E-10 ,
         levels:list[str]        = [ 0.01,0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99 ] ,
         default_label:int       = -1     ,
         bWriteToDisc:bool       = True   ,
