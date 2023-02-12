@@ -2014,7 +2014,7 @@ def composition_contraction_to_hierarchy_ser ( na1:np.array , na2:np.array , n:i
         return ( pd.DataFrame( [ 'files stored as' , output_directory + 'I'.join(fname) , compression , I ] ) )
     else :
         if bFirstRep :
-            print ( pd.DataFrame(solution[::-1]).T )
+            return ( pd.DataFrame(solution[::-1]).T )
         return ( pd.DataFrame(solution).T )
 
 def composition_contraction_to_hierarchy ( contracted_df:pd.DataFrame , TOL:float=1E-10 ,
