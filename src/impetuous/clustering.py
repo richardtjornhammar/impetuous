@@ -1299,6 +1299,7 @@ https://arxiv.org/abs/2208.04720v2
     else :
         decomposition = [ tuple( (0,0) ) ]
     decomposition .append( tuple( ( B ,-garbage_n )) )
+    decomposition .append( tuple( ( A , B )) )
     decomposition .append( tuple( ( A*B/(A+B) , None ) ) )
     return ( decomposition )
 
@@ -1313,6 +1314,8 @@ def generate_clustering_labels ( distm:np.array , cmd:str='min' , labels:list[st
     cluster_df  = hierarch_df .T .apply( lambda x: cluster_appraisal(x , garbage_n = 0 , Sfunc=Sfunc ) )
     clabels_o , clabels_n = None , None
     screening    = np.array( [ v[-1][0] for v in cluster_df.values ] )
+    Avals        = np.array( [ v[-2][0] for v in cluster_df.values ] )
+    Bvals        = np.array( [ v[-2][1] for v in cluster_df.values ] )
     level_values = np.array( list(res.keys()) )
     if bExtreme :
         imax            = np.argmax( screening )
@@ -1321,7 +1324,7 @@ def generate_clustering_labels ( distm:np.array , cmd:str='min' , labels:list[st
         jhit = np.argmin([ np.abs(len(cluster_df.iloc[i])-2-n_clusters)\
                    for i in range(len(cluster_df)) ])
         clabels_n = hierarch_df.iloc[jhit,:].values.tolist()
-    return ( clabels_n , clabels_o , hierarch_df , np.array( [level_values,screening] ) )
+    return ( clabels_n , clabels_o , hierarch_df , np.array( [ level_values , screening , Avals , Bvals ] ) )
 
 def sL( L:list[str] ) -> pd.DataFrame :
     n = len(L)
