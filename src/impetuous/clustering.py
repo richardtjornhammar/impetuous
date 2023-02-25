@@ -1372,7 +1372,22 @@ def label_correspondances ( L1:list[str] , L2:list[str] ,
     FP = nssum( ( p_eS1 ) * (1-p_eS2) > 0)      # FP
     TN = nssum( ( 1-p_eS1 ) * (1-p_eS2) > 0)    # TN
     return ( [TP,FP,FN,TN] )
-
+#
+# BEGIN DUNN
+def delta(ck:np.array, cl:np.array)->np.array:
+    values = np.ones([len(ck), len(cl)])*1E4
+    for i in range(0, len(ck)):
+        for j in range(0, len(cl)):
+            values[i, j] = np.linalg.norm(ck[i]-cl[j])
+    return np.min(values)
+#
+def big_delta(ci:np.array)->np.array:
+    values = np.zeros([len(ci), len(ci)])
+    for i in range(0, len(ci)):
+        for j in range(0, len(ci)):
+            values[i, j] = np.linalg.norm(ci[i]-ci[j])
+    return np.max(values)
+#
 def dunn_index ( k_coordinates:list[np.array] ) -> float :
     deltas = np.ones([len(k_coordinates), len(k_coordinates)])*1E6
     big_deltas = np.zeros([len(k_coordinates), 1])
