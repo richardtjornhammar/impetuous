@@ -2222,6 +2222,58 @@ def confusion_matrix ( dict_row:dict , dict_col:dict , bSwitchKeyValues:bool=Fal
             confusion[i,j] = len( set(dict_row[all_interactions[i]]) & set(dict_col[all_interactions[j]]) )
     return ( {'confusion matrix':confusion,'index names':all_interactions } )
 
+def confusion_lengths ( BCM:np.array ) -> list[np.array] :
+    from scipy.stats import rankdata
+    ND		= len(np.shape(BCM))
+    SAIGA	= []
+    for i_ in range( ND ) :
+        j_	= ND-1-i_ # NOT USED
+        rBCM	= rankdata( BCM , 'average' , axis=i_ )
+        rBCM	= np.abs( np.max ( rBCM , axis=i_ ) - rBCM )
+        Z	= np.sum( BCM , axis=i_ )
+        SAIGA	.append ( np.sum(BCM*rBCM/Z,axis=i_ ) + 1  )
+    return ( SAIGA )
+
+def compare_labeling_solutions ( df_:pd.DataFrame, lab1:str , lab2:str , nsamples:int = None ) -> list[pd.DataFrame] :
+    from impetuous.clustering           import label_correspondances
+    g1 = df_.groupby(lab1)      .apply( lambda x:','.join(x.index.values.tolist()) )
+    g2 = df_.groupby(lab2)      .apply( lambda x:','.join(x.index.values.tolist()) )
+    v1 , n1 = [ v.split(',') for v in g1.values ] , g1.index.values
+    v2 , n2 = [ v.split(',') for v in g2.values ] , g2.index.values
+    bres , iorder12 , jorder12 = blind_confusion( v1 , v2 , sort_type = 'median' )
+    a12	= [ str(n1[i]) for i in iorder12 ]
+    b12	= [ str(n2[j]) for j in jorder12 ]
+    bc	= pd.DataFrame ( bres , index = a12 , columns = b12 )
+    results12 = np.array( label_correspondances( df_.loc[:,lab1].values.tolist() , df_.loc[:,lab2].tolist()  ) )
+    quality12 = quality_metrics( *[*results12,'greater'] )
+    quality12 ['-log10 p-value'] = -np.log10 ( quality12['Fishers p-value'] )
+    if not nsamples is None :
+        quality12['p-value resolution'] = 1./float(nsamples)
+    return ( [ bc ,	pd.DataFrame ( np.array( results12 ).reshape(2,2) ) ,
+			pd.DataFrame ( [[ item[0] , item[1] ] for item in quality12.items()] )		] )
+#
+def additional_metrics ( source_df:pd.DataFrame , target_df, lab1:str , lab2:str , coordinate_information:tuple = None ) -> pd.DataFrame :
+    from impetuous.clustering import dunn_index
+    import sklearn.metrics as sm
+    ix	= source_df.index.values
+    v1	= source_df.loc[:,lab1].values.tolist()
+    v2	= source_df.loc[:,lab2].values.tolist()
+    target_df.loc[ 'MI' , : ]	= [ 'Mutual Information' , sm.mutual_info_score(v1,v2) ]
+    target_df.loc['AMI' , : ]   = [ 'Adjusted Mutual Information' , sm.adjusted_mutual_info_score(v1,v2) ]
+    target_df.loc[ 'RI' , : ]	= [ 'Rand Index' , sm.rand_score(v1,v2) ]
+    target_df.loc['ARI' , : ]   = [ 'Adjusted Rand Index', sm.adjusted_rand_score(v1,v2) ]
+    if not coordinate_information is None :
+        if len(coordinate_information) == 4 :
+            print ( 'CALC SILHOUTTE' )
+            ci = coordinate_information
+            X = pd.read_csv( ci[0], sep=ci[1], index_col = ci[2] )
+            X = X .loc[ ix , [c for c in X.columns if ci[3] in c] ]
+            target_df.loc['SSC'] = [ 'Silhouette Score', sm.silhouette_score( X, v1 ) ]
+            target_df.loc['DBS'] = [ 'Davies Bouldin Score', sm.davies_bouldin_score( X, v1 ) ]
+            X.loc[:,'c'] = v1
+            target_df.loc['DI' ] = [ 'Dunn Index' , dunn_index( [ v for v in X.groupby('c').apply(lambda x:x.iloc[:,:-1].values ) ] ) ]
+    return ( target_df )
+
 def group_classifications ( df:pd.DataFrame     ,
                 det_limit:float         = 1.0   ,
                 log2FClim:float         = 2.0   ,
