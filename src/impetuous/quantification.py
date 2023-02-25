@@ -2252,7 +2252,8 @@ def compare_labeling_solutions ( df_:pd.DataFrame, lab1:str , lab2:str , nsample
     return ( [ bc ,	pd.DataFrame ( np.array( results12 ).reshape(2,2) ) ,
 			pd.DataFrame ( [[ item[0] , item[1] ] for item in quality12.items()] )		] )
 #
-def additional_metrics ( source_df:pd.DataFrame , target_df, lab1:str , lab2:str , coordinate_information:tuple = None ) -> pd.DataFrame :
+def additional_metrics ( source_df:pd.DataFrame , target_df, lab1:str , lab2:str ,
+                         coordinate_information:tuple = None, bCostly:bool=True ) -> pd.DataFrame :
     from impetuous.clustering import dunn_index
     import sklearn.metrics as sm
     ix	= source_df.index.values
@@ -2271,7 +2272,8 @@ def additional_metrics ( source_df:pd.DataFrame , target_df, lab1:str , lab2:str
             target_df.loc['SSC'] = [ 'Silhouette Score', sm.silhouette_score( X, v1 ) ]
             target_df.loc['DBS'] = [ 'Davies Bouldin Score', sm.davies_bouldin_score( X, v1 ) ]
             X.loc[:,'c'] = v1
-            target_df.loc['DI' ] = [ 'Dunn Index' , dunn_index( [ v for v in X.groupby('c').apply(lambda x:x.iloc[:,:-1].values ) ] ) ]
+            if bCostly :
+                target_df.loc['DI' ] = [ 'Dunn Index' , dunn_index( [ v for v in X.groupby('c').apply(lambda x:x.iloc[:,:-1].values ) ] ) ]
     return ( target_df )
 
 def group_classifications ( df:pd.DataFrame     ,
@@ -2285,7 +2287,7 @@ def group_classifications ( df:pd.DataFrame     ,
     #
     n_  = len ( df.index  .values )
     m_  = len ( df.columns.values )
-    agg_df = df
+    agg_df = df.apply(pd.to_numeric)
     #
     if ( bLog2 ) :
         agg_df = df .apply( lambda x:np.log2(x+1) )
