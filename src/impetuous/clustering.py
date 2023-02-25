@@ -1373,6 +1373,16 @@ def label_correspondances ( L1:list[str] , L2:list[str] ,
     TN = nssum( ( 1-p_eS1 ) * (1-p_eS2) > 0)    # TN
     return ( [TP,FP,FN,TN] )
 
+def dunn_index ( k_coordinates:list[np.array] ) -> float :
+    deltas = np.ones([len(k_coordinates), len(k_coordinates)])*1E6
+    big_deltas = np.zeros([len(k_coordinates), 1])
+    l_range = list(range(0, len(k_coordinates)))
+    for k in l_range:
+        for l in (l_range[0:k]+l_range[k+1:]):
+            deltas[k, l] = delta(k_coordinates[k], k_coordinates[l])
+        big_deltas[k] = big_delta(k_coordinates[k])
+    di = np.min(deltas)/np.max(big_deltas)
+    return ( di )
 
 if __name__ == '__main__' :
 
