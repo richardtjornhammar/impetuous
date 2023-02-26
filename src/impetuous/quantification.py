@@ -2229,7 +2229,7 @@ def confusion_lengths ( BCM:np.array ) -> list[np.array] :
     for i_ in range( ND ) :
         j_	= ND-1-i_ # NOT USED
         rBCM	= rankdata( BCM , 'average' , axis=i_ )
-        rBCM	= np.abs( 1 + np.max ( rBCM , axis=i_ ) - rBCM )
+        rBCM	= 1 + np.abs( np.max ( rBCM , axis=i_ ) - rBCM )
         Z	= np.sum( BCM , axis=i_ )
         SAIGA	.append ( np.sum(BCM*rBCM/Z,axis=i_ ) )
     return ( SAIGA )
