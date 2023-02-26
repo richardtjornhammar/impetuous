@@ -1802,7 +1802,7 @@ function quartileBounds(values,groups) {
 
 
 def simple_bokeh_dendrogram ( distm , labels=None , label_types=None , linkage='single' ,
-                        axis_labels = None , hover_txt=None , bFlipAxes = False ,
+                        axis_labels = None , hover_txt=None , bFlipAxes = False , bSuppressHover=True,
                         tools = ['box_zoom','pan','reset','save'] , sep = '-', angle=np.pi/2,
                         plt_kws = { 'plot_width' : 500 , 'plot_height' : 500,
                                     'tools' : None, 'title' : None , 'x_axis_type' : None,
@@ -1838,7 +1838,7 @@ def simple_bokeh_dendrogram ( distm , labels=None , label_types=None , linkage='
     for key in variables.keys():
         hover_txt.append((str(key),"@"+str(key)))
     #
-    if hover_txt :
+    if (not hover_txt is None) and (not bSuppressHover) :
         tools.append( HoverTool( tooltips=hover_txt ) )
     #
     if bFlipAxes :
