@@ -1801,7 +1801,8 @@ function quartileBounds(values,groups) {
         save ( clo )
 
 
-def simple_bokeh_dendrogram ( distm , labels=None , label_types=None , linkage='single' , axis_labels = None , hover_txt=None,
+def simple_bokeh_dendrogram ( distm , labels=None , label_types=None , linkage='single' ,
+                        axis_labels = None , hover_txt=None , bFlipAxes = False ,
                         tools = ['box_zoom','pan','reset','save'] , sep = '-', angle=np.pi/2,
                         plt_kws = { 'plot_width' : 500 , 'plot_height' : 500,
                                     'tools' : None, 'title' : None , 'x_axis_type' : None,
@@ -1840,7 +1841,10 @@ def simple_bokeh_dendrogram ( distm , labels=None , label_types=None , linkage='
     if hover_txt :
         tools.append( HoverTool( tooltips=hover_txt ) )
     #
-    fig = figure( x_range=dn['ivl'] , tools=tools , plot_width=plt_kws['plot_width'] , plot_height = plt_kws['plot_height'] )
+    if bFlipAxes :
+        fig = figure( y_range=dn['ivl'] , tools=tools , plot_width=plt_kws['plot_width'] , plot_height = plt_kws['plot_height'] )
+    else:
+        fig = figure( x_range=dn['ivl'] , tools=tools , plot_width=plt_kws['plot_width'] , plot_height = plt_kws['plot_height'] )
     #
     for crdx,crdy,i in zip( dn['icoord'] , dn['dcoord'] , range(len(dn['icoord'])) ) :
         crds    = crd_transform(crdx,ma,mi,n)
@@ -1848,9 +1852,15 @@ def simple_bokeh_dendrogram ( distm , labels=None , label_types=None , linkage='
                'order'   : [i for j in range(len(crdx)) ] }
 
         cdsl = ColumnDataSource ( di )
-        fig .line( 'icoord', 'dcoord' , source=cdsl , color = 'black'  )
+        if bFlipAxes :
+            fig .line( 'dcoord', 'icoord' , source=cdsl , color = 'black'  )
+        else :
+            fig .line( 'icoord', 'dcoord' , source=cdsl , color = 'black'  )
 
-    fig.xaxis.major_label_orientation = angle
+    if bFlipAxes :
+        fig.yaxis.major_label_orientation = angle
+    else :
+        fig.xaxis.major_label_orientation = angle
     fig.xgrid.grid_line_color = None
     fig.ygrid.grid_line_color = None
 
