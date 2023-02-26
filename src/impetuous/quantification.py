@@ -2229,9 +2229,9 @@ def confusion_lengths ( BCM:np.array ) -> list[np.array] :
     for i_ in range( ND ) :
         j_	= ND-1-i_ # NOT USED
         rBCM	= rankdata( BCM , 'average' , axis=i_ )
-        rBCM	= np.abs( np.max ( rBCM , axis=i_ ) - rBCM )
+        rBCM	= np.abs( 1 + np.max ( rBCM , axis=i_ ) - rBCM )
         Z	= np.sum( BCM , axis=i_ )
-        SAIGA	.append ( np.sum(BCM*rBCM/Z,axis=i_ ) + 1  )
+        SAIGA	.append ( np.sum(BCM*rBCM/Z,axis=i_ ) )
     return ( SAIGA )
 
 def compare_labeling_solutions ( df_:pd.DataFrame, lab1:str , lab2:str , nsamples:int = None ) -> list[pd.DataFrame] :
