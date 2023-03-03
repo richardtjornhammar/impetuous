@@ -67,7 +67,8 @@ def HierarchicalEnrichment (
             analyte_df , dag_df , dag_level_label = 'DAG,l' ,
             ancestors_id_label = 'aid' , id_name = None , threshold = 0.05 ,
             p_label = 'C(Status),p', analyte_name_label = 'analytes' ,
-            item_delimiter = ',' , alexa_elim=False , alternative = 'two-sided'
+            item_delimiter = ',' , alexa_elim=False , alternative = 'two-sided',
+            test_type:str = 'fisher'
         ) :
     #
     # NEEDS AN ANALYTE SIGNIFICANCE FRAME:
@@ -76,6 +77,10 @@ def HierarchicalEnrichment (
     #     INCLUDING NODE ID, NODE ANALYTES FIELD (SEPERATED BY ITEM DELIMITER)
     #     INCLUDING ANCESTORS FIELD (SEPERATED BY ITEM DELIMITER)
     #     DAG LEVEL OF EACH NODE
+    from impetuous.special import unpack
+    all_annotated = set( [ w for w in unpack( [ str(v).split(item_delimiter)\
+                for v in dag_df.loc[:,analyte_name_label ].values.reshape(-1)\
+                        if not 'nan' == str(v).lower() ]) ])
     tolerance = threshold
     df = dag_df ; dag_depth = np.max( df[dag_level_label].values )
     AllAnalytes = set( analyte_df.index.values ) ; nidx = len( AllAnalytes )
@@ -83,7 +88,7 @@ def HierarchicalEnrichment (
     if len( AllAnalytes ) == len( SigAnalytes ) :
         print ( 'THIS STATISTICAL TEST WILL BE NONSENSE' )
         print ( 'TRY A DIFFERENT THRESHOLD' )
-    marked_analytes = {} ; used_analytes = {} ; node_sig = {}
+    marked_analytes = {} ; used_analytes = {} ; node_sig = {}; node_odds = {}
     for d in range( dag_depth, 0, -1 ) :
         # ROOT IS NOT INCLUDED
         filter_ = df [ dag_level_label ] == d
@@ -93,7 +98,7 @@ def HierarchicalEnrichment (
                 continue
             analytes_ = df.loc[node,analyte_name_label].replace('\n','').replace(' ','').split(item_delimiter)
             try :
-                group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ].dropna( axis=0, how='any', thresh=analyte_df.shape[1]/2 ).drop_duplicates()
+                group = analyte_df.loc[[a for a in analytes_ if a in AllAnalytes] ]
             except KeyError as e :
                 continue
             if node in marked_analytes :
@@ -102,8 +107,10 @@ def HierarchicalEnrichment (
             L_ = len( group ) ; str_analytes=','.join(group.index.values)
             if L_ > 0 :
                 used_analytes[node] = ','.join( group.index.values )
-                pv,odds = group_significance( group , AllAnalytes=AllAnalytes, SigAnalytes=SigAnalytes , tolerance = threshold , alternative=alternative )
-                node_sig[node] = pv ; marked_ = set( group.index.values )
+                pv , odds = group_significance( group ,
+				AllAnalytes = AllAnalytes, SigAnalytes = SigAnalytes , AllAnnotated=all_annotated ,
+				tolerance = threshold , alternative=alternative, TestType=test_type )
+                node_sig[node] = pv ; node_odds[node] = odds ; marked_ = set( group.index.values )
                 ancestors = df.loc[node,ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
                 if alexa_elim and pv > threshold : # USE ALEXAS ELIM ALGORITHM : IS NOT DEFAULT
                     continue
@@ -113,11 +120,11 @@ def HierarchicalEnrichment (
                         marked_analytes[u] = us | marked_
                     else :
                         marked_analytes[u] = marked_
-    df['Hierarchical,p'] = [ node_sig[idx] if idx in node_sig else 1. for idx in df.index.values ]
+    df['Hierarchical,p']	= [ node_sig[idx] if idx in node_sig else 1. for idx in df.index.values ]
+    df['Hierarchical,odds']	= [ node_odds[idx] if idx in node_sig else 1. for idx in df.index.values ]
     df['Included analytes,ids'] = [ used_analytes[idx] if idx in used_analytes else '' for idx in df.index.values ]
     df = df.dropna()
     return ( df )
-
 
 
 def hierarchy_matrix ( distance_matrix:np.array   = None ,
