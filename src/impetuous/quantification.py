@@ -1293,10 +1293,10 @@ def prune_journal ( journal_df , remove_units_on = '_' ) :
     journal_df = pd.concat( [nmr_journal,str_journal] )
     return( journal_df )
 
-def group_significance( subset , all_analytes_df = None ,
-                        tolerance = 0.05 , significance_name = 'pVal' ,
-                        AllAnalytes = None , SigAnalytes = None,
-                        alternative = 'two-sided' ) :
+def group_significance( subset:pd.Series , all_analytes_df:pd.DataFrame = None ,
+                        tolerance:float = 0.05 , significance_name:str = 'pVal' ,
+                        AllAnalytes:set = None , SigAnalytes:set = None , TestType:str='fisher' ,
+                        alternative:str = 'two-sided' , AllAnnotated:set=None ) :
     # FISHER ODDS RATIO CHECK
     # CHECK FOR ALTERNATIVE :
     #   'greater'   ( ENRICHMENT IN GROUP )
@@ -1309,12 +1309,25 @@ def group_significance( subset , all_analytes_df = None ,
         if all_analytes_df is None :
             SigAnalytes = set( all_analytes_df.iloc[(all_analytes_df<tolerance).loc[:,significance_name]].index.values )
     Analytes       = set(subset.index.values)
+    if not AllAnnotated is None :
+        Analytes	= Analytes & AllAnnotated
+        SigAnalytes	= SigAnalytes & AllAnnotated
+        AllAnalytes	= AllAnalytes & AllAnnotated
     notAnalytes    = AllAnalytes - Analytes
     notSigAnalytes = AllAnalytes - SigAnalytes
     AB  = len(Analytes&SigAnalytes)    ; nAB  = len(notAnalytes&SigAnalytes)
     AnB = len(Analytes&notSigAnalytes) ; nAnB = len(notAnalytes&notSigAnalytes)
-    oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative )
+    if 'fisher' in TestType.lower() :
+        oddsratio , pval = stats.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative )
+    if 'hypergeom' in TestType.lower():
+        x  = AB
+        N  = len( AllAnalytes )
+        k  = len( Analytes )
+        m  = len( SigAnalytes )
+        pval = stats.hypergeom( M=N , n=m , N=k) .sf( x-1 )
+        oddsratio = 0
     return ( pval , oddsratio )
+
 
 def quantify_groups_by_analyte_pvalues( analyte_df, grouping_file, delimiter='\t',
                                  tolerance = 0.05 , p_label = 'C(Status),p' ,
@@ -2222,16 +2235,17 @@ def confusion_matrix ( dict_row:dict , dict_col:dict , bSwitchKeyValues:bool=Fal
             confusion[i,j] = len( set(dict_row[all_interactions[i]]) & set(dict_col[all_interactions[j]]) )
     return ( {'confusion matrix':confusion,'index names':all_interactions } )
 
-def confusion_lengths ( BCM:np.array ) -> list[np.array] :
+def confusion_lengths ( BCM:np.array , ranktype:str = 'ordinal' ) -> list[np.array] :
     from scipy.stats import rankdata
-    ND		= len(np.shape(BCM))
+    axshape	= lambda i,nm : np.array([ nm[j] if j!=i else 1 for j in range(len(nm)) ])
+    nm		= np.shape(BCM)
+    ND		= len( nm )
     SAIGA	= []
     for i_ in range( ND ) :
-        j_	= ND-1-i_ # NOT USED
-        rBCM	= rankdata( BCM , 'average' , axis=i_ )
-        rBCM	= 1 + np.abs( np.max ( rBCM , axis=i_ ) - rBCM )
-        Z	= np.sum( BCM , axis=i_ )
-        SAIGA	.append ( np.sum(BCM*rBCM/Z,axis=i_ ) )
+        rBCM    = rankdata( BCM , ranktype , axis=i_ )
+        rBCM    = 1 + np.abs( np.max ( rBCM , axis=i_ ) .reshape(axshape(i_,nm)) * np.ones( np.prod(nm) ).reshape(nm) - rBCM )
+        Z       = np.sum( BCM , axis=i_ )
+        SAIGA   .append ( np.sum(BCM*rBCM,axis=i_)/Z )
     return ( SAIGA )
 
 def compare_labeling_solutions ( df_:pd.DataFrame, lab1:str , lab2:str , nsamples:int = None ) -> list[pd.DataFrame] :
