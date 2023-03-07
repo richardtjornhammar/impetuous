@@ -37,16 +37,55 @@ def pathway_frame_from_file ( filename ,
 
 
 def create_dag_representation_df ( pathway_file:str = '../data/GROUPDEFINITIONS.gmt' ,
-                                   pcfile:str = '../data/PCLIST.txt', identifier:str='R-HSA'
+                                   pcfile:str = '../data/PCLIST.txt', identifier:str='R-HSA',
+                                   item_sep:str = ','
                                  ) :
     pc_list_file = pcfile
-    tree , ance , desc = parent_child_to_dag ( pc_list_file , identifier=identifier )
-    pdf = make_pathway_ancestor_data_frame ( ance )
+    tree , ance , desc = parent_child_to_dag ( pc_list_file , identifier = identifier )
     pdf_ = pathway_frame_from_file( pathway_file )
-    pdf.index = [v.replace(' ','') for v in  pdf.index.values]
-    pdf_.index= [v.replace(' ','') for v in pdf_.index.values]
-    dag_df = pd.concat([pdf.T,pdf_.T]).T
-    return ( dag_df , tree )
+    root = tree.get_root_id()
+    lost = set(tree.keys()) - set(pdf_.index.values.tolist())
+    for l in lost :
+        pdf_.loc[l] = ['NA','']
+    DF = []
+    for idx in pdf_.index.values :
+        ord_ascendants  = tree.search(  root_id         = idx                   ,
+                                        linktype        = 'ascendants'          ,
+                                        order           = 'depth'               )['path']
+        level = len ( ord_ascendants ) - 1
+        ord_descendants = tree.search(  root_id         = idx                   ,
+                                        linktype        = 'descendants'         ,
+                                        order           = 'depth'               )['path']
+        ord_ascendants  = [ a for a in ord_ascendants  if not ( a==idx ) ]
+        ord_descendants = [ d for d in ord_descendants if not ( d==idx ) ]
+        if len( ord_ascendants ) > 0 :
+            parent = ord_ascendants[0]
+        else:
+            parent = ''
+        dag_anscestors          = item_sep.join(  ord_ascendants )
+        dag_descendants         = item_sep.join( ord_descendants )
+        DF.append( [level,dag_anscestors,dag_descendants,parent , *pdf_.loc[idx].values ] )
+    ndag_df = pd.DataFrame( DF ,
+                  columns = [*['DAG,level','DAG,ancestors','DAG,descendants','DAG,parent'],*pdf_.columns.values],
+                  index   = pdf_.index.values )
+    return ( ndag_df , tree )
+
+
+def fill_in_full_hierarchy ( df:pd.DataFrame    = None ,
+                         gmtfile:str        = '/home/USER/data/Reactome/reactome_v71.gmt' ,
+                         pcfile :str        = '/home/USER/data/Reactome/NewestReactomeNodeRelations.txt',
+                         fields:list[float] = ['p-value'] ) -> pd.DataFrame :
+    dag_df , tree      = create_dag_representation_df ( pathway_file = gmtfile , pcfile = pcfile )
+    for field in fields :
+        dag_df.loc[:,field] = 1.
+    for idx in df.index.values :
+        dag_df.loc[ idx , fields ] = df.loc[ idx , fields ]
+    dag_df.loc[:,'parent'] = dag_df.loc[:,'DAG,parent']
+    for idx in dag_df.index.values :
+        if idx in set(df.index.values) :
+            dag_df.loc[idx,fields] = df.loc[idx,fields]
+    dag_df.loc[:,'name'] = dag_df.index.values
+    return ( dag_df )
 
 
 def HierarchalEnrichment (
