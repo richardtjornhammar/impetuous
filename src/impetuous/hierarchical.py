@@ -107,7 +107,7 @@ def HierarchicalEnrichment (
             ancestors_id_label:str = 'aid' , id_name:str = None , threshold:float = 0.05 ,
             p_label:str = 'C(Status),p', analyte_name_label:str = 'analytes' ,
             item_delimiter:str = ',' , alexa_elim:bool=False , alternative:str = 'two-sided',
-            test_type:str = 'fisher', bNoMasking:bool=False
+            test_type:str = 'fisher', bNoMasking:bool=False, bOnlyMarkSignificant:bool=False
         ) :
     #
     # NEEDS AN ANALYTE SIGNIFICANCE FRAME:
@@ -150,6 +150,8 @@ def HierarchicalEnrichment (
 				AllAnalytes = AllAnalytes, SigAnalytes = SigAnalytes , AllAnnotated=all_annotated ,
 				tolerance = threshold , alternative=alternative, TestType=test_type )
                 node_sig[node] = pv ; node_odds[node] = odds ; marked_ = set( group.index.values )
+                if bOnlyMarkSignificant : # NOT DEFAULT
+                    marked_ = marked_ & SigAnalytes
                 ancestors = df.loc[node,ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
                 if ( alexa_elim and pv > threshold ) or bNoMasking :  # USE ALEXAS ELIM ALGORITHM : IS NOT DEFAULT
                     continue
