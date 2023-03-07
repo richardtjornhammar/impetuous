@@ -103,11 +103,11 @@ def HierarchalEnrichment (
 
 
 def HierarchicalEnrichment (
-            analyte_df , dag_df , dag_level_label = 'DAG,l' ,
-            ancestors_id_label = 'aid' , id_name = None , threshold = 0.05 ,
-            p_label = 'C(Status),p', analyte_name_label = 'analytes' ,
-            item_delimiter = ',' , alexa_elim=False , alternative = 'two-sided',
-            test_type:str = 'fisher'
+            analyte_df:pd.DataFrame , dag_df:pd.DataFrame , dag_level_label:str = 'DAG,l' ,
+            ancestors_id_label:str = 'aid' , id_name:str = None , threshold:float = 0.05 ,
+            p_label:str = 'C(Status),p', analyte_name_label:str = 'analytes' ,
+            item_delimiter:str = ',' , alexa_elim:bool=False , alternative:str = 'two-sided',
+            test_type:str = 'fisher', bNoMasking:bool=False
         ) :
     #
     # NEEDS AN ANALYTE SIGNIFICANCE FRAME:
@@ -151,7 +151,7 @@ def HierarchicalEnrichment (
 				tolerance = threshold , alternative=alternative, TestType=test_type )
                 node_sig[node] = pv ; node_odds[node] = odds ; marked_ = set( group.index.values )
                 ancestors = df.loc[node,ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
-                if alexa_elim and pv > threshold : # USE ALEXAS ELIM ALGORITHM : IS NOT DEFAULT
+                if ( alexa_elim and pv > threshold ) or bNoMasking :  # USE ALEXAS ELIM ALGORITHM : IS NOT DEFAULT
                     continue
                 for u in ancestors :
                     if u in marked_analytes :
