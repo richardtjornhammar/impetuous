@@ -1603,6 +1603,68 @@ def quantify_analytes( analyte_df , journal_df , formula ,
             edf.loc[l] = q
     return ( edf.T )
 
+def groupFactorAnalysisEnrichment ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
+                delimiter = '\t' , test_type = 'random' , agg_func=lambda x : np.min(x) ,
+                split_id = None , skip_line_char = '#', bVerbose:bool=True
+              ) :
+    # https://github.com/richardtjornhammar/righteous/commit/6c63dcc922eb389237220bf65ffd4b1fa3241a2c
+    #from impetuous.quantification import find_category_interactions , find_category_variables, qvalues
+    from sklearn.decomposition import PCA
+    import statsmodels.api as sm
+    from statsmodels.formula.api import ols
+    #
+    dimred = PCA()
+    statistical_formula = formula
+    if not split_id is None :
+        nidx = [ idx.split(split_id)[-1].replace(' ','') for idx in analyte_df.index.values ]
+        analyte_df.index = nidx
+    #
+    sidx = set( analyte_df.index.values ) ; nidx=len(sidx)
+    eval_df = None
+    for c in find_category_variables(formula):
+        cs_ = list( set( journal_df.loc[c].values ) )
+        journal_df.loc[c+',str'] = journal_df.loc[c]
+        journal_df.loc[c] = [ { c_:i_ for i_,c_ in zip( range(len(cs_)),cs_ ) }[v] for v in journal_df.loc[c].values ]
+    with open ( grouping_file ) as input:
+        for line in input:
+            if line[0] == skip_line_char :
+                continue
+            vline = line.replace('\n','').split(delimiter)
+            gid,gdesc,analytes_ = vline[0],vline[1],vline[2:]
+            if not synonyms is None :
+                [ analytes_.append(synonyms[a]) for a in analytes_ if a in synonyms ]
+            try :
+                group = analyte_df.loc[[a for a in analytes_ if a in sidx] ]
+            except KeyError as e :
+                continue
+            L_ = len( group ); str_analytes=','.join(group.index.values)
+            if L_>0 :
+                if bVerbose :
+                    print ( gid )
+                Xnew = dimred.fit_transform(group.T.values)
+                group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=['Group'])
+                cdf = pd.concat( [group_expression_df,jdf] ).T
+                cdf = cdf.loc[:,['Cancer','Group']].apply(pd.to_numeric)
+                linear_model = ols( 'Group~' + formula.split('~')[1], data = cdf ).fit()
+                table = sm.stats.anova_lm(linear_model,typ=2 )
+                rdf = group_expression_df
+                for idx in table.iloc[0,:].index :
+                    rdf[idx.replace('PR(>F)','Group,p')] = table.iloc[0,:].loc[idx]
+                rdf ['description']     = gdesc+','+str(L_)
+                rdf ['analytes']        = str_analytes
+                rdf .index = [ gid ]
+                if eval_df is None :
+                    eval_df = rdf
+                else :
+                    eval_df = pd.concat([eval_df,rdf])
+    edf = eval_df.T.fillna(1.0)
+    for col in eval_df.columns :
+        if ',p' in col :
+            q = [q_[0] for q_ in qvalues(eval_df.loc[:,col].values)]; l=col.split(',')[0]+',q'
+            edf.loc[l] = q
+    return ( edf.T )
+
+
 def group_counts( analyte_df, grouping_file, delimiter = '\t',
                   tolerance = 0.05 , p_label = 'C(Status),p' ,
                   group_prefix = ''
