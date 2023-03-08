@@ -167,6 +167,104 @@ def HierarchicalEnrichment (
     df = df.dropna()
     return ( df )
 
+def groupFactorHierarchicalEnrichment (
+            analyte_df:pd.DataFrame , journal_df:pd.DataFrame , formula:str ,
+            dag_df:pd.DataFrame = None , gmtfile:str = None , pcfile:str = None ,
+            dag_level_label:str = 'DAG,level' , ancestors_id_label:str = 'DAG,ancestors' ,
+            id_name:str = None , threshold:float = 0.05 , bVerbose:bool = False ,
+            p_label:str = 'C(Status),p', analyte_name_label:str = 'analytes' ,
+            item_delimiter:str = ',' , alexa_elim:bool=True , alternative:str = 'two-sided' ,
+            test_type:str = 'fisher', bNoMasking:bool=False ) -> pd.DataFrame :
+    # https://github.com/richardtjornhammar/righteous/commit/6c63dcc922eb389237220bf65ffd4b1fa3241a2c
+    #
+    # A HIERARCHICALLY CORRECTED GROUP FACTOR ANALYSIS METHOD !
+    #
+    from impetuous.quantification import find_category_interactions , find_category_variables, qvalues
+    from sklearn.decomposition import PCA
+    import statsmodels.api as sm
+    from statsmodels.formula.api import ols
+    #
+    if dag_df is None :
+        from impetuous.hierarchical import create_dag_representation_df
+        dag_df,tree = create_dag_representation_df( pathway_file = gmtfile , pcfile = pcfile , item_sep = item_delimiter )
+    print ( dag_df )
+    dimred = PCA()
+    statistical_formula = formula
+    eval_df = None
+    for c in find_category_variables(formula):
+        cs_ = list( set( journal_df.loc[c].values ) )
+        journal_df.loc[c+',str'] = journal_df.loc[c]
+        journal_df.loc[c] = [ { c_:i_ for i_,c_ in zip( range(len(cs_)),cs_ ) }[v] for v in journal_df.loc[c].values ]
+    #
+    # NEEDS AN ANALYTE FRAME
+    #       A  JOURNAL FRAME
+    # DAG GRAPH DESCRIPTION FRAME :
+    #     INCLUDING NODE ID, NODE ANALYTES FIELD (SEPERATED BY ITEM DELIMITER)
+    #     INCLUDING ANCESTORS FIELD (SEPERATED BY ITEM DELIMITER)
+    #     DAG LEVEL OF EACH NODE
+    #
+    from impetuous.special import unpack
+    all_annotated = set( [ w for w in unpack( [ str(v).split(item_delimiter)\
+                for v in dag_df.loc[:,analyte_name_label ].values.reshape(-1)\
+                        if not 'nan' == str(v).lower() ]) ])
+    tolerance = threshold
+    df = dag_df ; dag_depth = np.max( df[dag_level_label].values )
+    AllAnalytes = set( analyte_df.index.values ) & all_annotated ; nidx = len( AllAnalytes )
+    marked_analytes = {} ; used_analytes = {} ; node_sig = {}; node_odds = {}
+    for d in range( dag_depth, 0, -1 ) :
+        # ROOT IS NOT INCLUDED
+        filter_ = df [ dag_level_label ] == d
+        nodes = df.iloc[ [i for i in np.where(filter_)[ 0 ]] ,:].index.values
+        for node in nodes :
+            if 'nan' in str(df.loc[node,analyte_name_label]).lower() :
+                continue
+            analytes_ = df.loc[node,analyte_name_label] .replace('\n','').replace(' ','').split(item_delimiter)
+            try :
+                group = analyte_df.loc[ [a for a in analytes_ if a in AllAnalytes] ]
+            except KeyError as e :
+                continue
+            if node in marked_analytes :
+                unused_group = group.loc[ list( set(group.index.values)-marked_analytes[node] ) ]
+                group = unused_group
+            L_ = len( group ) ; str_analytes=','.join(group.index.values)
+            if L_ > 0 :
+                gid = node
+                used_analytes[node] = ','.join( group.index.values )
+                if bVerbose :
+                    print ( gid )
+                Xnew = dimred.fit_transform(group.T.values)
+                group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=['Group'])
+                cdf = pd.concat( [group_expression_df,jdf] ).T
+                cdf = cdf.loc[:,['Cancer','Group']].apply(pd.to_numeric)
+                linear_model = ols( 'Group~' + formula.split('~')[1], data = cdf ).fit()
+                table = sm.stats.anova_lm(linear_model,typ=2 )
+                rdf = group_expression_df
+                for idx in table.iloc[0,:].index :
+                    rdf[idx.replace('PR(>F)','Hierarchical,p')] = table.iloc[0,:].loc[idx]
+                rdf ['description']		= df.loc[node,'description']+','+str(L_)
+                rdf ['Included analytes,ids']	= str_analytes
+                rdf .index = [ gid ]
+                pv = rdf['Hierarchical,p'].values
+                if eval_df is None :
+                    eval_df = rdf
+                else :
+                    eval_df = pd.concat([eval_df,rdf])
+                marked_ = set( group.index.values )
+                ancestors = df.loc[node,ancestors_id_label].replace('\n','').replace(' ','').split(item_delimiter)
+                if ( alexa_elim and pv > threshold ) or bNoMasking :  # USE ALEXAS ELIM ALGORITHM : IS DEFAULT
+                    continue
+                for u in ancestors :
+                    if u in marked_analytes :
+                        us = marked_analytes[u]
+                        marked_analytes[u] = us | marked_
+                    else :
+                        marked_analytes[u] = marked_
+    edf = eval_df.T.fillna(1.0)
+    for col in eval_df.columns :
+        if ',p' in col :
+            q = [q_[0] for q_ in qvalues(edf.loc[col,:].values)]; l=col.split(',')[0]+',q'
+            edf.loc[l] = q
+    return ( edf.T )
 
 def hierarchy_matrix ( distance_matrix:np.array   = None ,
                        coordinates:np.array       = None ,
