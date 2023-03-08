@@ -101,6 +101,19 @@ def HierarchalEnrichment (
             p_label = p_label , analyte_name_label = analyte_name_label ,
             item_delimiter = item_delimiter , alexa_elim = alexa_elim , alternative = alternative ) )
 
+def hierarchicalEnrichment (
+            analyte_df:pd.DataFrame , dag_df:pd.DataFrame , dag_level_label:str = 'DAG,l' ,
+            ancestors_id_label:str = 'aid' , id_name:str = None , threshold:float = 0.05 ,
+            p_label:str = 'C(Status),p', analyte_name_label:str = 'analytes' ,
+            item_delimiter:str = ',' , alexa_elim:bool=False , alternative:str = 'two-sided',
+            test_type:str = 'fisher', bNoMasking:bool=False, bOnlyMarkSignificant:bool=False
+        )  -> pd.DataFrame :
+    return ( HierarchicalEnrichment (
+            analyte_df=analyte_df , dag_df=dag_df , dag_level_label = dag_level_label ,
+            ancestors_id_label = ancestors_id_label , id_name = id_name , threshold = threshold ,
+            p_label = p_label, analyte_name_label = analyte_name_label ,
+            item_delimiter = item_delimiter , alexa_elim = alexa_elim , alternative = alternative ,
+            test_type = test_type, bNoMasking = bNoMasking, bOnlyMarkSignificant=bOnlyMarkSignificant ) )
 
 def HierarchicalEnrichment (
             analyte_df:pd.DataFrame , dag_df:pd.DataFrame , dag_level_label:str = 'DAG,l' ,
@@ -108,7 +121,7 @@ def HierarchicalEnrichment (
             p_label:str = 'C(Status),p', analyte_name_label:str = 'analytes' ,
             item_delimiter:str = ',' , alexa_elim:bool=False , alternative:str = 'two-sided',
             test_type:str = 'fisher', bNoMasking:bool=False, bOnlyMarkSignificant:bool=False
-        ) :
+        )  -> pd.DataFrame  :
     #
     # NEEDS AN ANALYTE SIGNIFICANCE FRAME:
     #     INCLUDING P VALUES OF ANALYTES
