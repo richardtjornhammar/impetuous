@@ -247,7 +247,7 @@ def groupFactorHierarchicalEnrichment (
                     print ( gid )
                 Xnew = dimred.fit_transform(group.T.values)
                 group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=['Group'])
-                cdf = pd.concat( [group_expression_df,jdf] ).T
+                cdf = pd.concat( [group_expression_df,journal_df.] ).T
                 cdf = cdf.loc[:,['Cancer','Group']].apply(pd.to_numeric)
                 linear_model = ols( 'Group~' + formula.split('~')[1], data = cdf ).fit()
                 table = sm.stats.anova_lm(linear_model,typ=2 )
