@@ -1603,10 +1603,11 @@ def quantify_analytes( analyte_df , journal_df , formula ,
             edf.loc[l] = q
     return ( edf.T )
 
-def groupFactorAnalysisEnrichment ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
-                delimiter = '\t' , test_type = 'random' , agg_func=lambda x : np.min(x) ,
-                split_id = None , skip_line_char = '#', bVerbose:bool=True
-              ) :
+def groupFactorAnalysisEnrichment ( analyte_df:pd.DataFrame , journal_df:pd.DataFrame , formula:str ,
+                grouping_file:str , synonyms:dict = None ,
+                delimiter:str = '\t' , test_type:str = 'random' , agg_func=lambda x : np.min(x) ,
+                split_id:str = None , skip_line_char:str = '#', bVerbose:bool=False
+              ) -> pd.DataFrame :
     # https://github.com/richardtjornhammar/righteous/commit/6c63dcc922eb389237220bf65ffd4b1fa3241a2c
     #from impetuous.quantification import find_category_interactions , find_category_variables, qvalues
     from sklearn.decomposition import PCA
