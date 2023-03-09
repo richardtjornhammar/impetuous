@@ -187,7 +187,7 @@ def groupFactorHierarchicalEnrichment (
             id_name:str = None , threshold:float = 0.05 , bVerbose:bool = False ,
             p_label:str = 'C(Status),p', analyte_name_label:str = 'analytes' ,
             item_delimiter:str = ',' , alexa_elim:bool=True , alternative:str = 'two-sided' ,
-            test_type:str = 'fisher', bNoMasking:bool=False ) -> pd.DataFrame :
+            test_type:str = 'fisher', bNoMasking:bool=False , agg_function=lambda x:x[0]) -> pd.DataFrame :
     # https://github.com/richardtjornhammar/righteous/commit/6c63dcc922eb389237220bf65ffd4b1fa3241a2c
     #
     # A HIERARCHICALLY CORRECTED GROUP FACTOR ANALYSIS METHOD !
@@ -204,10 +204,13 @@ def groupFactorHierarchicalEnrichment (
     dimred = PCA()
     statistical_formula = formula
     eval_df = None
+    cats = []
     for c in find_category_variables(formula):
         cs_ = list( set( journal_df.loc[c].values ) )
         journal_df.loc[c+',str'] = journal_df.loc[c]
         journal_df.loc[c] = [ { c_:i_ for i_,c_ in zip( range(len(cs_)),cs_ ) }[v] for v in journal_df.loc[c].values ]
+        cats.append(c)
+    vars = [ v.replace(' ','') for v in formula.split('~')[1].split('+') if np.sum([ c in v for c in cats ])==0 ]
     #
     # NEEDS AN ANALYTE FRAME
     #       A  JOURNAL FRAME
@@ -248,12 +251,14 @@ def groupFactorHierarchicalEnrichment (
                 Xnew = dimred.fit_transform(group.T.values)
                 group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=['Group'])
                 cdf = pd.concat( [group_expression_df,journal_df] ).T
-                cdf = cdf.loc[:,['Cancer','Group']].apply(pd.to_numeric)
+                cdf = cdf.loc[ : , ['Group',*vars,*cats]  ].apply(pd.to_numeric)
                 linear_model = ols( 'Group~' + formula.split('~')[1], data = cdf ).fit()
                 table = sm.stats.anova_lm(linear_model,typ=2 )
                 rdf = group_expression_df
-                for idx in table.iloc[0,:].index :
-                    rdf[idx.replace('PR(>F)','Hierarchical,p')] = table.iloc[0,:].loc[idx]
+                for idx in table.index.values :
+                    for jdx in table.loc[idx].index :
+                        rdf[ idx + ';' + jdx.replace('PR(>F)','Hierarchical,p')] = table.loc[idx].loc[jdx]
+                rdf ['Hierarchical,p']          = agg_function( table.iloc[:,-1].values )
                 rdf ['description']		= df.loc[node,'description']+','+str(L_)
                 rdf ['Included analytes,ids']	= str_analytes
                 rdf .index = [ gid ]
