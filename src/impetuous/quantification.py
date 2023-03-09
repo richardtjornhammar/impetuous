@@ -1622,10 +1622,13 @@ def groupFactorAnalysisEnrichment ( analyte_df:pd.DataFrame , journal_df:pd.Data
     #
     sidx = set( analyte_df.index.values ) ; nidx=len(sidx)
     eval_df = None
+    cats = []
     for c in find_category_variables(formula):
         cs_ = list( set( journal_df.loc[c].values ) )
         journal_df.loc[c+',str'] = journal_df.loc[c]
         journal_df.loc[c] = [ { c_:i_ for i_,c_ in zip( range(len(cs_)),cs_ ) }[v] for v in journal_df.loc[c].values ]
+        cats.append(c)
+    vars = [ v.replace(' ','') for v in formula.split('~')[1].split('+') if np.sum([ c in v for c in cats ])==0 ]
     with open ( grouping_file ) as input:
         for line in input:
             if line[0] == skip_line_char :
@@ -1645,12 +1648,13 @@ def groupFactorAnalysisEnrichment ( analyte_df:pd.DataFrame , journal_df:pd.Data
                 Xnew = dimred.fit_transform(group.T.values)
                 group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=['Group'])
                 cdf = pd.concat( [group_expression_df,journal_df] ).T
-                cdf = cdf.loc[:,['Cancer','Group']].apply(pd.to_numeric)
+                cdf = cdf.loc[ : , ['Group',*vars,*cats]  ].apply(pd.to_numeric)
                 linear_model = ols( 'Group~' + formula.split('~')[1], data = cdf ).fit()
                 table = sm.stats.anova_lm(linear_model,typ=2 )
                 rdf = group_expression_df
-                for idx in table.iloc[0,:].index :
-                    rdf[idx.replace('PR(>F)','Group,p')] = table.iloc[0,:].loc[idx]
+                for idx in table.index.values :
+                    for jdx in table.loc[idx].index :
+                        rdf[ idx + ';' + jdx.replace('PR(>F)','Hierarchical,p')] = table.loc[idx].loc[jdx]
                 rdf ['description']     = gdesc+','+str(L_)
                 rdf ['analytes']        = str_analytes
                 rdf .index = [ gid ]
