@@ -1654,7 +1654,7 @@ def groupFactorAnalysisEnrichment ( analyte_df:pd.DataFrame , journal_df:pd.Data
                 rdf = group_expression_df
                 for idx in table.index.values :
                     for jdx in table.loc[idx].index :
-                        rdf[ idx + ';' + jdx.replace('PR(>F)','Hierarchical,p')] = table.loc[idx].loc[jdx]
+                        rdf[ idx + ';' + jdx.replace('PR(>F)','Group,p')] = table.loc[idx].loc[jdx]
                 rdf ['description']     = gdesc+','+str(L_)
                 rdf ['analytes']        = str_analytes
                 rdf .index = [ gid ]
