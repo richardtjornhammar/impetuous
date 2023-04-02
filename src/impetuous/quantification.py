@@ -1437,6 +1437,30 @@ class APCA ( object ) :
 
 dimred = PCA()
 
+def mean_field ( data:np.array , bSeparate:bool=False ) :
+    m0  = np.mean( data , axis=0 )
+    m1  = np.mean( data , axis=1 )
+    ms1 = m1.reshape(-1,1) * np.ones(len(m0)).reshape(1,-1)
+    ms0 = np.ones(len(m1)).reshape(-1,1) * m0.reshape(1,-1)
+    if bSeparate :
+        return ( m1.reshape(-1,1)*m0.reshape(1,-1) , ( ms1 + ms0 ) * 0.5 )
+    return ( m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
+
+def gCA ( data:np.array, centering:int = 0 ) -> tuple[np.array] :
+    if centering<0 :
+        return ( np.linalg.svd(data) )
+    if centering == 0 or centering == 1 : # CORRESPONDS TO PCA SOLUTIONS AXIS=1 IS SAIGA = (PCA(DAT.T)).T
+        return ( np.linalg.svd( data - data.mean(axis=centering).reshape( *((-1)**centering*np.array([1,-1])) ), full_matrices = False ) )
+    if centering==2 :
+        return ( np.linalg.svd( data - np.mean(data) , full_matrices = False ) )
+    if centering==3 :
+        return ( np.linalg.svd( data - mean_field(data) , full_matrices = False ) )
+    if centering==4 :
+        return ( np.linalg.svd( data - mean_field(data,bSeparate=True)[1] , full_matrices = False ) )
+    if centering==5 : # ARE YOU SURE YOU KNOW WHAT YOU ARE DOING ?
+        mf = mean_field(data,bSeparate=True)
+        return ( np.linalg.svd( mf[0] / data - mf[1] , full_matrices = False ) )
+
 def quantify_groups ( analyte_df , journal_df , formula , grouping_file , synonyms = None ,
                       delimiter = '\t' , test_type = 'random' ,
                       split_id = None , skip_line_char = '#'
