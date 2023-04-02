@@ -200,7 +200,8 @@ def groupFactorHierarchicalEnrichment (
     if dag_df is None :
         from impetuous.hierarchical import create_dag_representation_df
         dag_df,tree = create_dag_representation_df( pathway_file = gmtfile , pcfile = pcfile , item_sep = item_delimiter )
-    print ( dag_df )
+    if bVerbose:
+        print ( dag_df )
     dimred = PCA()
     statistical_formula = formula
     eval_df = None
