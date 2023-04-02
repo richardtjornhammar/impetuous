@@ -1988,6 +1988,7 @@ def composition_absolute( adf:pd.DataFrame , jdf:pd.DataFrame , label:str ) -> p
     adf = adf .iloc[ np.inf != np.abs( 1.0/np.std(adf.values,1) ) ,
                      np.inf != np.abs( 1.0/np.std(adf.values,0) ) ].copy()
     jdf = jdf .loc[ : , adf.columns ]
+    adf = adf.apply(pd.to_numeric) # ONLY NUMBERS ALLOWED HERE
     adf .loc[ label ] = jdf .loc[ label ]
     cdf = adf.T.groupby(label).apply(np.sum).T.iloc[:-1,:]
     return ( cdf )
@@ -2124,11 +2125,13 @@ def composition_contraction_to_hierarchy_ser ( na1:np.array , na2:np.array , n:i
 def composition_contraction_to_hierarchy ( contracted_df:pd.DataFrame , TOL:float=1E-10 ,
         levels:list[str]        = [ 0.01,0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99 ] ,
         default_label:int       = -1     ,
-        bWriteToDisc:bool       = True   ,
+        bWriteToDisc:bool       = False   ,
         output_directory:str    = './'   ,
         bFirstRep:bool          = True   ,
         compression:str         = 'gzip' ) -> pd.DataFrame :
-    # return ( composition_contraction_to_hierarchy_red ( contracted_df ,levels=levels) )
+
+    if bWriteToDisc :
+        print ( "WARNING: THIS MIGHT CAUSE MANY FILES TO BE CREATED THROWN BY: composition_contraction_to_hierarchy"  )
     na1 , na2 , n , m = composition_split_contraction( contracted_df )
     res_df = composition_contraction_to_hierarchy_ser ( na1, na2, n, m ,
 				 levels			= levels ,
@@ -2160,7 +2163,7 @@ def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:s
 	bFull:bool		= False  ,
         bFirstRep:bool		= True	 ,
         default_label:int       = -1     ,
-        bWriteToDisc:bool       = True   ,
+        bWriteToDisc:bool       = False   ,
         output_directory:str    = './'   ,
         compression:str         = 'gzip' ) -> dict :
     #
@@ -2168,8 +2171,10 @@ def composition_create_hierarchy ( adf:pd.DataFrame , jdf:pd.DataFrame , label:s
     #   A COMPOSITION HIERARCHY IS DEFINED VIA ABSOLUTE QUANTIFICATIONS
     #   IT IS NOT A HIERARCHY STEMMING FROM A DISTANCE MATRIX CALCULATION
     #   OF ALL THE RELATIVE DISTANCES, I.E. AS IN WHAT IS DONE FOR
-    #   AGGLOMARATIVE HIERARCHICAL CLUSTERING DERIVED HIERARCHIES
+    #   AGGLOMARATIVE HIERARCHICAL CLUSTERING DERIVED COMPOSITIONAL HIERARCHIES
     #
+    if bWriteToDisc :
+        print ( "WARNING: THIS MIGHT CAUSE MANY FILES TO BE CREATED. THROWN BY: composition_create_hierarchy"  )
     contr_d         = composition_create_contraction( adf=adf , jdf=jdf , label=label )
     contracted_df   = contr_d['contraction']
     lookup_l2i      = contr_d['label_to_id']
