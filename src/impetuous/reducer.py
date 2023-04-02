@@ -183,6 +183,78 @@ def Householder_reduction ( A ):
     VT = Q0.T
     return ( U , S , VT )
 
+def householder_reduction ( A:np.array ):
+    return ( Householder_reduction ( A:np.array ) )
+
+def eigensolve_rectangular (	DAT:np.array , bRemoveMeans:bool = True , bCov:bool = True ,
+				bHouseHolder:bool = False , bKeepItReal:bool=False ) -> dict :
+    #
+    # SAIGA RECT-SOLVER !
+    # IF YOU ARE DOING THIS AND THINK THAT IT IS SMART THEN YOU SHOULD PROBABLY JUST DIAGONALISE YOUR DATA ...
+    nm = np.shape( DAT )
+    n_ = np.min (  nm  )
+    bLocal = not bCov
+    if bHouseHolder :
+        HBF = householder_reduction (   DAT   - ( DAT.mean(axis=0) if bRemoveMeans else np.zeros(nm[1]) )     ) [1] [:n_,:n_]
+        HBS = householder_reduction (   DAT.T - ( DAT.mean(axis=1) if bRemoveMeans else np.zeros(nm[0]) ).T   ) [1] [:n_,:n_]
+        if bKeepItReal :
+            HBS = HBS*HBS.T
+            HBF = HBF*HBF.T
+        return ( { 'features':  np.linalg.eig( HBF ) , 'samples':  np.linalg.eig( HBS ) } )
+    #
+    if bLocal :
+        # WHILE THESE TWO ARE NOT
+        U,S,WT = np.linalg.svd(  DAT   - ( DAT.mean(axis=0) if bRemoveMeans else np.zeros(nm[1]) )     , full_matrices = False )
+        V,Z,MT = np.linalg.svd( (DAT.T - ( DAT.mean(axis=1) if bRemoveMeans else np.zeros(nm[0]) ) ).T , full_matrices = False )
+    #
+    # IF MEAN CENTERING
+    # V  CORRESPONDS TO COMPONENTS FROM PCA. Z*MT CORRESPONDS TO SCORES FROM PCA OF DAT.T
+    # WT CORRESPONDS TO COMPONENTS FROM PCA.  U*S CORRESPONDS TO SCORES FROM PCA OF DAT
+    ## print ( V.T )		# INTERPRETATION: THE DEPICTION OF THE DISTRIBUTION CAUSING THE REDUCTION
+    ## print ( (Z*MT).T )	# INTERPRETATION: THE REDUCTION THAT CONSERVES THE STATISTICAL MOMENT BETWEEN THE SYMMETRIC PARTS
+    #
+    # Name_DimensionAxis	MEAN REMOVED							NAME		 EQUALS MC	AXIS	PCAT	RIGHT
+    if not bLocal :
+        cov_01 = mycov(DAT.T) # np.dot( np.dot(    V,np.diag(Z**2)),V.T )/(nm[1]-1)	# FEATURE COVARIATION 0         T       1       W1      F
+        cov_10 = mycov( DAT ) # np.dot( np.dot( WT.T,np.diag(S**2)), WT )/(nm[0]-1)	#  SAMPLE COVARIATION 1		T	0	W0	F
+        if bKeepItReal :
+            cov_01 = cov_01*cov_01.T
+            cov_10 = cov_10*cov_10.T
+        eigenvals_F , eigenvectors_F = np.linalg.eig( cov_01 )
+        eigenvals_S , eigenvectors_S = np.linalg.eig( cov_10 )
+    else :
+        cov_00 = np.dot( np.dot(    U,np.diag(S**2)),U.T )/(nm[1]-1)    		# FEATURE COVARIATION 1         F       0       S0      T
+        cov_11 = np.dot( np.dot( MT.T,np.diag(Z**2)), MT )/(nm[0]-1)    		#  SAMPLE COVARIATION 0         F       1       S1      T
+        eigenvals_F , eigenvectors_F = np.linalg.eig( cov_00 )
+        eigenvals_S , eigenvectors_S = np.linalg.eig( cov_11 )
+    #
+    ## COMPARISON
+    #		nC
+    #		00	01	10	11
+    #	00	T	T	F	F
+    #	01	T	T	F	F
+    #	10	F	F	T	T
+    #  	11	F	F	T	T
+    #
+    #		C
+    #		00	01	10	11
+    #	00	T	~	F	F
+    #   01	~	T	F	F
+    #   10	F	F	T	*
+    #	11	F	F	*	T
+    #
+    # EIGENSOLUTION OF COVARIATION MATRICES 00 AND 01 GOES TOGETHER AND ARE CLOSE
+    # EIGENSOLUTION OF COVARIATION MATRICES 10 AND 11 GOES TOGETHER AND ARE CLOSE
+    #
+    ## CONCLUSION: WE CAN USE THE "RIGHT" COVARIATIONS TO CALCULATE EIGENSOLUTIONS
+    #
+    # TO BE CLEAR : FOR DATA WE SEEK THE 0 AXIS SOLUTION
+    # THE USEFUL DIMENSION IS THE SAME IN ALL CASES = MIN( SHAPE( DATA ))
+    #
+    return ( {	'features' : [ eigenvals_F , eigenvectors_F ] ,
+		 'samples' : [ eigenvals_S , eigenvectors_S ] , 'useful dimension' : np.min(nm) } )
+
+
 
 def seqdot( B ) :
     if len(B)  > 2 :
