@@ -188,6 +188,7 @@ def householder_reduction ( A:np.array ) -> tuple[np.array] :
 
 def eigensolve_rectangular (	DAT:np.array , bRemoveMeans:bool = True , bCov:bool = True ,
 				bHouseHolder:bool = False , bKeepItReal:bool=False ) -> dict :
+    from impetuous.quantification import mycov
     #
     # SAIGA RECT-SOLVER !
     # IF YOU ARE DOING THIS AND THINK THAT IT IS SMART THEN YOU SHOULD PROBABLY JUST DIAGONALISE YOUR DATA ...
