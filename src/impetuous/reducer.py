@@ -183,8 +183,8 @@ def Householder_reduction ( A ):
     VT = Q0.T
     return ( U , S , VT )
 
-def householder_reduction ( A:np.array ):
-    return ( Householder_reduction ( A:np.array ) )
+def householder_reduction ( A:np.array ) -> tuple[np.array] :
+    return ( Householder_reduction ( A ) )
 
 def eigensolve_rectangular (	DAT:np.array , bRemoveMeans:bool = True , bCov:bool = True ,
 				bHouseHolder:bool = False , bKeepItReal:bool=False ) -> dict :
