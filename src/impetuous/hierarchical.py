@@ -690,6 +690,57 @@ def build_pclist_word_hierarchy ( filename = None ,  # 'new_compartment_genes.gm
     else :
         return ( PClist )
 
+
+
+def prune_lvl_pclist(asc:list) -> list :
+    cp = dict()
+    for n,p,c in asc :
+        if c in cp :
+            l = cp[c][1]
+            if n<l :
+                cp[c]=[p,n]
+        else :
+            cp[c] = [p,n]
+
+    pc_pruned=list() 
+    for item in cp.items():
+        pc_pruned.append([item[1][0],item[0]])
+    return ( pc_pruned )
+
+def dict_to_pclist( groups:dict , L0:int=None , bPruned:bool=True ) -> list :
+    # SIMPLIFIED LOGIC FOR CREATING A PARENT CHILD LIST
+    # FROM A COLLECTION OF SAIGA PROOF WORDS.
+    PC = list()
+    if L0 is None :
+        L0 = 1E15
+    gS = groups.keys()
+    for gm in gS :
+        L = L0*10
+        for gn in gS :
+            if gn==gm :
+                continue
+            A,B = set(groups[gm]) , set(groups[gn])
+            if len(A-B) >= 0 and len(B-A) == 0 :
+                l = len(A-B)
+                PC.append([ l, gm , gn ] )
+    if bPruned :
+        return ( prune_lvl_pclist(PC) )
+    return ( PC )
+
+def simple_gmtfile_to_pclist( gmtname:str , gmt_delimiter:str = '\t' , bPruned:bool=True ) -> list :
+    groups		=	dict()
+    gmt_delimiter	=	'\t'
+    L0	= 0
+    with open ( gmtname , 'r' ) as input :
+        for line in input :
+            info = line.replace('\n','').split(gmt_delimiter)
+            groups[info[0]] = info[2:]
+            if len(set(info[2:]))>L0:
+                L0 = len(set(info[2:]))
+    return ( dict_to_pclist( groups , L0 , bPruned=bPruned )  )
+
+
+
 def matrixZ2linkage_dict_tuples ( Z :np.array ) -> dict :
     # from scipy.cluster.hierarchy import linkage
     from scipy.cluster.hierarchy import fcluster
