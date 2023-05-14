@@ -587,27 +587,6 @@ def associations ( M , W = None , bRanked = True ) :
     res = PQ/R2
     return ( res )
 
-def spearmanrho ( xs:np.array , ys:np.array ) -> np.array :
-    from scipy.stats import rankdata
-    xs_ = np.array( [ rankdata(x,'average') for x in xs] )
-    ys_ = np.array( [ rankdata(y,'average') for y in ys] )
-    return ( correlation_core(xs_,ys_) )
-
-def pearsonrho ( xs:np.array , ys:np.array ) -> np.array :
-    return ( correlation_core ( xs , ys ) )
-
-def correlation_core ( xs:np.array , ys:np.array , TOL:float=1E-12 ) -> np.array :
-    x_means = xs.mean(axis=1)
-    y_means = ys.mean(axis=1)
-    xms = xs - (x_means*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T # THIS CAN BE IMPROVED
-    yms = ys - (y_means*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T # THIS CAN BE IMPROVED
-    r = np.dot( yms , xms.T ) / np.sqrt( (yms*yms).sum(axis=1).reshape(len(yms),1) @ (xms*xms).sum(axis=1).reshape(1,len(xms))  )
-    if not TOL is None : # DEV
-        r = 1 - r
-        r = r * ( np.abs(r)>TOL )
-        r = 1 - r
-    return ( r )
-
 crop = lambda x,W:x[:,:W]
 def run_shape_alignment_regression( analyte_df , journal_df , formula ,
                           bVerbose = False , synonyms = None , blur_cutoff = 99.8 ,
@@ -1437,14 +1416,65 @@ class APCA ( object ) :
 
 dimred = PCA()
 
-def mean_field ( data:np.array , bSeparate:bool=False ) :
-    m0  = np.mean( data , axis=0 )
-    m1  = np.mean( data , axis=1 )
-    ms1 = m1.reshape(-1,1) * np.ones(len(m0)).reshape(1,-1)
-    ms0 = np.ones(len(m1)).reshape(-1,1) * m0.reshape(1,-1)
+def mean_field ( data:np.array , bSeparate:bool=False , axis_type:str=None ) :
+    lm0,lm1 = np.shape(data)
+    if axis_type=='0' or str(axis_type) == str(None) :
+        m0  = np.mean( data , axis=0 )
+        ms0 = np.ones(lm0).reshape(-1,1) * m0.reshape(1,-1)
+        if axis_type=='0':
+            return ( ms0 )
+    if axis_type=='1' or axis_type is None :
+        m1  = np.mean( data , axis=1 )
+        ms1 = m1.reshape(-1,1) * np.ones(lm1).reshape(1,-1)
+        if axis_type=='1' :
+            return ( ms1 )
     if bSeparate :
         return ( m1.reshape(-1,1)*m0.reshape(1,-1) , ( ms1 + ms0 ) * 0.5 )
-    return ( m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
+    return( 2*m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
+
+def correlation_core ( xs:np.array , ys:np.array , TOL:float=1E-12 , axis_type:str='0' , bVanilla:bool=False ) -> np.array :
+    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+        xs = xs.values
+    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+        ys = ys.values
+    if bVanilla :
+        x_means = (np.mean(xs,axis=1)*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T
+        y_means = (np.mean(ys,axis=1)*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T
+    else :
+        x_means = mean_field ( xs , bSeparate=False , axis_type=axis_type )
+        y_means = mean_field ( ys , bSeparate=False , axis_type=axis_type )
+    xms = xs - x_means #(x_means*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T # THIS CAN BE IMPROVED
+    yms = ys - y_means #(y_means*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T # THIS CAN BE IMPROVED
+    r = np.dot( yms , xms.T ) / np.sqrt( (yms*yms).sum(axis=1).reshape(len(yms),1) @ (xms*xms).sum(axis=1).reshape(1,len(xms))  )
+    if not TOL is None : # DEV
+        r = 1 - r
+        r = r * ( np.abs(r)>TOL )
+        r = 1 - r
+    return ( r )
+
+def spearmanrho ( xs:np.array , ys:np.array ) -> np.array :
+    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+        xs = xs.values
+    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+        ys = ys.values
+    from scipy.stats import rankdata
+    xs_ = np.array( [ rankdata(x,'average') for x in xs] )
+    ys_ = np.array( [ rankdata(y,'average') for y in ys] )
+    return ( correlation_core(xs_,ys_ , axis_type = '1' ) )
+
+def pearsonrho ( xs:np.array , ys:np.array ) -> np.array :
+    return ( correlation_core ( xs , ys , axis_type = '1' ) )
+
+def tjornhammarrho( xs:np.array , ys:np.array , axis_type:str = None , bRanked:bool=True )-> np.array :
+    if bRanked:
+        if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+            xs = xs.values
+        if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+            ys = ys.values
+        from scipy.stats import rankdata
+        xs = np.array( [ rankdata(x,'average') for x in xs] )
+        ys = np.array( [ rankdata(y,'average') for y in ys] )
+    return ( correlation_core( xs , ys , axis_type = axis_type ) )
 
 def gCA ( data:np.array, centering:int = 0 ) -> tuple[np.array] :
     if centering<0 :
@@ -2611,3 +2641,19 @@ if __name__ == '__main__' :
     for i in range(6):
         Fi = 2**(2**i)+1
         print ("Fermats ",i,"th number = ", Fi, " and is it Prime?", impq.isItPrime(Fi) )
+
+
+    from scipy.stats import spearmanr,pearsonr
+    df = pd.read_csv( "cl_analyte_df.tsv" , sep='\t', index_col=0 ).iloc[:2000,:]
+    print ( "HERE" )
+    print ( df )
+    import time
+    t0=time.time()
+    rs0 = spearmanr( df.T )[0]
+    t1=time.time()
+    rs1 = spearmanrho( df,df )
+    t2=time.time()
+    rs2 = tjornhammarrho( df , df  )
+    t3 = time.time()
+    print ( rs0,rs1,rs2 )
+    print ( t1-t0 , t2-t1 ,t3-t2 )
