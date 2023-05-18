@@ -1418,7 +1418,7 @@ dimred = PCA()
 
 def function_field ( data:np.array , axis_type:str=None  ,
 		    function = lambda x,a : np.mean(x,a) ,
-                    merge_function = lambda A,B : 2*A.reshape(-1,1)*B.reshape(1,-1) / ( A + B ) ) -> np.array :
+                    merge_function = lambda A,B,C,D : 2*A.reshape(-1,1)*B.reshape(1,-1) / ( C + D ) ) -> np.array :
     # SAIGA FUNCTION FOR FUNCTIONAL FIELD CALCULATIONS !
     lm0,lm1 = np.shape(data)
     if axis_type=='0' or str(axis_type) == str(None) :
@@ -1431,7 +1431,7 @@ def function_field ( data:np.array , axis_type:str=None  ,
         ms1 = m1.reshape(-1,1) * np.ones(lm1).reshape(1,-1)
         if axis_type=='1' :
             return ( ms1 )
-    return( merge_function(m1,m0) )
+    return( merge_function(m1,m0,ms1,ms0) )
 
 def std_field ( data:np.array , axis_type:str=None ) -> np.array :
     lm0,lm1 = np.shape(data)
