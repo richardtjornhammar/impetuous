@@ -1416,8 +1416,9 @@ class APCA ( object ) :
 
 dimred = PCA()
 
-def function_field ( data:np.array , function=lambda x,a : np.mean(x,a) ,
-                     bSeparate:bool=False , axis_type:str=None ) :
+def function_field ( data:np.array , axis_type:str=None  ,
+		    function = lambda x,a : np.mean(x,a) ,
+                    merge_function = lambda A,B : 2*A.reshape(-1,1)*B.reshape(1,-1) / ( A + B ) ) -> np.array :
     # SAIGA FUNCTION FOR FUNCTIONAL FIELD CALCULATIONS !
     lm0,lm1 = np.shape(data)
     if axis_type=='0' or str(axis_type) == str(None) :
@@ -1430,9 +1431,21 @@ def function_field ( data:np.array , function=lambda x,a : np.mean(x,a) ,
         ms1 = m1.reshape(-1,1) * np.ones(lm1).reshape(1,-1)
         if axis_type=='1' :
             return ( ms1 )
-    if bSeparate :
-        return ( m1.reshape(-1,1)*m0.reshape(1,-1) , ( ms1 + ms0 ) * 0.5 )
-    return( 2*m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
+    return( merge_function(m1,m0) )
+
+def std_field ( data:np.array , axis_type:str=None ) -> np.array :
+    lm0,lm1 = np.shape(data)
+    if axis_type=='0' or str(axis_type) == str(None) :
+        m0  = np.std( data , axis=0 )
+        ms0 = np.ones(lm0).reshape(-1,1) * m0.reshape(1,-1)
+        if axis_type=='0':
+            return ( ms0 )
+    if axis_type=='1' or axis_type is None :
+        m1  = np.std( data , axis=1 )
+        ms1 = m1.reshape(-1,1) * np.ones(lm1).reshape(1,-1)
+        if axis_type=='1' :
+            return ( ms1 )
+    return( ( ms1 + ms0 ) / ( 2*m1.reshape(-1,1)*m0.reshape(1,-1) ) )
 
 def mean_field ( data:np.array , bSeparate:bool=False , axis_type:str=None ) :
     lm0,lm1 = np.shape(data)
