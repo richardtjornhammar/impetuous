@@ -252,8 +252,11 @@ def fuzzy_locate( w , fuzzy_s1, exact_loc ) :
         j = sorted(I)[-1][1]
     return ( j )
 
+def scale_free_geomav(A:np.array,B:np.array) -> np.array :
+    return( A*B/((A+B)*(A+B)) * 4 )
+
 def GEOMAV ( A:float , B:float ) -> float :
-    return ( A*B/(A+B) )
+    return ( 2*A*B/(A+B) )
 
 def geomav ( x:np.array ) -> float :
     return ( GEOMAV ( x[0] , x[1] ) )
