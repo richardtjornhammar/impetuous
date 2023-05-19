@@ -1421,7 +1421,7 @@ def function_field ( data:np.array , axis_type:str=None  ,
                     merge_function = lambda A,B,C,D : 2*A.reshape(-1,1)*B.reshape(1,-1) / ( C + D ) ) -> np.array :
     # SAIGA FUNCTION FOR FUNCTIONAL FIELD CALCULATIONS !
     lm0,lm1 = np.shape(data)
-    if axis_type=='0' or str(axis_type) == str(None) :
+    if axis_type=='0' or axis_type is None :
         m0  = function( data , 0 )
         ms0 = np.ones(lm0).reshape(-1,1) * m0.reshape(1,-1)
         if axis_type=='0':
@@ -1435,7 +1435,7 @@ def function_field ( data:np.array , axis_type:str=None  ,
 
 def std_field ( data:np.array , axis_type:str=None , bReciprocal:bool=True ) -> np.array :
     lm0,lm1 = np.shape(data)
-    if axis_type=='0' or str(axis_type) == str(None) :
+    if axis_type=='0' or axis_type is None :
         m0  = np.std( data , axis=0 )
         ms0 = np.ones(lm0).reshape(-1,1) * m0.reshape(1,-1)
         if axis_type=='0':
@@ -1451,7 +1451,7 @@ def std_field ( data:np.array , axis_type:str=None , bReciprocal:bool=True ) -> 
 
 def mean_field ( data:np.array , bSeparate:bool=False , axis_type:str=None ) :
     lm0,lm1 = np.shape(data)
-    if axis_type=='0' or str(axis_type) == str(None) :
+    if axis_type=='0' or axis_type is None :
         m0  = np.mean( data , axis=0 )
         ms0 = np.ones(lm0).reshape(-1,1) * m0.reshape(1,-1)
         if axis_type=='0':
