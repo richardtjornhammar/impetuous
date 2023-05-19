@@ -1433,7 +1433,7 @@ def function_field ( data:np.array , axis_type:str=None  ,
             return ( ms1 )
     return( merge_function(m1,m0,ms1,ms0) )
 
-def std_field ( data:np.array , axis_type:str=None , bRecirpocal:bool=True ) -> np.array :
+def std_field ( data:np.array , axis_type:str=None , bReciprocal:bool=True ) -> np.array :
     lm0,lm1 = np.shape(data)
     if axis_type=='0' or str(axis_type) == str(None) :
         m0  = np.std( data , axis=0 )
