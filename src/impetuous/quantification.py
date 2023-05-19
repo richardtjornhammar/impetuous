@@ -1433,7 +1433,7 @@ def function_field ( data:np.array , axis_type:str=None  ,
             return ( ms1 )
     return( merge_function(m1,m0,ms1,ms0) )
 
-def std_field ( data:np.array , axis_type:str=None ) -> np.array :
+def std_field ( data:np.array , axis_type:str=None , bRecirpocal:bool=True ) -> np.array :
     lm0,lm1 = np.shape(data)
     if axis_type=='0' or str(axis_type) == str(None) :
         m0  = np.std( data , axis=0 )
@@ -1445,7 +1445,12 @@ def std_field ( data:np.array , axis_type:str=None ) -> np.array :
         ms1 = m1.reshape(-1,1) * np.ones(lm1).reshape(1,-1)
         if axis_type=='1' :
             return ( ms1 )
-    return( 2*m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
+    if bReciprocal:	# INVERTED GEOMETRIC SCALE * MEAN VALUE OF STD
+        return( ( ( ms1 + ms0 ) * (ms1 + ms0) ) / ( 4 * m1.reshape(-1,1)*m0.reshape(1,-1) ) * ( ms1 + ms0 ) * 0.5 )
+    return( 2*m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) ) # GEOMETRIC CENTER
+
+def scale_free_geomav(A:np.array,B:np.array) -> np.array :
+    return( A*B/((A+B)*(A+B)) * 4 )
 
 def mean_field ( data:np.array , bSeparate:bool=False , axis_type:str=None ) :
     lm0,lm1 = np.shape(data)
