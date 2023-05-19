@@ -1422,12 +1422,12 @@ def function_field ( data:np.array , axis_type:str=None  ,
     # SAIGA FUNCTION FOR FUNCTIONAL FIELD CALCULATIONS !
     lm0,lm1 = np.shape(data)
     if axis_type=='0' or str(axis_type) == str(None) :
-        m0  = function( data , axis=0 )
+        m0  = function( data , 0 )
         ms0 = np.ones(lm0).reshape(-1,1) * m0.reshape(1,-1)
         if axis_type=='0':
             return ( ms0 )
     if axis_type=='1' or axis_type is None :
-        m1  = function( data , axis=1 )
+        m1  = function( data , 1 )
         ms1 = m1.reshape(-1,1) * np.ones(lm1).reshape(1,-1)
         if axis_type=='1' :
             return ( ms1 )
@@ -1445,7 +1445,7 @@ def std_field ( data:np.array , axis_type:str=None ) -> np.array :
         ms1 = m1.reshape(-1,1) * np.ones(lm1).reshape(1,-1)
         if axis_type=='1' :
             return ( ms1 )
-    return( ( ms1 + ms0 ) / ( 2*m1.reshape(-1,1)*m0.reshape(1,-1) ) )
+    return( 2*m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
 
 def mean_field ( data:np.array , bSeparate:bool=False , axis_type:str=None ) :
     lm0,lm1 = np.shape(data)
