@@ -1399,6 +1399,203 @@ def dunn_index ( k_coordinates:list[np.array] ) -> float :
     di = np.min(deltas)/np.max(big_deltas)
     return ( di )
 
+import scipy.stats as sts
+import scipy.spatial.distance as scd
+import scipy.special as scp
+#
+def another_metric ( labels:list , D:np.array ) -> float :
+    print ( 'WARNING : DONT USE THIS' )
+    N	= len( labels )
+    ldf	= pd.DataFrame( labels , columns=['L'] , index=range(N) )
+    paired	= ldf.groupby('L').apply(lambda x:x.index.values.tolist())
+    nm = np.shape(D)
+    Z  = np.diag(-1*np.ones(N))
+    if nm[0] != nm[1] or len(nm) == 1 :
+        from scipy.spatial.distance import pdist,squareform
+        D = squareform(D)
+        if N != len(D) :
+            print ('MALFORMED INPUT')
+            exit(1)
+    for v in paired.values :
+        for i in range(len(v)):
+            for j in range(i+1,len(v)):
+                Z[ v[i] , v[j] ] =  1
+                Z[ v[j] , v[i] ] = -1
+    g1 , g2 = [] , []
+    for z , d in zip(Z.reshape(-1),D.reshape(-1)) :
+        if z  > 0 :
+            g1.append(d) # IN
+        elif z > -1 and z < 1 :
+            g2.append(d) # OUT
+    K , M = len(g1) , len(g2)
+    results = sts.mannwhitneyu(  g1 , g2  )
+    return ( 1-np.sqrt(results[0])/K/M , results[1] )
+
+def hm_auc ( X:np.array = np.array([[33,6,6,11,2],[3,2,2,11,33]]) ) :
+    desc_ = """
+	CALCULATES THE APPROXIMATE AUC AND STANDARD ERROR OF A SEGMENTATION
+	STRATEGY WHERE IN AND OUT VALUES CORRESPOND TO SEVERITY DEGREE
+	KNOWN IN LITT.
+    """
+    nN , nA	= np.sum(X,1)
+    nT		= np.sum(X,0)
+    N		= np.sum(X)
+    E1	= X[0]
+    E4	= np.array( [ *[0],*np.cumsum(X[0])[ :-1] ] )
+    E3	= X[1]
+    E2	= np.array( [ *np.cumsum(X[1][::-1])[::-1][1:],*[0]] )
+    E5	= E1*E2 + 0.5 * ( E1*E3 )
+    tE5 = np.sum(E5)
+    W   = tE5/nA/nN
+    AUC = W # THETA = W
+    E6  = E3 * ( E4**2 + E4 * E1 + 1/3 *E1**2 )
+    E7  = E1 * ( E2**2 + E2 * E3 + 1/3 *E3**2 )
+    tE6 = np.sum(E6)
+    tE7 = np.sum(E7)
+    Q2	= tE6 / ( nA * nN**2 )
+    Q1	= tE7 / ( nN * nA**2 )
+    SETHETA = np.sqrt( ( W*(1-W) + (nA-1)*(Q1-W**2) + (nN-1)*(Q2-W**2) )/nA/nN )
+    return ( W , SETHETA )
+
+def reformD( D:np.array , N:int ) -> np.array :
+    from scipy.spatial.distance import pdist,squareform
+    D = squareform(D)
+    if N != len( D ) :
+        print ('MALFORMED INPUT')
+        exit( 1 )
+    return ( D )
+
+def approximate_auc(  labels:list , D:np.array , fraction:float = 0.1 , bVerbose=False , bInvert:bool=False ) -> tuple :
+    from scipy.stats			import rankdata
+    from scipy.special			import binom
+    from scipy.spatial.distance		import squareform
+    #
+    desc_ = """
+ WHAT YOU HAVE IS A HISTOGRAM OF VALUES ACROSS A COMMON RANGE FOR THE IN AND OUT SET
+ SO FOR CLUSTERING IT WOULD CORRESPOND TO HAVING THE VALUES BINNED ACROSS A COMMON SCALE
+ IN THE DISTANCE MATRIX. DISTANCES ARE SMALLER IF SIMILAR NOT LARGER SO IN IS OUT IF
+ YOU ARE USING SIMILIARTY VALUES THAT ARE INCREASING (I.E. COVARIANCE) THEN YOU MUST INVERT
+
+ ALL TO ALL AUC CONTRIBUTION CALCULATION
+    """
+    M		= len(labels)
+    nm          = np.shape ( D )
+    if len( nm ) == 1 :
+        D = reformD( D,M )
+    if nm[0] != nm[1] :
+        D = reformD( D,M )
+    nm = np.shape(D)
+    if M != nm[0] :
+        print ( 'MALFORMED INPUT' )
+        exit(1)
+    #
+    N	= nm[0]
+    L	= int( np.round(N*fraction) ) + 1
+    lD	= squareform( D )
+    if bVerbose : # CHECKING
+        pid2lid = lambda n,i,j : np.nan if i==j else int(binom(n,2) - binom(n-i,2) + (j-i-1) ) if i<j else int(binom(n,2) - binom(n-j,2) + (i-j-1) )
+        i,j = 1,2
+        print ( D[i,j] , lD[ pid2lid(N,i,j) ] )
+        i,j= 2,1
+        print ( D[i,j] , lD[ pid2lid(N,i,j) ] )
+        print (  hanley_mcneil_auc( ) )
+    ldf = pd.DataFrame( labels , columns=['L'] , index=range(N) )
+    paired      = ldf.groupby('L').apply(lambda x:x.index.values.tolist())
+    Z  = np.diag(-1*np.ones(N)) * 0.0
+    for v in paired.values :
+        for i in range(len(v)):
+            for j in range(i+1,len(v)):
+                Z[ v[i] , v[j] ] = 1
+                Z[ v[j] , v[i] ] = 1
+    lZ = squareform(Z)
+    if bVerbose :
+        print ( lZ )
+    rlD = rankdata(lD,'average')
+    mra = np.max( rlD )
+    K	= int(np.floor(mra/L))+1
+    if bVerbose :
+        print ( rlD )
+        print ( mra , L , K , int(np.floor(mra/L)) )
+    X = np.zeros(2*K).reshape(2,K)
+    for v,b in zip(rlD,lZ) :
+        X[ 1-int(b) if not bInvert else int(b) ][ int(np.floor(v/L)) ] += 1
+    if bVerbose :
+        print ( X )
+    auc = hm_auc( X )
+    if bVerbose :
+        print ( auc )
+    return ( auc )
+#
+def immersiveness ( I:int, labels:list , D:np.array , fraction:float = 0.1 , bVerbose=False , bInvert:bool=False ) -> tuple :
+    desc_ = """
+ WHAT YOU HAVE IS A HISTOGRAM OF VALUES ACROSS A COMMON RANGE FOR THE IN AND OUT SET
+ SO FOR CLUSTERING IT WOULD CORRESPOND TO HAVING THE VALUES BINNED ACROSS A COMMON SCALE
+ IN THE DISTANCE MATRIX. DISTANCES ARE SMALLER IF SIMILAR NOT LARGER SO IN IS OUT IF
+ YOU ARE USING SIMILIARTY VALUES THAT ARE INCREASING (I.E. COVARIANCE) THEN YOU MUST INVERT
+
+ ONE TO ALL AUC CONTRIBUTION CALCULATION
+    """
+    from scipy.stats                    import rankdata
+    from scipy.special                  import binom
+    from scipy.spatial.distance         import squareform
+    M           = len(labels)
+    nm          = np.shape ( D )
+    if len( nm ) == 1 :
+        D = reformD( D,M )
+    if nm[0] != nm[1] :
+        D = reformD( D,M )
+    N	= M
+    L	= int( np.round(N*fraction) ) + 1
+    d		= rankdata( D[I] ,'average' )
+    mrd		= np.max( d )
+    bSel	= np.array( [ np.array([ l == labels[I] ,  l != labels[I] ]) for l in labels ] ).T
+    if bVerbose :
+        print ( d[bSel[0]] )
+        print ( d[bSel[1]] )
+    K	= int(np.floor(mrd/L))+1
+    X	= np.zeros(2*K).reshape(2,K)
+    for v,b in zip( d,bSel[0] ) :
+        X[ 1-int(b) if not bInvert else int(b) ][ int(np.floor(v/L)) ] +=1
+    auc = hm_auc( X )
+    if bVerbose :
+        print ( X )
+        print ( auc )
+    return ( auc )
+
+def complete_immersiveness ( labels:list , D:np.array , fraction:float = 0.1 , bVerbose=False , bInvert:bool=False ) -> np.array :
+    total_immersiveness	= []
+    N 			= len(labels)
+    for i in range ( N ) :
+        immersed = immersiveness ( i , labels , D )
+        if bVerbose :
+            print ( 'IMERSIVENESS = ' , i ,   immersed   )
+        total_immersiveness .append( np.array(immersed) )
+    return ( np.array ( total_immersiveness ) )
+#
+#
+def happiness ( entry_nr:int , ldf:pd.DataFrame , ndf:pd.DataFrame , clustercol:int=0 , namecol=0 , neighborcol=1 , lookup:dict=None ) -> float :
+    descr_ = """
+ ldf ASSUMES THE CLUSTER INFORMATION HAS UNIQUE NAMES AS INDEX AND CLUSTER IDS IN clustercol
+ ndf ASSUMES THAT namecol CONTAINS UNIQUE NAMES AS VALUES FOUND IN THE ldf INDEX AND THAT NEIGHBOR
+	COL CONTAINS UNIQUE NAMES. ndf CONTAINS SELF AS ITS FIRST NEIGHBOR.
+    """
+    if lookup is None :
+        lookup  = { i:(c,j) for i,c,j in zip(ldf.index.values,ldf.iloc[:,0].values,range(len(ldf)) ) }
+    i_ = entry_nr
+    I , C = ldf.index.values[i_],ldf.iloc[i_,clustercol]
+    check       = [ [lookup[name],name==I] for name in ndf.iloc[ndf.iloc[:,0].values==I].iloc[:,1].values  ]
+    happy       = [ c[0][0] for c in check if c[1] ][0]
+    happiness   = np.sum( [ c[0][0]==happy for c in check ] )/len(check)
+    return ( happiness )
+
+def complete_happiness ( ldf:pd.DataFrame , ndf:pd.DataFrame , clustercol:int=0 , namecol=0 , neighborcol=1  ) -> list[float] :
+    lookup = { i:(c,j) for i,c,j in zip(ldf.index.values,ldf.iloc[:,0].values,range(len(ldf)) ) }
+    total_happiness_ = []
+    for i_ in range( len(ldf) ) :
+        total_happiness_ .append( happiness( i_ , ldf , ndf , lookup=lookup ) )
+    return ( total_happiness_ )
+#
+
 if __name__ == '__main__' :
 
     D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
