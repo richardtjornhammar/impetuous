@@ -20,6 +20,42 @@ import sys
 
 import typing
 
+def read_rds( filename:str ) -> np.array :
+    import rpy2.robjects as robjects
+    from rpy2.robjects import pandas2ri
+    pandas2ri.activate()
+    readRDS = robjects.r['readRDS']
+    return ( readRDS (filename) )
+
+def write_rds ( df:pd.DataFrame, filename='./test.rds' , bLinearValues=False ) :
+    import rpy2.robjects as robjects
+    from   rpy2.robjects import pandas2ri
+    from   rpy2.robjects.conversion import localconverter
+    pandas2ri .activate()
+
+    with localconverter( robjects.default_converter + pandas2ri.converter) :
+        r_df = robjects.conversion.py2rpy( df )
+    robjects.r.assign( filename,r_df )
+
+    saveRDS = robjects.r( f"saveRDS" )
+    if bLinearValues :
+        print ( 'STORING LINEAR ARRAY' )
+        saveRDS ( df.values.reshape(-1) , file = filename )
+    else :
+        print ( 'STORING DATA FRAME' )
+        saveRDS ( r_df                  , file = filename )
+
+def create_unique_index_value_paired_dataframe ( df:pd.DataFrame , labid:str , labv:str ) -> pd.DataFrame :
+    DF = []
+    non_redundant = df.loc[:,[labid,labv]].groupby(labid).apply(lambda x:sorted(x.values.reshape(-1))[::-1] )
+    for idx , vals in zip( non_redundant.index.values,non_redundant.values ) :
+        for v,i_ in zip(vals,range(len(vals))):
+            DF.append( [ idx+'.'+str(i_),v ] )
+    df__ =          pd.DataFrame(DF,columns=[labid,labv])
+    df__ .index =   df__.loc[ : , labid]
+    df__ =          df__.loc[ : , [labv] ]
+    return ( df__ )
+
 class Node ( object ) :
     def __init__ ( self ) :
         self.id_          :str   = ""
