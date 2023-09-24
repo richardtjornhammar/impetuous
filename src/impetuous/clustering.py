@@ -1431,7 +1431,8 @@ def another_metric ( labels:list , D:np.array ) -> float :
     results = sts.mannwhitneyu(  g1 , g2  )
     return ( 1-np.sqrt(results[0])/K/M , results[1] )
 
-def hm_auc ( X:np.array = np.array([[33,6,6,11,2],[3,2,2,11,33]]) ) :
+def hm_auc ( X:np.array = np.array([[33,6,6,11,2],[3,2,2,11,33]]) ,
+             bReturnRates:bool=False ) :
     desc_ = """
 	CALCULATES THE APPROXIMATE AUC AND STANDARD ERROR OF A SEGMENTATION
 	STRATEGY WHERE IN AND OUT VALUES CORRESPOND TO SEVERITY DEGREE
@@ -1455,7 +1456,25 @@ def hm_auc ( X:np.array = np.array([[33,6,6,11,2],[3,2,2,11,33]]) ) :
     Q2	= tE6 / ( nA * nN**2 )
     Q1	= tE7 / ( nN * nA**2 )
     SETHETA = np.sqrt( ( W*(1-W) + (nA-1)*(Q1-W**2) + (nN-1)*(Q2-W**2) )/nA/nN )
+    if bReturnRates :
+        # W IS AN ANALYTIC AUC MEASURE
+        # SETHETA IS THE ASSOCIATED STANDARD ERROR
+        # num_auc IS A NUMERICAL ESTIMATE
+        tpr = np.cumsum( X[0]/np.sum(X[0]) )
+        fpr = np.cumsum( X[1]/np.sum(X[1]) )
+        num_auc = np.trapz(tpr,fpr)
+        num_err = np.abs(W-num_auc)
+        return ( W , SETHETA , tpr , fpr , num_auc , num_err) 
     return ( W , SETHETA )
+
+def num_auc ( X:np.array = np.array( [[33,6,6,11,2] , [3,2,2,11,33]]) ) -> tuple :
+    # W IS AN ANALYTIC AUC MEASURE
+    # SETHETA IS THE ASSOCIATED STANDARD ERROR
+    # num_auc IS A NUMERICAL ESTIMATE
+    tpr = np.cumsum( X[0]/np.sum(X[0]) )
+    fpr = np.cumsum( X[1]/np.sum(X[1]) )
+    num_auc = np.trapz(tpr,fpr)
+    return ( tpr , fpr , num_auc )
 
 def reformD( D:np.array , N:int ) -> np.array :
     from scipy.spatial.distance import pdist,squareform
