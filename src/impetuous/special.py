@@ -306,6 +306,50 @@ def rename_order(A:list) ->list :
             a0 = a0+1
     return ( [R[a] for a in A] )
 
+def scan_auc (	X:np.array , Y:np.array ,
+		r_cut:float = 0.0 , phi_rot:float = 0.0 , N_centers:int=4 ,
+		D:np.array = None, labs:str='abcdefghijklmnopqrstuvwxyz',
+		bMergeInternal:bool = False , fraction:float=0.9 ) -> tuple :
+    auc_score = 0.0
+    if True :
+        L_id , R_id = [] , []
+        from impetuous.fit import quaternion as quat
+        rot_axis        = np.array( [ 0 , 0 , 1 ] )
+        phi             = phi_rot
+        q               = quat( vector=rot_axis , angle=phi )
+        for x , y in zip ( X , Y ) :
+            rv	= q.rotate_coord( np.array([x,y,0]) )
+            x,y	= rv[0] , rv[1]
+            # fI IS THE DECISION BOUNDARY FOR THE ANGLE
+            fI = np.round( np.arctan2(x,y)/np.pi/2.0*N_centers )
+            fI = fI if np.abs(fI)<np.sqrt(N_centers) else np.abs(fI)
+            # r_cut IS THE DECISION BOUNDARY FOR THE RADIUS
+            r  = np.sqrt( x**2+y**2 ) > r_cut
+            L_id.append( fI )
+            R_id.append( r )
+        L_id = np.array( L_id )
+        R_id = np.array( R_id )
+        dimL = len( set(L_id) )
+        #
+        if not bMergeInternal :
+            C_id = ( L_id - np.min(L_id) ) + R_id * dimL
+        else :
+            C_id = ( L_id - np.min(L_id) + 1 ) * R_id
+        labs    =labs.upper()
+        if len(set(C_id))>len(labs):
+            print ( 'TOO MANY SEGMENTS WILL FAIL' )
+            exit(1)
+        L2S     = { l:labs[i] for l,i in zip( set(C_id),range(len(set(C_id))) ) }
+        labels  = [ L2S[l] for l in C_id ]
+        if D is None :
+            from scipy.spatial.distance	import pdist , squareform
+            D = squareform( pdist( np.array([ np.array([x,y]) for (x,y) in zip(X,Y) ])))
+        from impetuous.clustering import approximate_auc
+        auc_score , tpr_fpr , TP , TN , FN , FP = approximate_auc(  labels , D , fraction = 0.9 )
+    return ( auc_score , labels , tpr_fpr , TP , TN , FN , FP )
+
+
+
 def read_rds_matrix ( filename = 'matrix.rds', bIsSquare=False ) :
     import rpy2.robjects as robjects
     from   rpy2.robjects import pandas2ri
