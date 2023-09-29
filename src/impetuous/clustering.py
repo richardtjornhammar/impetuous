@@ -1484,7 +1484,7 @@ def reformD( D:np.array , N:int ) -> np.array :
         exit( 1 )
     return ( D )
 
-def approximate_auc(  labels:list , D:np.array , fraction:float = 0.1 , bVerbose=False , bInvert:bool=False ) -> tuple :
+def approximate_auc(  labels:list , D:np.array , fraction:float = 0.1 , bVerbose=False , bInvert:bool=False , bLegacy:bool=False ) -> tuple :
     from scipy.stats			import rankdata
     from scipy.special			import binom
     from scipy.spatial.distance		import squareform
@@ -1540,10 +1540,20 @@ def approximate_auc(  labels:list , D:np.array , fraction:float = 0.1 , bVerbose
         X[ 1-int(b) if not bInvert else int(b) ][ int(np.floor(v/L)) ] += 1
     if bVerbose :
         print ( X )
-    auc = hm_auc( X )
-    if bVerbose :
-        print ( auc )
-    return ( auc )
+    if bLegacy :
+        auc = hm_auc( X )
+        if bVerbose :
+            print ( auc )
+        return ( auc )
+    tpr_fpr = np.cumsum( X.T/np.sum(X,1) , 0 )
+    TP = np.cumsum( X[0] )		# AT THRESHOLD
+    FN = np.cumsum( X[0][::-1] )[::-1]	# AT THRESHOLD
+    FP = np.cumsum( X[1] )		# AT THRESHOLD
+    TN = np.cumsum( X[1][::-1] )[::-1]	# AT THRESHOLD
+    auc = np.trapz(tpr_fpr[:,0],tpr_fpr[:,1])
+    if str( auc ) == str( np.nan ) :
+        auc = 0.0
+    return ( auc , tpr_fpr, TP , TN , FN , FP )
 #
 def immersiveness ( I:int, labels:list , D:np.array , fraction:float = 0.1 , bVerbose=False , bInvert:bool=False ) -> tuple :
     desc_ = """
