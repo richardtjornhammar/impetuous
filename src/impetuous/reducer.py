@@ -617,7 +617,7 @@ def batchcorrect( convoluted_df:pd.DataFrame , convolution_model:pd.DataFrame=No
     # NAIVE WAY OF DOING VARIATIONAL CORRECTION TO A FULL RECTANGULAR DATAFRAME
     #
     bUseModel = False
-    if not model is None:
+    if not convolution_model is None:
         model	= convolution_model
         bUseModel = True
     m_res	= np.linalg.svd(model.values,False)
