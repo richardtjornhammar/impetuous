@@ -637,7 +637,7 @@ def batchcorrect( convoluted_df:pd.DataFrame , convolution_model:pd.DataFrame=No
     dma,dmi	= np.max(deconv_df),np.min(deconv_df)
     oma,omi	= np.max(convoluted_df),np.min(convoluted_df)
     scaled_deconv_df	= (deconv_df - dmi)/(dma-dmi) * (oma-omi) + omi
-    print ( scaled_deconv_df )
+    return ( scaled_deconv_df )
 
 
 if __name__ == '__main__' :
