@@ -612,6 +612,32 @@ REQUESTED"""
         uncursed = uncursed*(1-np.eye(n))
     return(uncursed)
 
+def batchcorrect( convoluted_df:pd.DataFrame , convolution_model:pd.DataFrame=None )->pd.DataFrame :
+    #
+    # NAIVE WAY OF DOING VARIATIONAL CORRECTION TO A FULL RECTANGULAR DATAFRAME
+    #
+    bUseModel = False
+    if not model is None:
+        model	= convolution_model
+        bUseModel = True
+    m_res	= np.linalg.svd(model.values,False)
+    strength	= [ *[m_res[1][0]] , *m_res[1][1:] ]
+    #
+    X = convoluted_df.values
+    u,s,vt = np.linalg.svd(X,False)
+    o = np.array([*[1],*list(np.zeros(len(s)-1))])
+    z = s*o
+    if bUseModel :
+        vt = m_res[2]
+        o  = np.zeros(len(u)*len(vt)).reshape(len(u),len(vt))
+        o[0][0] = m_res[1][0]
+    deconv_df = pd.DataFrame(  	X/( np.dot( np.dot(u,o),vt) + 1 ) ,
+				columns = imputed_df.columns ,
+				index =   imputed_df.index )
+    dma,dmi	= np.max(deconv_df),np.min(deconv_df)
+    oma,omi	= np.max(convoluted_df),np.min(convoluted_df)
+    scaled_deconv_df	= (deconv_df - dmi)/(dma-dmi) * (oma-omi) + omi
+    print ( scaled_deconv_df )
 
 
 if __name__ == '__main__' :
