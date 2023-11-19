@@ -55,7 +55,7 @@ nice_colors = list( set( [ '#c5c8c6' , '#1d1f21' , '#282a2e' , '#373b41' , '#a54
                 '#8c9440' , '#b5bd68' , '#de935f' , '#f0c674' , '#5f819d' , '#81a2be' ,
                 '#85678f' , '#b294bb' , '#5e8d87' , '#8abeb7' , '#707880' ] ) )
 
-safe_palette_hex    = [ '#193CBC' , '#1473AF' , '#589ACF' , '#EEE762' , '#E8B84F' , '#EA594E' ]
+safe_palette    = [ '#193CBC' , '#1473AF' , '#589ACF' , '#EEE762' , '#E8B84F' , '#EA594E' ]
 
 make_hex_colors = lambda c : '#%02x%02x%02x' % (c[0]%256,c[1]%256,c[2]%256)
 
