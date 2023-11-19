@@ -733,6 +733,53 @@ def low_missing_value_imputation ( fdf , fraction = 0.9 , absolute = 'True' ) :
                 fdf.iloc[i,j] = nan_values[i,j]
     return ( fdf )
 
+from numpy import histogram as hist
+def expect ( values , what:str='' ):
+    nbins = int(np.ceil(len(values)*0.1))
+    not_nans = []
+    for v in values :
+        if not 'nan' in str(v).lower():
+            not_nans.append(v)
+    if what == 'mean':
+        return ( np.mean( not_nans ) )
+    if what == 'median':
+        return ( np.median(not_nans) )
+    res = hist( not_nans , nbins )
+    X   = ( res[1][1:]+res[1][:-1] )*0.5
+    if what == 'represented':
+        return (  X[np.argmax(res[0]) ] )
+    return ( np.sum(X*res[0])/np.sum(res[0]) )
+
+def impute_values ( df:pd.DataFrame , by:list=None , bVerbose:bool=True ) :
+    if not by is None :
+        sb = { s:i for i,s in zip(range(len(list(set(by)))),list(set(by))) }
+    df.loc['gid'] = by
+    impute_vals,imputed_df = None,None
+    for analyte in df.index.values :
+        if 'gid' in analyte :
+            continue
+        tmp = pd.DataFrame( df.loc[[analyte,'gid'],:].T.groupby('gid').apply(lambda x:pd.Series(expect(x.values),name=analyte) ) )
+        tmp.columns = [analyte]
+        w = []
+        for v in  zip( df.loc[[analyte,'gid'],:].T.values ) :
+            if 'nan' in str(v[0][0]).lower() :
+                w.append( tmp.loc[v[0][1]].values[0] )
+            else :
+                w.append( v[0][0] )
+        if imputed_df is None :
+            imputed_df =  pd.DataFrame([w],index=[analyte] , columns=[df.columns] )
+        else :
+            imputed_df = pd.concat([ imputed_df,  pd.DataFrame([w],index=[analyte] , columns=[df.columns]) ])
+        if impute_vals is None :
+            impute_vals = tmp.T
+        else :
+            impute_vals = pd.concat([impute_vals,tmp.T])
+        if bVerbose :
+            print ( imputed_df,impute_vals , np.sum(imputed_df.values))
+    impute_vals.index = df.index.values.tolist()[:-1]
+    return ( imputed_df , impute_vals )
+
+
 if __name__ == '__main__' :
     #
     # IF YOU REQUIRE THE DATA THEN LOOK IN :
