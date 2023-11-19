@@ -348,6 +348,28 @@ def scan_auc (	X:np.array , Y:np.array ,
         auc_score , tpr_fpr , TP , TN , FN , FP = approximate_auc(  labels , D , fraction = 0.9 )
     return ( auc_score , labels , tpr_fpr , TP , TN , FN , FP )
 
+def nan_mean( x , bSpecial:bool=False ) :
+    if bSpecial:
+        x=x.iloc[:-1]
+    S = 0
+    N = 0
+    for z in x :
+        if z == np.nan :
+            continue
+        else :
+            S += z
+            N += 1
+    if N == 0 :
+        return np.nan
+    else :
+        return S/N
+
+recover = lambda u,s,vt : np.dot(u*s,vt)
+psuedo_inverse = lambda u,s,vt : recover(vt.T,s,u.T)
+
+def invert ( C ) :
+    a0,a1,a2 = np.linalg.svd(C,False)
+    return ( psuedo_inverse(a0,a1,a2) )
 
 
 def read_rds_matrix ( filename = 'matrix.rds', bIsSquare=False ) :
