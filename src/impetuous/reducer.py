@@ -620,8 +620,8 @@ def batchcorrect( convoluted_df:pd.DataFrame , convolution_model:pd.DataFrame=No
     if not convolution_model is None:
         model	= convolution_model
         bUseModel = True
-    m_res	= np.linalg.svd(model.values,False)
-    strength	= [ *[m_res[1][0]] , *m_res[1][1:] ]
+        m_res	= np.linalg.svd(model.values,False)
+        strength	= [ *[m_res[1][0]] , *m_res[1][1:] ]
     #
     X = convoluted_df.values
     u,s,vt = np.linalg.svd(X,False)
