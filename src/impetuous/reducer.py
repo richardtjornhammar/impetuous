@@ -612,31 +612,32 @@ REQUESTED"""
         uncursed = uncursed*(1-np.eye(n))
     return(uncursed)
 
-def batchcorrect( convoluted_df:pd.DataFrame , convolution_model:pd.DataFrame=None )->pd.DataFrame :
-    #
+def correction (	convoluted_df:pd.DataFrame		,
+			convolution_model:pd.DataFrame = None 	,
+			nFirst:int = 1 , bFlipped:bool = True ) -> pd.DataFrame :
     # NAIVE WAY OF DOING VARIATIONAL CORRECTION TO A FULL RECTANGULAR DATAFRAME
-    #
     bUseModel = False
     if not convolution_model is None:
-        model	= convolution_model
+        model   = convolution_model
         bUseModel = True
-        m_res	= np.linalg.svd(model.values,False)
-        strength	= [ *[m_res[1][0]] , *m_res[1][1:] ]
+        m_res   = np.linalg.svd(model.values,False)
     #
     X = convoluted_df.values
-    u,s,vt = np.linalg.svd(X,False)
-    o = np.array([*[1],*list(np.zeros(len(s)-1))])
-    z = s*o
+    u , s , vt = np.linalg.svd( X , False )
+    #
+    correction = 0
     if bUseModel :
         vt = m_res[2]
-        o  = np.zeros(len(u)*len(vt)).reshape(len(u),len(vt))
-        o[0][0] = m_res[1][0]
-    deconv_df = pd.DataFrame(  	X/( np.dot( np.dot(u,o),vt) + 1 ) ,
-				columns = convoluted_df.columns ,
-				index =   convoluted_df.index )
-    dma,dmi	= np.max(deconv_df),np.min(deconv_df)
-    oma,omi	= np.max(convoluted_df),np.min(convoluted_df)
-    scaled_deconv_df	= (deconv_df - dmi)/(dma-dmi) * (oma-omi) + omi
+        z  = m_res[1]
+    for i in range( nFirst ) :
+        print ( i )
+        correction += np.outer(u.T[i],vt[i])*s[i]
+    deconv_df = pd.DataFrame(   X-correction ,
+                                columns = convoluted_df.columns ,
+                                index =   convoluted_df.index )
+    dma,dmi     = np.max(deconv_df),np.min(deconv_df)
+    oma,omi     = np.max(convoluted_df),np.min(convoluted_df)
+    scaled_deconv_df    = (deconv_df - dmi)/(dma-dmi) * (oma-omi) + omi
     return ( scaled_deconv_df )
 
 
