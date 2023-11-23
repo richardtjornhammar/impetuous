@@ -348,13 +348,11 @@ def scan_auc (	X:np.array , Y:np.array ,
         auc_score , tpr_fpr , TP , TN , FN , FP = approximate_auc(  labels , D , fraction = 0.9 )
     return ( auc_score , labels , tpr_fpr , TP , TN , FN , FP )
 
-def nan_mean( x , bSpecial:bool=False ) :
-    if bSpecial:
-        x=x.iloc[:-1]
+def nan_mean( x:np.array , bSpecial:bool=False ) -> float :
     S = 0
     N = 0
     for z in x :
-        if z == np.nan :
+        if 'nan' in str(z).lower() :
             continue
         else :
             S += z
@@ -363,6 +361,10 @@ def nan_mean( x , bSpecial:bool=False ) :
         return np.nan
     else :
         return S/N
+
+def nan_mean_df ( x:pd.Series , names:list=None ) -> pd.Series :
+    return( pd.Series(  [ np.sum([ y_ for y_ in x_ if not 'nan' in str(y_).lower()  ])/np.sum([ 1 for y_ in x_ if not 'nan' in str(y_).lower() ])\
+                 for x_ in x.T.values ], index=names ) )
 
 recover = lambda u,s,vt : np.dot(u*s,vt)
 psuedo_inverse = lambda u,s,vt : recover(vt.T,s,u.T)
