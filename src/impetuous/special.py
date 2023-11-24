@@ -46,7 +46,7 @@ lint2lstr
 unpack
 rem
 """
-
+import pandas as pd
 import numpy as np
 
 def sign ( x ) :
