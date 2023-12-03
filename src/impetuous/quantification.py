@@ -1465,6 +1465,14 @@ def mean_field ( data:np.array , bSeparate:bool=False , axis_type:str=None ) :
         return ( m1.reshape(-1,1)*m0.reshape(1,-1) , ( ms1 + ms0 ) * 0.5 )
     return( 2*m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
 
+def associativity( xs:np.array , ys:np.array ) -> np.array :
+    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+        xs = xs.values
+    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+        ys = ys.values
+    r = np.dot( ys , xs.T ) / np.sqrt( np.outer( np.diag(np.dot( ys,ys.T )) , np.diag(np.dot(xs,xs.T)) )  )
+    return r
+
 def correlation_core ( xs:np.array , ys:np.array , TOL:float=1E-12 , axis_type:str='0' , bVanilla:bool=False ) -> np.array :
     if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
         xs = xs.values
