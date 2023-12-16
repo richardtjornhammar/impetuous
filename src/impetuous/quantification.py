@@ -1470,8 +1470,11 @@ def associativity( xs:np.array , ys:np.array ) -> np.array :
         xs = xs.values
     if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
         ys = ys.values
-    r = np.dot( ys , xs.T ) / np.sqrt( np.outer( np.diag(np.dot( ys,ys.T )) , np.diag(np.dot(xs,xs.T)) )  )
-    return r
+    # ASSUMING COLUMN DIMENSION IS REDUCED
+    nomer = np.dot( ys,xs.T )
+    dnom1 = np.sum( ys**2 , 1 )
+    dnom2 = np.sum( xs**2 , 1 )
+    return ( nomer/np.sqrt(np.outer(dnom1,dnom2)) )
 
 def correlation_core ( xs:np.array , ys:np.array , TOL:float=1E-12 , axis_type:str='0' , bVanilla:bool=False ) -> np.array :
     if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
@@ -2662,6 +2665,67 @@ def f_truth(i:int) -> bool : #  THE SQUARE SUM OF THE I:TH AND I+1:TH FIBONACCI 
     return ( fibonacci(i)**2+fibonacci(i+1)**2 == fibonacci(2*i+1))
 
 
+
+def encode( G = ['Male','Male','Female'] ) -> dict :
+    #
+    # CREATES AN BINARY ENCODING MATRIX FROM THE SUPPLIED LIST
+    # USES A PANDAS DATAFRAME AS INTERMEDIATE FOR ERROR CHECKING
+    # THIS PUTS THE O IN OPLS (ORTHOGONAL)
+    # THIS IS THE SAME AS THE PANDAS DEPENDENT IMPLEMENTATION
+    # BUT FASTER AND MORE MEM EFFICIENT
+    # IT IS STILL A SLOW IMPLEMENTATION
+    #
+    ugl = list(set(G)) ; n = len(ugl) ; m = len(G)
+    lgu = { u:j for u,j in zip(ugl,range(n)) }
+    enc_d = np.zeros(m*n,dtype=int).reshape(-1,n)
+    for i in range ( m ) :
+        j = lgu[G[i]]
+        enc_d[i,j] = int(1)
+    return ( {'encoding':enc_d.T,'labels':ugl} )
+
+def dirac_matrix ( G = ['Male','Male','Female'] ) -> np.array :
+    eV = encode(   G   )['encoding']
+    return ( np.dot(eV.T,eV) )
+
+def inclusion_projection ( X:np.array, G:list[str] ,
+		bSelfExcluded:bool=False ) -> np.array :
+    nm = np.shape(X)
+    ax = -1
+    if nm[0] == len(G) :
+        ax = 1
+        X = X.T
+    if nm[1] == len(G) :
+        ax = 0
+    if ax == -1 :
+        print ( 'NO COALESCENT AXIS' )
+        exit(1)
+    dM  = dirac_matrix(G)		# THESE ARE SHARED
+    dM -= np.eye(len(dM),dtype=int)*int(bSelfExcluded)
+    if np.sum(np.sum(dM,0)==0)>0 :
+        print ( 'WARNING:\tYOU ARE INCLUDING SINGLETONS.\n\t\tSINGLES CAUSES PANIC IN DIVISION AND SPAWNS NANS\n\t\tSET bSelfExcluded=False')
+    eX  = np.dot(X,dM) / np.sum(dM,ax)	# ONLY SHARED ARE PROPAGATED
+    return ( eX if ax==0 else eX.T )
+
+#def assoc ( x:np.array , y:np.array ,ax:int=1 ) -> np.array :
+#    # ASSUMING COLUMN DIMENSION IS REDUCED
+#    nomer = np.dot( y,x.T )
+#    dnom1 = np.sum( y**2 , ax )
+#    dnom2 = np.sum( x**2 , ax )
+#    return ( nomer/np.sqrt(np.outer(dnom1,dnom2)) )
+
+def block_remove ( data:np.array , unwanted_blocks:list[str] , meanax:int=1 ) -> np.str :
+    ax = meanax
+    if meanax == 0 :
+        data = data.T
+        ax = 1
+    means = np.outer( np.mean( data , ax ) , np.ones(len(data[0])) )				# REMEMBER FEATURE MEANS
+    block_contributions = inclusion_projection ( data , unwanted_blocks , False ).copy()	# CALCULATE SAMPLE BLOCK VARIANCE
+    if meanax==0 :
+        return ( np.transpose(data - block_contributions + means) )
+    return ( data - block_contributions + means )						# REMOVE SAMPLE BLOCKS AND ADD
+												# BACK FEATURE MEANS
+
+
 if __name__ == '__main__' :
 
     test_type = 'random'
@@ -2698,3 +2762,38 @@ if __name__ == '__main__' :
     t3 = time.time()
     print ( rs0,rs1,rs2 )
     print ( t1-t0 , t2-t1 ,t3-t2 )
+
+
+    #
+    print ( "HERE" )
+    #
+    N,M = 10 , 5
+    NNM = 10*( np.random.rand(N,M) + 1 )
+    ML  = np.array( [ str(int(v)) for v in np.round( 2*np.random.rand(M)+1 ) ] )
+    #
+    e2 = encode( ML )
+
+    print ( e2 )
+
+    eV = e2['encoding']
+
+    dM = dirac_matrix(ML)
+    print ( dM )
+
+    from scipy.stats import pearsonr
+    if False :
+        i_,j_ = 0,1
+        for encv in eV :
+            # print ( NNM[0] )
+            if np.sum(encv)>1 :
+                collected = np.array( [ [  n , m  ] for (n,m,e)  in zip( NNM[i_] , NNM[j_] , encv ) if e==1 ]).reshape(-1,2).T
+                print ( pearsonr(collected[0],collected[1]) )
+    #
+    # SANITY CHECK THEN OK
+    eP = inclusion_projection ( NNM , ML , False ).copy()
+    dX = NNM # - eP # REMANING INTERACTIONS
+    print ( assoc(dX,dX) )
+    dX = NNM - eP # REMANING INTERACTIONS
+    print ( assoc(dX,dX) )
+    print ( block_remove(NNM,ML) )
+    print ( NNM )
