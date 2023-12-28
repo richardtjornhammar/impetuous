@@ -1591,7 +1591,80 @@ def immersiveness ( I:int, labels:list , D:np.array , fraction:float = 0.1 , bVe
         print ( auc )
     return ( auc )
 
-def complete_immersiveness ( labels:list , D:np.array , fraction:float = 0.1 , bVerbose=False , bInvert:bool=False ) -> np.array :
+def complete_immersiveness ( labels:list , D:np.array , fraction:float = 0.1 ,  bins:int = None ,
+        bVerbose=False , bInvert:bool=False , bAlternative:bool = False ) -> np.array :
+    if bAlternative :
+        from impetuous.quantification import dirac_matrix
+        bSanityCheck    = bVerbose
+        if bins is None :
+            bins = len(D)
+            if bins<10 :
+                bins = 100
+        bins += 10
+        grouped		= dirac_matrix( labels )
+        ungrouped	= 1 - grouped
+        if bSanityCheck :
+            in_d		= [ d for d in ( D * grouped ) .reshape(-1) if d>0 ]
+            out_d		= [ d for d in (D * ungrouped) .reshape(-1) if d>0 ]
+            all_positives	= np.histogram(in_d , range=(0,np.max(D.reshape(-1))) , bins=bins )[0]
+            all_positives	= all_positives/np.sum(all_positives)
+            all_negatives , common_range = np.histogram(out_d, range=(0,np.max(D.reshape(-1))) , bins=bins )
+            all_negatives 	= all_negatives/np.sum(all_negatives)
+            domain = 0.5*(common_range[1:]+common_range[:-1])
+            #
+            tpr = np.cumsum(all_positives)
+            tpr = tpr/tpr[-1]
+            fpr = np.cumsum(all_negatives)
+            fpr = fpr/fpr[-1]
+            print ( 'FULL AUC:' , np.trapz(tpr,fpr) )
+        in_d            = D * grouped
+        out_d           = D * ungrouped
+        dr		= np.max(D.reshape(-1))/bins
+        domain		= np.array( [ dr*0.5+i*dr for i in range( bins ) ] )
+        cP,cN = [],[]
+        for d in domain :
+            cP.append ( np.sum( (in_d>0 ) * (in_d<=d) , 0 ) )
+            cN.append ( np.sum( (out_d>0) * (out_d<=d) , 0 ) )
+        cPdf = pd.DataFrame(cP) + 1
+        cNdf = pd.DataFrame(cN) + 1
+        TPR = (cPdf/cPdf.iloc[-1,:]).values
+        FPR = (cNdf/cNdf.iloc[-1,:]).values
+        del cPdf,cNdf
+        all_immersions = []
+        for tpr,fpr in zip( TPR.T,FPR.T ) :
+            all_immersions.append( ( np.trapz( tpr,fpr ), np.abs(np.trapz(np.diff(tpr),np.diff(fpr)) ) ) )
+        if bSanityCheck:
+            import matplotlib.pyplot as plt
+            plt.subplot(211)
+            plt.plot( domain[1:] , np.diff(TPR[:,0]) 	, 'y' , label = 'Grouped, first instance, immersion'   	)
+            plt.plot( domain[1:] , np.diff(FPR[:,0]) 	, 'c' , label = 'Ungrouped, first instance, immersion' 	)
+            plt.plot( domain 	 , all_positives 	, 'r' , label = 'Grouped, all instances, Immersiveness'	)
+            plt.plot( domain 	 , all_negatives 	, 'b' , label = 'Ungrouped, all instances, Immersiveness' )
+            plt.title( 'Immersiveness and Immersion' )
+            plt.xlabel( 'Distance [Arb Unit]')
+            plt.ylabel( 'Histogram' )
+            plt.legend()
+            plt.subplot(212)
+            mFPR = np.mean( FPR.T , 0 )
+            mTPR = np.mean( TPR.T , 0 )
+            sFPR = np.std(FPR.T,0)
+            sTPR = np.std(TPR.T,0)
+            #
+            plt.plot( mFPR - sFPR , mTPR+sTPR , ':g'	, label = 'mean + error'  )
+            plt.plot( mFPR , mTPR , 'g' , label='mean' )
+            plt.plot( mFPR + sFPR , mTPR - sTPR  , ':g'	, label = 'mean - error' )
+            #
+            plt.xlabel( 'FPR' )
+            plt.ylabel( 'TPR' )
+            plt.legend()
+            str_conv= lambda num: str(np.round(num*1000)/1000)
+            cal_title = 'Full AUC and error estimate: ' +    str_conv(   np.trapz( mTPR , mFPR )) +\
+			' +- ' + str_conv ( np.trapz( mTPR + sTPR ,  mFPR - sFPR ) -\
+                        np.trapz( mTPR - sTPR ,  mFPR + sFPR ) )
+            plt.title( cal_title )
+            plt.show()
+            print ( cal_title )
+        return ( np.array( all_immersions ) )
     total_immersiveness	= []
     N 			= len(labels)
     for i in range ( N ) :
@@ -1617,7 +1690,12 @@ def happiness ( entry_nr:int , ldf:pd.DataFrame , ndf:pd.DataFrame , clustercol:
     happiness   = np.sum( [ c[0][0]==happy for c in check ] )/len(check)
     return ( happiness )
 
-def complete_happiness ( ldf:pd.DataFrame , ndf:pd.DataFrame , clustercol:int=0 , namecol=0 , neighborcol=1  ) -> list[float] :
+def complete_happiness ( ldf:pd.DataFrame , ndf:pd.DataFrame=None , clustercol:int=0 , namecol=0 , neighborcol=1  ) -> list[float] :
+    if ndf is None :
+        from impetuous.quantification import dirac_matrix
+        N = float( len(set(ldf.iloc[:,clustercol].values.tolist())) )
+        N = len(ldf.index)
+        return( (np.sum( dirac_matrix(ldf.iloc[:,clustercol].values ), 0 )/N).tolist() )
     lookup = { i:(c,j) for i,c,j in zip(ldf.index.values,ldf.iloc[:,0].values,range(len(ldf)) ) }
     total_happiness_ = []
     for i_ in range( len(ldf) ) :
