@@ -49,6 +49,30 @@ rem
 import pandas as pd
 import numpy as np
 
+try :
+        from jax import numpy as jxnmp
+        bUseJax = True
+except ImportError :
+        print ( "ImportError:"," NO JAX. WILL NOT USE IT")
+        bUseJax = False
+except OSError:
+        print ( "OSError:"," NO JAX. WILL NOT USE IT")
+        bUseJax = False
+
+if bUseJax :
+    import jax.numpy as jnp
+    from jax import grad, jit, vmap
+
+def np_linalg_svd( X:np.array , full_matrices:bool=False , bJAXED:bool=bUseJax ) -> tuple[np.array] :
+    if bJAXED :
+        import jax.numpy        as np
+        import numpy            as denovonp
+        u,s,vt = np.linalg.svd(X,full_matrices)
+        return ( denovonp.array(u) ,denovonp.array(s), denovonp.array(vt) )
+    else :
+        import numpy            as np
+        return ( np.linalg.svd(X,full_matrices) )
+
 def sign ( x ) :
     return ( 2*(x>=0)-1 )
 

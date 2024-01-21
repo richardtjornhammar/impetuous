@@ -23,6 +23,20 @@ from sklearn.decomposition import PCA
 import itertools
 import typing
 
+try :
+        from jax import numpy as jxnmp
+        bUseJax = True
+except ImportError :
+        print ( "ImportError:"," NO JAX. WILL NOT USE IT")
+        bUseJax = False
+except OSError:
+        print ( "OSError:"," NO JAX. WILL NOT USE IT")
+        bUseJax = False
+if bUseJax :
+    import jax.numpy as jnp
+    from jax import grad, jit, vmap
+
+
 def subArraysOf ( Array:list,Array_:list=None ) -> list :
     if Array_ == None :
         Array_ = Array[:-1]
@@ -1465,36 +1479,36 @@ def mean_field ( data:np.array , bSeparate:bool=False , axis_type:str=None ) :
         return ( m1.reshape(-1,1)*m0.reshape(1,-1) , ( ms1 + ms0 ) * 0.5 )
     return( 2*m1.reshape(-1,1)*m0.reshape(1,-1) / ( ms1 + ms0 ) )
 
-def associativity( xs:np.array , ys:np.array ) -> np.array :
-    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
-        xs = xs.values
-    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
-        ys = ys.values
-    # ASSUMING COLUMN DIMENSION IS REDUCED
-    nomer = np.dot( ys,xs.T )
-    dnom1 = np.sum( ys**2 , 1 )
-    dnom2 = np.sum( xs**2 , 1 )
-    return ( nomer/np.sqrt(np.outer(dnom1,dnom2)) )
-
-def correlation_core ( xs:np.array , ys:np.array , TOL:float=1E-12 , axis_type:str='0' , bVanilla:bool=False ) -> np.array :
-    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
-        xs = xs.values
-    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
-        ys = ys.values
-    if bVanilla :
-        x_means = (np.mean(xs,axis=1)*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T
-        y_means = (np.mean(ys,axis=1)*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T
-    else :
-        x_means = mean_field ( xs , bSeparate=False , axis_type=axis_type )
-        y_means = mean_field ( ys , bSeparate=False , axis_type=axis_type )
-    xms = xs - x_means #(x_means*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T # THIS CAN BE IMPROVED
-    yms = ys - y_means #(y_means*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T # THIS CAN BE IMPROVED
-    r = np.dot( yms , xms.T ) / np.sqrt( (yms*yms).sum(axis=1).reshape(len(yms),1) @ (xms*xms).sum(axis=1).reshape(1,len(xms))  )
-    if not TOL is None : # DEV
-        r = 1 - r
-        r = r * ( np.abs(r)>TOL )
-        r = 1 - r
-    return ( r )
+#def associativity( xs:np.array , ys:np.array ) -> np.array :
+#    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+#        xs = xs.values
+#    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+#        ys = ys.values
+#    # ASSUMING COLUMN DIMENSION IS REDUCED
+#    nomer = np.dot( ys,xs.T )
+#    dnom1 = np.sum( ys**2 , 1 )
+#    dnom2 = np.sum( xs**2 , 1 )
+#    return ( nomer/np.sqrt(np.outer(dnom1,dnom2)) )
+#
+#def correlation_core ( xs:np.array , ys:np.array , TOL:float=1E-12 , axis_type:str='0' , bVanilla:bool=False ) -> np.array :
+#    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+#        xs = xs.values
+#    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+#        ys = ys.values
+#    if bVanilla :
+#        x_means = (np.mean(xs,axis=1)*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T
+#        y_means = (np.mean(ys,axis=1)*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T
+#    else :
+#        x_means = mean_field ( xs , bSeparate=False , axis_type=axis_type )
+#        y_means = mean_field ( ys , bSeparate=False , axis_type=axis_type )
+#    xms = xs - x_means #(x_means*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T # THIS CAN BE IMPROVED
+#    yms = ys - y_means #(y_means*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T # THIS CAN BE IMPROVED
+#    r = np.dot( yms , xms.T ) / np.sqrt( (yms*yms).sum(axis=1).reshape(len(yms),1) @ (xms*xms).sum(axis=1).reshape(1,len(xms))  )
+#    if not TOL is None : # DEV
+#        r = 1 - r
+#        r = r * ( np.abs(r)>TOL )
+#        r = 1 - r
+#    return ( r )
 
 def spearmanrho ( xs:np.array , ys:np.array ) -> np.array :
     if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
@@ -2683,9 +2697,69 @@ def encode( G = ['Male','Male','Female'] ) -> dict :
         enc_d[i,j] = int(1)
     return ( {'encoding':enc_d.T,'labels':ugl} )
 
-def dirac_matrix ( G = ['Male','Male','Female'] ) -> np.array :
+#def dirac_matrix ( G = ['Male','Male','Female'] ) -> np.array :
+#    eV = encode(   G   )['encoding']
+#    return ( np.dot(eV.T,eV) )
+def dirac_matrix ( G:list = ['Male','Male','Female'], bJAXED:bool=bUseJax ) -> np.array :
     eV = encode(   G   )['encoding']
-    return ( np.dot(eV.T,eV) )
+    if bJAXED :
+        import jax.numpy        as np
+        import numpy            as denovonp
+        return ( denovonp.array(np.dot(eV.T,eV)) )
+    else :
+        import numpy            as np
+        return ( np.dot(eV.T,eV) )
+
+
+def correlation_core ( xs:np.array , ys:np.array ,
+                TOL:float=1E-12 , axis_type:str='0' ,
+                bVanilla:bool=False, bJAXED:bool = bUseJax ) -> np.array :
+    if bJAXED :
+        import jax.numpy        as np
+        import numpy            as denovonp
+    else :
+        import numpy            as np
+    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+        xs = xs.values
+    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+        ys = ys.values
+    if bVanilla :
+        x_means = (np.mean(xs,axis=1)*np.array([[1 for i in range(np.shape(xs)[1]) ]]).T).T
+        y_means = (np.mean(ys,axis=1)*np.array([[1 for i in range(np.shape(ys)[1]) ]]).T).T
+    else :
+        x_means = mean_field ( xs , bSeparate=False , axis_type=axis_type )
+        y_means = mean_field ( ys , bSeparate=False , axis_type=axis_type )
+    xms = xs - x_means
+    yms = ys - y_means
+    r = np.dot( yms , xms.T ) / np.sqrt( (yms*yms).sum(axis=1).reshape(len(yms),1) @ (xms*xms).sum(axis=1).reshape(1,len(xms))  )
+    if not TOL is None : # DEV
+        r = 1 - r
+        r = r * ( np.abs(r)>TOL )
+        r = 1 - r
+    if bJAXED :
+        return ( denovonp.array(r) ) # MTUABLE
+    else :
+        return ( r )
+
+def associativity( xs:np.array , ys:np.array , bJAXED:bool = bUseJax ) -> np.array :
+    if bJAXED :
+        import jax.numpy        as np
+        import numpy            as denovonp
+    else :
+        import numpy            as np
+    if 'pandas' in str(type(xs)).lower() or 'series' in str(type(xs)).lower() or 'dataframe' in str(type(xs)).lower() :
+        xs = xs.values
+    if 'pandas' in str(type(ys)).lower() or 'series' in str(type(ys)).lower() or 'dataframe' in str(type(ys)).lower() :
+        ys = ys.values
+    # ASSUMING COLUMN DIMENSION IS REDUCED
+    nomer = np.dot( ys,xs.T )
+    dnom1 = np.sum( ys**2 , 1 )
+    dnom2 = np.sum( xs**2 , 1 )
+    if bJAXED :
+        return ( denovonp.array( nomer/np.sqrt(np.outer(dnom1,dnom2)) ) ) # MUTABLE
+    else :
+        return ( nomer/np.sqrt(np.outer(dnom1,dnom2)) )
+
 
 def inclusion_projection ( X:np.array, G:list[str] ,
 		bSelfExcluded:bool=False ) -> np.array :
@@ -2724,7 +2798,6 @@ def block_remove ( data:np.array , unwanted_blocks:list[str] , meanax:int=1 ) ->
         return ( np.transpose(data - block_contributions + means) )
     return ( data - block_contributions + means )						# REMOVE SAMPLE BLOCKS AND ADD
 												# BACK FEATURE MEANS
-
 
 if __name__ == '__main__' :
 
