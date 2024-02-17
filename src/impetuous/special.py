@@ -411,3 +411,71 @@ def read_rds_matrix ( filename = 'matrix.rds', bIsSquare=False ) :
     else :
         return ( 		readRDS(filename)	)
 
+
+def hc_rot( n:int, rp:list[int], rq:list[int] ) -> list[int] :
+    if rq[1] == 0 :
+        if rq[0] == 1  :
+            rp[0] = n-1 - rp[0];
+            rp[1] = n-1 - rp[1];
+        #                                                                                                                                                                          
+        # SWAP                                                                                                                                                                     
+        t: int = rp[0]
+        rp[0] = rp[1]
+        rp[1] = t
+    #                                                                                                                                                                              
+    return ( rp )
+
+
+def hc_r2d ( n:int , rp:list[int] ) -> int :
+    rq:list[int]  = [0,0]
+    s:int = int(n/2)
+    d:int = 0
+    while ( s>0 ) :
+        rq[0] = int( np.bitwise_and(rp[0] , s) > 0 )
+        rq[1] = int( np.bitwise_and(rp[1] , s) > 0 )
+        d += s * s * ( np.bitwise_xor( 3*rq[0] , rq[1] ) )
+        rp = rot(n, rp, rq)
+        s  = int(s/2)
+    return d
+
+
+def hc_d2r( n:int, d:int ) -> list[int] :
+    rp :list[int] = [ 0, 0 ]
+    rq :list[int] = [ 0, 0 ]
+    s  :int = 1
+    t  :int = d
+    while ( s<n ) :
+        rq[0]  = int( np.bitwise_and( 1 , int(t/2) ) )
+        rq[1]  = int( np.bitwise_and( 1 , (np.bitwise_xor( t , rq[0] )) ) )
+        rp = rot(s, rp, rq)
+        rp[0] += s * rq[0]
+        rp[1] += s * rq[1]
+        t = int(t/4)
+        s = int(s*2)
+    return rp
+
+def hc_assign_lin_nn ( n:int , d0 : int ) -> list[int] :
+    nn : list[int] = [ d0 ]
+    r  : list[int] = d2r ( n , d0 )
+    nn.append( r2d( n , [ int((r[0]-1)>=0) * (r[0]-1) + (n-1) * int((r[0]-1)<0) , r[1] ] ) )
+    nn.append( r2d( n , [ int((r[0]+1) <n) * (r[0]+1) , r[1]   ] ) )
+    nn.append( r2d( n , [ r[0] , int((r[1]-1)>=0) * (r[1]-1) + (n-1) * int((r[1]-1)<0) ] ) )
+    nn.append( r2d( n , [ r[0] , int((r[1]+1) <n) * (r[1]+1)   ] ) )
+    return ( nn )
+
+
+if __name__ == '__main__' :
+
+    d:int =  0
+    n:int =  4
+    R = []
+    while( d<n*n ) :
+        rt = hc_d2r( n , d )
+        R .append(rt)
+        d += 1
+
+    import matplotlib.pyplot as plt
+    R = np.array(R)
+    plt.plot(R[:,0],R[:,1],'k')
+    plt.plot(R[:,0],R[:,1],'dr')
+    plt.show()
