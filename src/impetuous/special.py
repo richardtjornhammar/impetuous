@@ -434,7 +434,7 @@ def hc_r2d ( n:int , rp:list[int] ) -> int :
         rq[0] = int( np.bitwise_and(rp[0] , s) > 0 )
         rq[1] = int( np.bitwise_and(rp[1] , s) > 0 )
         d += s * s * ( np.bitwise_xor( 3*rq[0] , rq[1] ) )
-        rp = rot(n, rp, rq)
+        rp = hc_rot(n, rp, rq)
         s  = int(s/2)
     return d
 
@@ -447,7 +447,7 @@ def hc_d2r( n:int, d:int ) -> list[int] :
     while ( s<n ) :
         rq[0]  = int( np.bitwise_and( 1 , int(t/2) ) )
         rq[1]  = int( np.bitwise_and( 1 , (np.bitwise_xor( t , rq[0] )) ) )
-        rp = rot(s, rp, rq)
+        rp = hc_rot(s, rp, rq)
         rp[0] += s * rq[0]
         rp[1] += s * rq[1]
         t = int(t/4)
@@ -456,11 +456,11 @@ def hc_d2r( n:int, d:int ) -> list[int] :
 
 def hc_assign_lin_nn ( n:int , d0 : int ) -> list[int] :
     nn : list[int] = [ d0 ]
-    r  : list[int] = d2r ( n , d0 )
-    nn.append( r2d( n , [ int((r[0]-1)>=0) * (r[0]-1) + (n-1) * int((r[0]-1)<0) , r[1] ] ) )
-    nn.append( r2d( n , [ int((r[0]+1) <n) * (r[0]+1) , r[1]   ] ) )
-    nn.append( r2d( n , [ r[0] , int((r[1]-1)>=0) * (r[1]-1) + (n-1) * int((r[1]-1)<0) ] ) )
-    nn.append( r2d( n , [ r[0] , int((r[1]+1) <n) * (r[1]+1)   ] ) )
+    r  : list[int] = hc_d2r ( n , d0 )
+    nn.append( hc_r2d( n , [ int((r[0]-1)>=0) * (r[0]-1) + (n-1) * int((r[0]-1)<0) , r[1] ] ) )
+    nn.append( hc_r2d( n , [ int((r[0]+1) <n) * (r[0]+1) , r[1]   ] ) )
+    nn.append( hc_r2d( n , [ r[0] , int((r[1]-1)>=0) * (r[1]-1) + (n-1) * int((r[1]-1)<0) ] ) )
+    nn.append( hc_r2d( n , [ r[0] , int((r[1]+1) <n) * (r[1]+1)   ] ) )
     return ( nn )
 
 
