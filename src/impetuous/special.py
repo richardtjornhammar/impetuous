@@ -463,8 +463,35 @@ def hc_assign_lin_nn ( n:int , d0 : int ) -> list[int] :
     nn.append( hc_r2d( n , [ r[0] , int((r[1]+1) <n) * (r[1]+1)   ] ) )
     return ( nn )
 
+def hc_assign_lin_nnn ( n:int , d0 : int , bPeriodic:bool=True , bReturnLabels:bool=False ) -> list[int] :
+    #
+    nnn : list[int] = [ d0 ]
+    r   : list[int] = hc_d2r ( n , d0 )
+    border_function = lambda a,n,bPeriodic : a%n if bPeriodic else 0 if a<0 else a if a < n else n-1
+    #
+    nnn.append( hc_r2d( n , [ r[0] , border_function( r[1]+1 , n , bPeriodic) ] ) ) # N
+    nnn.append( hc_r2d( n , [ border_function(r[0]+1, n , bPeriodic) , border_function( r[1]+1 , n , bPeriodic) ] ) ) # NE
+    nnn.append( hc_r2d( n , [ border_function( r[0]+1 , n , bPeriodic) , r[1] ] ) ) # E
+    nnn.append( hc_r2d( n , [ border_function(r[0]+1, n , bPeriodic) , border_function( r[1]-1 , n , bPeriodic) ] ) ) # SE
+    nnn.append( hc_r2d( n , [ r[0] , border_function( r[1]-1 , n , bPeriodic) ] ) ) # S
+    nnn.append( hc_r2d( n , [ border_function(r[0]-1, n , bPeriodic) , border_function( r[1]-1 , n , bPeriodic) ] ) ) # SW
+    nnn.append( hc_r2d( n , [ border_function( r[0]-1 , n , bPeriodic) , r[1] ] ) ) # W
+    nnn.append( hc_r2d( n , [ border_function(r[0]-1, n , bPeriodic) , border_function( r[1]+1 , n , bPeriodic) ] ) ) # NW
+    #
+    if bReturnLabels :
+        nnn.append( [ "." , "N" , "NE" , "E" , "SE" , "S" , "SW" , "W" , "NW" ] )
+    return ( nnn )
 
-if __name__ == '__main__' :
+
+if __name__ == '__main__':
+    n=32
+    d=hc_r2d(32,[31,31])
+    print ( hc_d2r( n, d ) )
+    print ( hc_assign_lin_nn ( n , d ) )
+    print ( hc_assign_lin_nnn ( n , d , bPeriodic=True  )  )
+    print ( hc_assign_lin_nnn ( n , d , bPeriodic=False )  )
+    print ( [ hc_d2r(n,d_) for d_ in hc_assign_lin_nnn ( n , d , bPeriodic=True ) ] )
+    print ( [ hc_d2r(n,d_) for d_ in hc_assign_lin_nnn ( n , d , bPeriodic=False ) ] )
 
     d:int =  0
     n:int =  4
