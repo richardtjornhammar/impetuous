@@ -1065,21 +1065,21 @@ def read_xyz(fname='argon.xyz',sep=' ') :
 
 
 def hierarchical_bundle ( input_coordinates:np.array	,
-    label_pairs:list    = None              ,
-    labels:list[str]	= None              ,
+    label_pairs:list            = None              ,
+    labels:list[str]            = None              ,
     linkage:str			= 'ward'            ,
     metric:str			= 'euclidean'		,
-    divergence_function	= lambda x : x**5	,
-    keep_n_common:int	= None              ,
+    divergence_function         = lambda x : x**5	,
+    keep_n_common:int           = None              ,
     N_segments:int		= 100               ,
     bPolar:bool			= True              ,
     bPlotted:bool		= False             ,
-    start_theta:float	= np.pi * 0.0		,
+    start_theta:float           = np.pi * 0.0		,
     end_theta:float		= np.pi * 2.00		) -> dict :
     #
     from impetuous.fit import bezier2D_curve
     if labels is None :
-        labels  = [ 'CID' + str(i) for i in range(len(X)) ]
+        labels  = [ 'CID' + str(i) for i in range(len(input_coordinates)) ]
     #
     polar_bezier_coords , bezier_coords , true_coords = [] , [] , []
     polar_dendrogram_coordinates = []
