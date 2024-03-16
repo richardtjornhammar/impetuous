@@ -1077,6 +1077,8 @@ def hierarchical_bundle ( input_coordinates:np.array	,
     start_theta:float           = np.pi * 0.0		,
     end_theta:float		= np.pi * 2.00		) -> dict :
     #
+    if bPlotted :
+        import matplotlib.pyplot as plt
     from scipy.cluster import hierarchy
     from scipy.spatial.distance import squareform, pdist
     from impetuous.fit import bezier2D_curve
