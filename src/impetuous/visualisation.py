@@ -54,10 +54,49 @@ list_typecheck = lambda xl,typ, func: func( [ typecheck(x,typ) for x in xl ] )
 nice_colors = list( set( [ '#c5c8c6' , '#1d1f21' , '#282a2e' , '#373b41' , '#a54242' , '#cc6666' ,
                 '#8c9440' , '#b5bd68' , '#de935f' , '#f0c674' , '#5f819d' , '#81a2be' ,
                 '#85678f' , '#b294bb' , '#5e8d87' , '#8abeb7' , '#707880' ] ) )
-
 safe_palette    = [ '#193CBC' , '#1473AF' , '#589ACF' , '#EEE762' , '#E8B84F' , '#EA594E' ]
-
 make_hex_colors = lambda c : '#%02x%02x%02x' % (c[0]%256,c[1]%256,c[2]%256)
+
+# https://github.com/rictjo/biocarta/commit/e46e76a6396bbdd8c64670837c4347fda139cf64
+invert_color = lambda color : make_hex_color( [  255 - int('0x'+color[1:3],0) ,
+                                        255 - int('0x'+color[3:5],0) ,
+                                        255 - int('0x'+color[5:] ,0) ] )
+
+def create_color ( num:int ) :
+    # THE COMMON PERCEPTION OF THE VISIBLE SPECTRUM 1792
+    make_hex_color = lambda c : '#%02x%02x%02x' % (c[0]%256,c[1]%256,c[2]%256)
+    c	= [ 0 , 0 , 0 ]
+    cas	= 1 + int ( num / 256 )
+    vol	= num	%	256
+    if   cas == 1 :
+        c[0] = vol
+    elif cas == 2 :
+        c[0] = 255
+        c[1] = vol
+    elif cas == 3 :
+        c[0] = 255 - vol
+        c[1] = 255
+    elif cas == 4 :
+        c[0] = 0
+        c[1] = 255
+        c[2] = vol
+    elif cas == 5 :
+        c[0] = 0
+        c[1] = 255 - vol
+        c[2] = 255
+    elif cas == 6 :
+        c[0] = vol
+        c[1] = 0
+        c[2] = 255
+    elif cas == 7 :
+        c[0] = 255
+        c[1] = vol
+        c[2] = 255
+    else :
+        c = [ 255 , 255 , 255 ]
+    return ( make_hex_color( c ) )
+
+
 
 def color_indices ( N=100 , M=256 , bRandom=False ) :
     idx = [ int(np.floor( i*M/N )) for i in range(N) ]
