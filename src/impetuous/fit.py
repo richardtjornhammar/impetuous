@@ -19,6 +19,20 @@ import pandas as pd
 import operator
 import typing
 
+# CALCULATE A BEZIER CURVE
+def bezier2D_curve ( points:np.array , N_segments:int=100 ) -> np.array :
+    if True :
+        import scipy.special as sm
+        ntk     = lambda n, t, k : t**(k)*(1-t)**(n-k)*sm.comb(n,k)
+        bezier  = lambda ts , n_ : np.matrix([[ntk(n_-1,t,k) for k in range(n_)] for t in ts])
+        def lsqfit( points , M ) :
+            bM = np.linalg.pinv(M)
+            return ( bM*points )
+        segments        = np.array( range(N_segments+1), dtype='float')/N_segments
+        M               = bezier ( segments , len(points) )
+        bezier_points   = np.array(M*points)
+        return ( bezier_points )
+
 class quaternion ( ) :
     def __init__ ( self , vector=None , angle=None ):
         self.bComplete = False
