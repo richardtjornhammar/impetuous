@@ -1063,10 +1063,167 @@ def read_xyz(fname='argon.xyz',sep=' ') :
     return ( coords )
 
 
+
+def hierarchical_bundle ( input_coordinates:np.array	,
+    label_pairs:list    = None              ,
+    labels:list[str]	= None              ,
+    linkage:str			= 'ward'            ,
+    metric:str			= 'euclidean'		,
+    divergence_function	= lambda x : x**5	,
+    keep_n_common:int	= None              ,
+    N_segments:int		= 100               ,
+    bPolar:bool			= True              ,
+    bPlotted:bool		= False             ,
+    start_theta:float	= np.pi * 0.0		,
+    end_theta:float		= np.pi * 2.00		) -> dict :
+    #
+    from impetuous.fit import bezier2D_curve
+    if labels is None :
+        labels  = [ 'CID' + str(i) for i in range(len(X)) ]
+    #
+    polar_bezier_coords , bezier_coords , true_coords = [] , [] , []
+    polar_dendrogram_coordinates = []
+    #
+    pdi         = pdist( np.array([ np.array([x,y]) for (x,y) in input_coordinates ]) , metric=metric )
+    distm       = squareform( pdi )
+    Z           = hierarchy.linkage( pdi , linkage )
+    #
+    root , nlist        = hierarchy.to_tree( Z , rd = True )
+    dn                  = hierarchy.dendrogram( Z , labels = labels , no_plot=True )
+    #
+    mi  = np.min(dn['icoord'])
+    ma  = np.max(dn['icoord'])
+    mr  = np.max(dn['dcoord'])
+    n   = len( dn['ivl'] )
+    #
+    nG  = NodeGraph()    # NodeGraph NODE ID MUST BE A STRING
+    #
+    I , K       = 0 , 0
+    LIDs        = []
+    lookup      = dict()
+    #
+    # FIRST WE BUILD THE GRAPH
+    for node in nlist :
+        if node .is_leaf() :
+            LIDs .append( node.get_id() )
+            continue
+        nG .add_ascendant_descendant( str( node.get_id() ) , str( node .get_left() .get_id() ) )
+        nG .add_ascendant_descendant( str( node.get_id() ) , str( node .get_right().get_id() ) )
+        lcrd = [ dn['icoord'][I][0] , dn['dcoord'][I][0] ]
+        rcrd = [ dn['icoord'][I][3] , dn['dcoord'][I][3] ]
+        I += 1
+    #
+    coordinate_data = dict()
+    K   = 0
+    TOL = 1E-14
+    for node in nlist :
+        for i in range(len(dn['dcoord'])) :
+            if ( node.dist - dn['dcoord'][i][1] )**2 <= TOL :
+                #
+                coordinate_data[ str(node.get_id()) ] = [ np.mean(dn['icoord'][i]) , np.max(dn['dcoord'][i]) ]
+                nG .get_dag()  [ str(node.get_id()) ] .get_data()['coordinate'] = coordinate_data[ str(node.get_id()) ]
+                K += 1
+                #
+                coordinate_data[ str(node.get_left().get_id()) ] = [ dn['icoord'][i][0] , dn['dcoord'][i][0] ]
+                nG .get_dag()  [ str(node.get_left().get_id()) ] .get_data()['coordinate']  = coordinate_data[ str(node.get_left().get_id()) ]
+                K += 1
+                #
+                coordinate_data[ str(node.get_right().get_id()) ] = [ dn['icoord'][i][3] , dn['dcoord'][i][3] ]
+                nG .get_dag()  [ str(node.get_right().get_id()) ] .get_data()['coordinate'] = coordinate_data[ str(node.get_right().get_id()) ]
+                K += 1
+                break
+
+    rootcrd = [ 0.5*( lcrd[0] + rcrd[0] ) , mr*1.1 ]
+    leaf_node_lookup = dict()
+    for lid, lab in zip( LIDs , labels ) :
+        leaf_node_lookup[lab] = str(lid)
+    nG .add_ascendant_descendant( str(root.get_id()) , str(node.get_left().get_id()) )
+    nG .add_ascendant_descendant( str(root.get_id()) , str(node.get_right().get_id()) )
+    nG .get_dag()[ str(root.get_id()) ].get_data()['coordinate'] = rootcrd
+    nG .set_root_id( str(root.get_id()) )
+    #
+    if bPlotted :
+        for node in nG.get_dag().values() :
+            crd = node.get_data()['coordinate']
+            plt .plot( crd[0], crd[1] , 'dr' )
+    func = divergence_function
+    theta = lambda ic , mi , ma : ( ic - mi ) * ( end_theta - start_theta ) / ( ma - mi ) + start_theta
+    #
+    for pair in label_pairs :
+        lab0 = pair[0]
+        lab1 = pair[1]
+        #
+        pathway1 = nG .complete_lineage( identification=leaf_node_lookup[lab0] , order='depth' , linktype='ascendants' )['path']
+        pathway2 = nG .complete_lineage( identification=leaf_node_lookup[lab1] , order='depth' , linktype='ascendants' )['path']
+
+        common_s12 = set(pathway1)&set(pathway2)
+        if not keep_n_common is None :
+            common_s12 = set(sorted(list(common_s12))[keep_n_common:])
+
+        CRDS = []
+        for p in [ leaf_node_lookup[lab0], *pathway1 ] :
+            if not p in common_s12 :
+                crd = nG.get_dag()[p].get_data()['coordinate']
+                CRDS.append(crd)
+        for p in [ leaf_node_lookup[lab1], *pathway2 ] [::-1] :
+            if not p in common_s12 :
+                crd = nG.get_dag()[p].get_data()['coordinate']
+                CRDS.append(crd)
+        R = np.array(CRDS)
+        #
+        b_points = bezier2D_curve ( R , N_segments = N_segments )
+        #
+        bezier_coords   .append( b_points )
+
+        rs  = [ func( np.abs(r-mr) )/func(mr) for r in b_points[:,1] ]
+        th  = [ theta(p,mi,ma) for p in b_points[:,0] ]
+        x   = [ r*np.cos(t) for r,t in zip(rs,th) ]
+        y   = [ r*np.sin(t) for r,t in zip(rs,th) ]
+
+        polar_bezier_coords.append( np.array([x,y]).T )
+        true_coords     .append( R )
+        if bPlotted :
+            plt.plot ( b_points[:,0] , b_points[:,1] , 'b' )
+    if bPlotted :
+        for pair in zip( dn['icoord'] ,  dn['dcoord'] ) :
+            plt.plot( pair[0] , pair[1] , 'k' )
+
+    if bPolar :
+        if bPlotted :
+            plt.figure(2)
+        #
+        from impetuous.visualisation import create_color
+        colormax = 1792
+        #
+        for pair in zip( dn['icoord'] , dn['dcoord'] ) :
+            rs  = [ func( np.abs(r-mr) )/func(mr) for r in pair[1] ]
+            th  = [ theta(p,mi,ma) for p in pair[0]   ]
+            x   = [ r*np.cos(t) for r,t in zip(rs,th) ]
+            y   = [ r*np.sin(t) for r,t in zip(rs,th) ]
+            I   = int ( np.floor( (np.mean(pair[0])-mi)/( ma - mi )*colormax ) )
+            polar_dendrogram_coordinates .append( [x,y] )
+            if bPlotted :
+                plt.plot( x , y , create_color(I) )
+        for b_p_points in polar_bezier_coords :
+            if bPlotted :
+                plt.plot( b_p_points[:,0], b_p_points[:,1] , 'k' )
+    elif bPlotted :
+        for pair in zip( dn['icoord'] ,  dn['dcoord'] ) :
+            plt.plot( pair[0] , pair[1] , 'k' )
+    if bPlotted :
+        plt.show()
+    #
+    return ( {	'polar, bezier coordinates' : polar_bezier_coords ,
+		'carthesian,  bezier coordinates' : bezier_coords ,
+		'true coord' : true_coords, 'polar, dendrogram coordinates' : polar_dendrogram_coordinates,
+		'GraphNode object':nG ,'dendrogram object':dn} )
+
+
+
 import os
 if __name__ == '__main__' :
     #
-    bMOFA_data = True
+    bMOFA_data = False
     if bMOFA_data :
         import os
         # os.system('mkdir ../data')
@@ -1088,7 +1245,7 @@ if __name__ == '__main__' :
         print(qdf)
         exit(1)
 
-
+    """
     base = '../../../data/'
     convert_file = base + 'naming_and_annotations/conv.txt'
     ens2sym , sym2ens = create_synonyms( convert_file )
@@ -1102,7 +1259,7 @@ if __name__ == '__main__' :
                 print(gname)
             else:
                 print('MISSING:',gname)
-
+    """
     n = Node()
     n.set_id("richard")
     n.add_label("eating")
@@ -1141,3 +1298,44 @@ if __name__ == '__main__' :
     route = RichTree.search( root_id='0', order='depth' )
     print ( "ROUTE:: " , route )
 
+
+    #
+    linkage             = 'ward'
+    labels              = None
+    data_spread         = 0.30
+    N_centers           = 4
+    N_points            = 100
+    bMergeInternal      = False
+
+    #
+    print ( "USING" , N_centers , "CENTERS FOR ASSESSMENT" )
+    #
+    omega       = np.pi/float(N_centers)*2.0
+    X , Y       = [] , []
+    for ic in range(N_centers) :
+        Y .append( np.sin(omega*ic)  + np.random.randn(N_points )*data_spread )
+        X .append( np.cos(omega*ic)  + np.random.randn(N_points )*data_spread )
+    X = np.array(X).reshape(-1)
+    Y = np.array(Y).reshape(-1)
+    input_coordinates = np.array([X,Y]).T
+    #
+    print ( 'CREATED TOY DATA' , input_coordinates )
+    if labels is None :
+        labels  = [ 'CID' + str(i) for i in range(len(X)) ]
+    #
+    label_pairs = [     [ labels[ 0] , labels[100] ] ,
+                        [ labels[ 0] , labels[ 1 ] ] ,
+                        [ labels[ 0] , labels[102] ] ,
+                        [ labels[ 0] , labels[101] ] ,
+                        [ labels[ 0] , labels[ 99] ] ,
+                        [ labels[ 0] , labels[ 98] ] ,
+                        [ labels[ 0] , labels[ 80] ] ,
+                        [ labels[ 0] , labels[ 81] ] ,
+                        [ labels[ 0] , labels[ 79] ] ,
+                        [ labels[-2] , labels[ 0 ] ] ,
+                        [ labels[-2] , labels[ 1 ] ] ,
+                        [ labels[-2] , labels[ 2 ] ] ,
+                        [ labels[-2] , labels[ 3 ] ] ]
+
+
+    hierarchical_bundle ( input_coordinates , label_pairs=label_pairs )
