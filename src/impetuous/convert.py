@@ -1065,17 +1065,18 @@ def read_xyz(fname='argon.xyz',sep=' ') :
 
 
 def hierarchical_bundle ( input_coordinates:np.array	,
-    label_pairs:list            = None              ,
-    labels:list[str]            = None              ,
-    linkage:str			= 'ward'            ,
+    label_pairs:list            = None              	,
+    labels:list[str]            = None              	,
+    linkage:str			= 'ward'            	,
     metric:str			= 'euclidean'		,
     divergence_function         = lambda x : x**5	,
-    keep_n_common:int           = None              ,
-    N_segments:int		= 100               ,
-    bPolar:bool			= True              ,
-    bPlotted:bool		= False             ,
+    keep_n_common:int           = None              	,
+    N_segments:int		= 100               	,
+    bPolar:bool			= True              	,
+    bPlotted:bool		= False             	,
     start_theta:float           = np.pi * 0.0		,
-    end_theta:float		= np.pi * 2.00		) -> dict :
+    end_theta:float		= np.pi * 2.00		,
+    colormax:int                = 1600			) -> dict :
     #
     if bPlotted :
         import matplotlib.pyplot as plt
@@ -1084,6 +1085,7 @@ def hierarchical_bundle ( input_coordinates:np.array	,
     from impetuous.fit import bezier2D_curve
     if labels is None :
         labels  = [ 'CID' + str(i) for i in range(len(input_coordinates)) ]
+    dtheta = ( start_theta - end_theta ) / (len(input_coordinates) - 1 )
     #
     polar_bezier_coords , bezier_coords , true_coords = [] , [] , []
     polar_dendrogram_coordinates = []
@@ -1151,7 +1153,7 @@ def hierarchical_bundle ( input_coordinates:np.array	,
             crd = node.get_data()['coordinate']
             plt .plot( crd[0], crd[1] , 'dr' )
     func = divergence_function
-    theta = lambda ic , mi , ma : ( ic - mi ) * ( end_theta - start_theta ) / ( ma - mi ) + start_theta
+    theta = lambda ic , mi , ma : ( ic - mi ) * ( end_theta - start_theta + dtheta) / ( ma - mi ) + start_theta
     #
     for pair in label_pairs :
         lab0 = pair[0]
@@ -1197,7 +1199,6 @@ def hierarchical_bundle ( input_coordinates:np.array	,
             plt.figure(2)
         #
         from impetuous.visualisation import create_color
-        colormax = 1792
         #
         for pair in zip( dn['icoord'] , dn['dcoord'] ) :
             rs  = [ func( np.abs(r-mr) )/func(mr) for r in pair[1] ]
