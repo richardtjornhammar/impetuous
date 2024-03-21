@@ -2787,7 +2787,7 @@ def inclusion_projection ( X:np.array, G:list[str] ,
 #    dnom2 = np.sum( x**2 , ax )
 #    return ( nomer/np.sqrt(np.outer(dnom1,dnom2)) )
 
-def block_remove ( data:np.array , unwanted_blocks:list[str] , meanax:int=1 ) -> np.str :
+def block_remove ( data:np.array , unwanted_blocks:list[str] , meanax:int=1 ) -> np.array :
     ax = meanax
     if meanax == 0 :
         data = data.T
