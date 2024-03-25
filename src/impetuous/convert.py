@@ -1063,37 +1063,18 @@ def read_xyz(fname='argon.xyz',sep=' ') :
     return ( coords )
 
 
-
-def hierarchical_bundle ( input_coordinates:np.array	,
-    label_pairs:list            = None              	,
-    labels:list[str]            = None              	,
-    linkage:str			= 'ward'            	,
-    metric:str			= 'euclidean'		,
-    divergence_function         = lambda x : x**5	,
-    keep_n_common:int           = None              	,
-    N_segments:int		= 100               	,
-    bPolar:bool			= True              	,
-    bPlotted:bool		= False             	,
-    start_theta:float           = np.pi * 0.0		,
-    end_theta:float		= np.pi * 2.00		,
-    colormax:int                = 1600			) -> dict :
+def create_hierarchical_nodegraph (	input_coordinates:np.array , labels:list[str] = None ,
+			metric:str = 'euclidean' , linkage:str = 'ward' ) -> NodeGraph :
     #
-    if bPlotted :
-        import matplotlib.pyplot as plt
-    from scipy.cluster import hierarchy
-    from scipy.spatial.distance import squareform, pdist
-    from impetuous.fit import bezier2D_curve
+    from scipy.cluster		import hierarchy
+    from scipy.spatial.distance	import squareform, pdist
+    from impetuous.fit		import bezier2D_curve
     if labels is None :
         labels  = [ 'CID' + str(i) for i in range(len(input_coordinates)) ]
-    dtheta = ( start_theta - end_theta ) / (len(input_coordinates) - 1 )
-    #
-    polar_bezier_coords , bezier_coords , true_coords = [] , [] , []
-    polar_dendrogram_coordinates = []
-    #
-    pdi         = pdist( np.array([ np.array([x,y]) for (x,y) in input_coordinates ]) , metric=metric )
+
+    pdi         = pdist( input_coordinates , metric=metric )
     distm       = squareform( pdi )
     Z           = hierarchy.linkage( pdi , linkage )
-    #
     root , nlist        = hierarchy.to_tree( Z , rd = True )
     dn                  = hierarchy.dendrogram( Z , labels = labels , no_plot=True )
     #
@@ -1138,7 +1119,7 @@ def hierarchical_bundle ( input_coordinates:np.array	,
                 nG .get_dag()  [ str(node.get_right().get_id()) ] .get_data()['coordinate'] = coordinate_data[ str(node.get_right().get_id()) ]
                 K += 1
                 break
-
+    #
     rootcrd = [ 0.5*( lcrd[0] + rcrd[0] ) , mr*1.1 ]
     leaf_node_lookup = dict()
     for lid, lab in zip( LIDs , labels ) :
@@ -1148,12 +1129,56 @@ def hierarchical_bundle ( input_coordinates:np.array	,
     nG .get_dag()[ str(root.get_id()) ].get_data()['coordinate'] = rootcrd
     nG .set_root_id( str(root.get_id()) )
     #
+    return ( {'NodeGraph':nG , 'leaf_nodes':leaf_node_lookup , 'dendrogram':dn } )
+
+
+
+def hierarchical_bundle ( input_coordinates:np.array	,
+    label_pairs:list            = None              	,
+    labels:list[str]            = None              	,
+    linkage:str			= 'ward'            	,
+    metric:str			= 'euclidean'		,
+    divergence_function         = lambda x : x**5	,
+    keep_n_common:int           = None              	,
+    N_segments:int		= 100               	,
+    bPolar:bool			= True              	,
+    bPlotted:bool		= False             	,
+    start_theta:float           = np.pi * 0.0		,
+    end_theta:float		= np.pi * 2.00		,
+    colormax:int                = 1600			) -> dict :
+    #
+    if bPlotted :
+        import matplotlib.pyplot as plt
+    from scipy.cluster import hierarchy
+    from scipy.spatial.distance import squareform, pdist
+    from impetuous.fit import bezier2D_curve
+    #
+    if labels is None :
+        labels  = [ 'CID' + str(i) for i in range(len(input_coordinates)) ]
+    #
+    nGd = create_hierarchical_nodegraph (  input_coordinates = input_coordinates ,
+			labels = labels		,
+                        metric = metric		,
+			linkage = linkage	)
+    #
+    nG			= nGd[ 'NodeGraph'  ]
+    leaf_node_lookup	= nGd[ 'leaf_nodes' ]
+    dn			= nGd[ 'dendrogram' ]
+    mi			= np.min(	dn['icoord']	)
+    ma			= np.max(	dn['icoord']	)
+    mr			= np.max(	dn['dcoord']	)
+    n			= len(		dn[  'ivl' ]	)
+    #
+    dtheta = ( start_theta - end_theta ) / (len(input_coordinates) - 1 )
+    polar_bezier_coords , bezier_coords , true_coords = [] , [] , []
+    polar_dendrogram_coordinates = []
+    #
     if bPlotted :
         for node in nG.get_dag().values() :
             crd = node.get_data()['coordinate']
             plt .plot( crd[0], crd[1] , 'dr' )
-    func = divergence_function
-    theta = lambda ic , mi , ma : ( ic - mi ) * ( end_theta - start_theta + dtheta) / ( ma - mi ) + start_theta
+    func	= divergence_function
+    theta	= lambda ic , mi , ma : ( ic - mi ) * ( end_theta - start_theta + dtheta) / ( ma - mi ) + start_theta
     #
     for pair in label_pairs :
         lab0 = pair[0]
@@ -1161,11 +1186,11 @@ def hierarchical_bundle ( input_coordinates:np.array	,
         #
         pathway1 = nG .complete_lineage( identification=leaf_node_lookup[lab0] , order='depth' , linktype='ascendants' )['path']
         pathway2 = nG .complete_lineage( identification=leaf_node_lookup[lab1] , order='depth' , linktype='ascendants' )['path']
-
+        #
         common_s12 = set(pathway1)&set(pathway2)
         if not keep_n_common is None :
             common_s12 = set(sorted(list(common_s12))[keep_n_common:])
-
+        #
         CRDS = []
         for p in [ leaf_node_lookup[lab0], *pathway1 ] :
             if not p in common_s12 :
@@ -1220,9 +1245,8 @@ def hierarchical_bundle ( input_coordinates:np.array	,
     #
     return ( {	'polar, bezier coordinates' : polar_bezier_coords ,
 		'carthesian,  bezier coordinates' : bezier_coords ,
-		'true coord' : true_coords, 'polar, dendrogram coordinates' : polar_dendrogram_coordinates,
-		'GraphNode object':nG ,'dendrogram object':dn} )
-
+		'true coord' : true_coords , 'polar, dendrogram coordinates' : polar_dendrogram_coordinates,
+		'GraphNode object':nG ,'dendrogram object':dn } )
 
 
 import os
