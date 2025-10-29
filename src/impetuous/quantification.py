@@ -2665,6 +2665,11 @@ def isItPrime( N , M=None,p=None,lM05=None ) :
            return ( True )
        return ( isItPrime(N-1,M=M,p=p+1,lM05=lM05) )
 
+def areTheyIsomorphic( adjacency_matrix1, adjacency_matrix2 , TOL=1E-10 ):
+    u1,s1,v1t = np.linalg.svd(adjacency_matrix1)
+    u2,s2,v2t = np.linalg.svd(adjacency_matrix2)
+    return ( bool( np.sum(np.abs(vt)-np.abs(v2t))<TOL ) )
+
 # FIRST APPEARENCE:
 # https://gist.github.com/richardtjornhammar/ef1719ab0dc683c69d5a864cb05c5a90
 def fibonacci(n:int) -> int :
