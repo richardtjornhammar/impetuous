@@ -194,8 +194,6 @@ def groupFactorHierarchicalEnrichment (
     #
     from impetuous.quantification import find_category_interactions , find_category_variables, qvalues
     from sklearn.decomposition import PCA
-    import statsmodels.api as sm
-    from statsmodels.formula.api import ols
     #
     if dag_df is None :
         from impetuous.hierarchical import create_dag_representation_df
@@ -253,17 +251,17 @@ def groupFactorHierarchicalEnrichment (
                 group_expression_df = pd.DataFrame([Xnew.T[0]],columns=analyte_df.columns.values,index=['Group'])
                 cdf = pd.concat( [group_expression_df,journal_df] ).T
                 cdf = cdf.loc[ : , ['Group',*vars,*cats]  ].apply(pd.to_numeric)
-                linear_model = ols( 'Group~' + formula.split('~')[1], data = cdf ).fit()
-                table = sm.stats.anova_lm(linear_model,typ=2 )
                 rdf = group_expression_df
-                for idx in table.index.values :
-                    for jdx in table.loc[idx].index :
-                        rdf[ idx + ';' + jdx.replace('PR(>F)','Hierarchical,p')] = table.loc[idx].loc[jdx]
-                rdf ['Hierarchical,p']          = agg_function( table.iloc[:,-1].values )
+                #linear_model = ols( 'Group~' + formula.split('~')[1], data = cdf ).fit()
+                #table = sm.stats.anova_lm(linear_model,typ=2 )
+                #for idx in table.index.values :
+                #    for jdx in table.loc[idx].index :
+                #        rdf[ idx + ';' + jdx.replace('PR(>F)','Hierarchical,p')] = table.loc[idx].loc[jdx]
+                # rdf ['Hierarchical,p']          = agg_function( table.iloc[:,-1].values )
                 rdf ['description']		= df.loc[node,'description']+','+str(L_)
                 rdf ['Included analytes,ids']	= str_analytes
                 rdf .index = [ gid ]
-                pv = rdf['Hierarchical,p'].values
+                #pv = rdf['Hierarchical,p'].values
                 if eval_df is None :
                     eval_df = rdf
                 else :
